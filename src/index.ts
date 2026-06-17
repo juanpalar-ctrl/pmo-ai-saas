@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import path from 'path';
 import { config } from './config/environment';
-
+import { initializeDatabase } from './init-db-pg';
 const app: Express = express();
 
 // Middleware
@@ -44,7 +44,8 @@ app.get('/api/health', (_req, res) => {
 // Iniciar servidor - IMPORTANTE: bind a 0.0.0.0 para Render
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = '0.0.0.0';
-
+// Inicializar BD
+initializeDatabase().catch(console.error);
 app.listen(PORT, HOST, () => {
   console.log(`✅ Servidor ejecutándose en http://localhost:${PORT}`);
   console.log(`🔧 Ambiente: ${config.nodeEnv}`);
