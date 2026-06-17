@@ -1,13 +1,49 @@
-export const safeSkill = {
+// ============================================
+// FRAMEWORK SAFE (Scaled Agile Framework)
+// Sistema ágil para empresas grandes
+// ============================================
+
+// Exportar objeto con la definición de SAFe
+export const safe = {
+  // Nombre del framework
   name: 'SAFe',
+  
+  // Emoji/ícono para el dashboard
   icon: '🏢',
-  description: 'Escalado ágil empresarial con múltiples equipos, roadmaps de largo plazo e integración estratégica.',
+  
+  // Descripción corta
+  description: 'Marco escalable para múltiples equipos, alineados a nivel de programa.',
+  
+  // MÉTRICAS (números que medimos)
   metrics: {
-    general: ['ROI', 'Costos Planeados', 'Costos Reales', 'Proyectos Activos'],
-    specific: [
-      { name: 'Portfolio Health', value: '92%', description: 'Salud general del portafolio' },
-      { name: 'Team Count', value: '8 equipos', description: 'Cantidad de equipos coordinados' },
-      { name: 'PI Completion', value: '87%', description: 'Objetivos completados por Program Increment' }
-    ]
-  }
+    // Métricas que usan TODOS los frameworks
+    general: {
+      // Retorno sobre inversión
+      ROI: '+28%',
+      
+      // Dinero planeado para gastar
+      'Costos Planeados': '$150K',
+      
+      // Dinero realmente gastado
+      'Costos Reales': '$142K',
+      
+      // Cantidad de proyectos activos
+      'Proyectos Activos': 8,
+    },
+    
+    // Métricas ESPECÍFICAS de SAFe
+    specific: {
+      // Número de equipos coordinados
+      'Teams Aligned': '6 teams',
+      
+      // Alineación de objetivos entre equipos
+      'Program Alignment': '94%',
+      
+      // Duración de cada incremento de programa
+      'PI (Program Increment) Length': '10 semanas',
+      
+      // Porcentaje de objetivos cumplidos en el PI
+      'PI Success Rate': '88%',
+    },
+  },
 };

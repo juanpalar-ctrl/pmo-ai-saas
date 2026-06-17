@@ -1,13 +1,49 @@
-export const kanbanSkill = {
+// ============================================
+// FRAMEWORK KANBAN
+// Sistema de flujo continuo sin sprints
+// ============================================
+
+// Exportar objeto con la definición de Kanban
+export const kanban = {
+  // Nombre del framework
   name: 'Kanban',
+  
+  // Emoji/ícono para el dashboard
   icon: '📋',
-  description: 'Flujo continuo de trabajo, limitación de WIP y mejora incremental sin iteraciones fijas.',
+  
+  // Descripción corta
+  description: 'Flujo continuo con límites de trabajo en progreso (WIP) y entregas frecuentes.',
+  
+  // MÉTRICAS (números que medimos)
   metrics: {
-    general: ['ROI', 'Costos Planeados', 'Costos Reales', 'Proyectos Activos'],
-    specific: [
-      { name: 'Lead Time', value: '8.5 días', description: 'Tiempo desde solicitud hasta entrega' },
-      { name: 'WIP Limit', value: '15 tareas', description: 'Máximo de tareas en progreso' },
-      { name: 'Throughput', value: '12 tareas/semana', description: 'Tareas completadas por semana' }
-    ]
-  }
+    // Métricas que usan TODOS los frameworks
+    general: {
+      // Retorno sobre inversión
+      ROI: '+28%',
+      
+      // Dinero planeado para gastar
+      'Costos Planeados': '$150K',
+      
+      // Dinero realmente gastado
+      'Costos Reales': '$142K',
+      
+      // Cantidad de proyectos activos
+      'Proyectos Activos': 8,
+    },
+    
+    // Métricas ESPECÍFICAS de Kanban
+    specific: {
+      // Tiempo promedio desde inicio hasta finalización
+      'Lead Time (días)': '8.5 días',
+      
+      // Tiempo que una tarea está en progreso
+      'Cycle Time': '6 días',
+      
+      // Cantidad máxima de tareas en progreso
+      'WIP Limit (max tasks)': '10',
+      
+      // Porcentaje de flujo sin bloqueos
+      'Flow Efficiency': '79%',
+    },
+  },
 };
