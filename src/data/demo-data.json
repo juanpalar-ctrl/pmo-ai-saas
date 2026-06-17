@@ -1,0 +1,180 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "Website Redesign",
+      "budget": 150000,
+      "spent": 95000,
+      "startDate": "2026-04-01",
+      "endDate": "2026-08-31",
+      "status": "On Track"
+    },
+    {
+      "id": 2,
+      "name": "Mobile App v2",
+      "budget": 200000,
+      "spent": 120000,
+      "startDate": "2026-05-15",
+      "endDate": "2026-10-31",
+      "status": "On Track"
+    },
+    {
+      "id": 3,
+      "name": "API Integration",
+      "budget": 120000,
+      "spent": 75000,
+      "startDate": "2026-03-01",
+      "endDate": "2026-07-31",
+      "status": "On Track"
+    }
+  ],
+  "epics": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "name": "Frontend Redesign",
+      "budget": 80000,
+      "spent": 60000,
+      "startDate": "2026-04-01",
+      "endDate": "2026-06-30",
+      "status": "On Track",
+      "assignedTo": "María García"
+    },
+    {
+      "id": 2,
+      "projectId": 1,
+      "name": "Backend APIs",
+      "budget": 70000,
+      "spent": 35000,
+      "startDate": "2026-05-01",
+      "endDate": "2026-07-31",
+      "status": "At Risk",
+      "assignedTo": "Carlos Ruiz"
+    },
+    {
+      "id": 3,
+      "projectId": 2,
+      "name": "iOS Development",
+      "budget": 100000,
+      "spent": 70000,
+      "startDate": "2026-05-15",
+      "endDate": "2026-08-31",
+      "status": "On Track",
+      "assignedTo": "Sofia Chen"
+    },
+    {
+      "id": 4,
+      "projectId": 3,
+      "name": "Payment Gateway",
+      "budget": 60000,
+      "spent": 45000,
+      "startDate": "2026-03-01",
+      "endDate": "2026-05-31",
+      "status": "Completado",
+      "assignedTo": "Roberto Díaz"
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "epicId": 1,
+      "name": "UI Design Mockups",
+      "budget": 20000,
+      "spent": 20000,
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-15",
+      "percentComplete": 100,
+      "status": "Completado",
+      "assignedTo": "María García"
+    },
+    {
+      "id": 2,
+      "epicId": 1,
+      "name": "React Components",
+      "budget": 30000,
+      "spent": 25000,
+      "startDate": "2026-04-16",
+      "endDate": "2026-05-31",
+      "percentComplete": 85,
+      "status": "On Track",
+      "assignedTo": "Juan Pérez"
+    },
+    {
+      "id": 3,
+      "epicId": 2,
+      "name": "API Architecture",
+      "budget": 20000,
+      "spent": 15000,
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-20",
+      "percentComplete": 75,
+      "status": "On Track",
+      "assignedTo": "Carlos Ruiz"
+    },
+    {
+      "id": 4,
+      "epicId": 2,
+      "name": "Database Optimization",
+      "budget": 25000,
+      "spent": 20000,
+      "startDate": "2026-05-21",
+      "endDate": "2026-06-30",
+      "percentComplete": 80,
+      "status": "At Risk",
+      "assignedTo": "Pedro Martinez"
+    },
+    {
+      "id": 5,
+      "epicId": 3,
+      "name": "Swift Architecture",
+      "budget": 30000,
+      "spent": 25000,
+      "startDate": "2026-05-15",
+      "endDate": "2026-06-15",
+      "percentComplete": 85,
+      "status": "On Track",
+      "assignedTo": "Sofia Chen"
+    },
+    {
+      "id": 6,
+      "epicId": 4,
+      "name": "Stripe Integration",
+      "budget": 30000,
+      "spent": 30000,
+      "startDate": "2026-03-01",
+      "endDate": "2026-04-15",
+      "percentComplete": 100,
+      "status": "Completado",
+      "assignedTo": "Roberto Díaz"
+    }
+  ],
+  "risks": [
+    {
+      "id": 1,
+      "projectId": 1,
+      "description": "Delay en Backend APIs",
+      "severity": "Alto",
+      "status": "Abierto",
+      "assignedTo": "Carlos Ruiz",
+      "mitigation": "Asignar más recursos"
+    },
+    {
+      "id": 2,
+      "projectId": 2,
+      "description": "Restricciones App Store",
+      "severity": "Crítico",
+      "status": "Abierto",
+      "assignedTo": "Sofia Chen",
+      "mitigation": "Validación temprana con Apple"
+    },
+    {
+      "id": 3,
+      "projectId": 3,
+      "description": "Rate limiting issues",
+      "severity": "Medio",
+      "status": "Abierto",
+      "assignedTo": "Marco Alves",
+      "mitigation": "Implementar caching"
+    }
+  ]
+}
