@@ -1,164 +1,62 @@
-import express, { Request, Response } from 'express';
-import sqlite3 from 'sqlite3';
-import path from 'path';
+import express from 'express';
+import { pool } from '../db';
 
 const router = express.Router();
-const dbPath = path.join(__dirname, '../../pmo.db');
 
-// GET: Todos los proyectos de un cliente
-router.get('/client/:clientId', (req: Request, res: Response) => {
-  const { clientId } = req.params;
-  const db = new sqlite3.Database(dbPath);
-
-  db.all(
-    `SELECT 
-      p.id, p.name, p.budget, p.spent, p.startDate, p.endDate, p.status,
-      ROUND(CAST(p.spent AS FLOAT) / p.budget * 100, 2) as percentSpent,
-      (p.budget - p.spent) as available
-    FROM projects WHERE clientId = ?`,
-    [clientId],
-    (_err, projects: any) => {
-      res.json(projects || []);
-      db.close();
-    }
-  );
+router.get('/client/:clientId', async (req: any, res: any) => {
+  try {
+    const { clientId } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM projects WHERE clientId = $1',
+      [clientId]
+    );
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// GET: Detalle de un proyecto + epics
-router.get('/project/:projectId', (req: Request, res: Response) => {
-  const { projectId } = req.params;
-  const db = new sqlite3.Database(dbPath);
-
-  db.get(
-    `SELECT * FROM projects WHERE id = ?`,
-    [projectId],
-    (_err, project: any) => {
-      db.all(
-        `SELECT 
-          id, name, budget, spent, startDate, endDate, status, assignedTo,
-          ROUND(CAST(spent AS FLOAT) / budget * 100, 2) as percentSpent
-        FROM epics WHERE projectId = ?`,
-        [projectId],
-        (_err, epics: any) => {
-          db.all(
-            `SELECT id, description, severity, status, assignedTo FROM risks WHERE projectId = ?`,
-            [projectId],
-            (_err, risks: any) => {
-              res.json({
-                project,
-                epics: epics || [],
-                risks: risks || []
-              });
-              db.close();
-            }
-          );
-        }
-      );
-    }
-  );
+router.get('/project/:projectId', async (req: any, res: any) => {
+  try {
+    const { projectId } = req.params;
+    const project = await pool.query('SELECT * FROM projects WHERE id = $1', [projectId]);
+    const epics = await pool.query('SELECT * FROM epics WHERE projectId = $1', [projectId]);
+    const risks = await pool.query('SELECT * FROM risks WHERE projectId = $1', [projectId]);
+    res.json({
+      project: project.rows[0],
+      epics: epics.rows,
+      risks: risks.rows
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// GET: Detalle de un epic + tareas
-router.get('/epic/:epicId', (req: Request, res: Response) => {
-  const { epicId } = req.params;
-  const db = new sqlite3.Database(dbPath);
-
-  db.get(
-    `SELECT * FROM epics WHERE id = ?`,
-    [epicId],
-    (_err, epic: any) => {
-      db.all(
-        `SELECT 
-          id, name, budget, spent, startDate, endDate, percentComplete, status, assignedTo,
-          ROUND(CAST(spent AS FLOAT) / budget * 100, 2) as percentSpent
-        FROM tasks WHERE epicId = ?`,
-        [epicId],
-        (_err, tasks: any) => {
-          res.json({
-            epic,
-            tasks: tasks || []
-          });
-          db.close();
-        }
-      );
-    }
-  );
+router.get('/epic/:epicId', async (req: any, res: any) => {
+  try {
+    const { epicId } = req.params;
+    const epic = await pool.query('SELECT * FROM epics WHERE id = $1', [epicId]);
+    const tasks = await pool.query('SELECT * FROM tasks WHERE epicId = $1', [epicId]);
+    res.json({
+      epic: epic.rows[0],
+      tasks: tasks.rows
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// POST: Crear proyecto
-router.post('/project', (req: Request, res: Response) => {
-  const { clientId, name, budget, startDate, endDate } = req.body;
-  const db = new sqlite3.Database(dbPath);
-
-  db.run(
-    `INSERT INTO projects (clientId, name, budget, startDate, endDate) VALUES (?, ?, ?, ?, ?)`,
-    [clientId, name, budget, startDate, endDate],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-      } else {
-        res.json({ id: this.lastID, message: 'Proyecto creado' });
-      }
-      db.close();
-    }
-  );
-});
-
-// POST: Crear epic
-router.post('/epic', (req: Request, res: Response) => {
-  const { projectId, name, budget, startDate, endDate, assignedTo } = req.body;
-  const db = new sqlite3.Database(dbPath);
-
-  db.run(
-    `INSERT INTO epics (projectId, name, budget, startDate, endDate, assignedTo) VALUES (?, ?, ?, ?, ?, ?)`,
-    [projectId, name, budget, startDate, endDate, assignedTo],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-      } else {
-        res.json({ id: this.lastID, message: 'Epic creado' });
-      }
-      db.close();
-    }
-  );
-});
-
-// POST: Crear tarea
-router.post('/task', (req: Request, res: Response) => {
-  const { epicId, name, budget, startDate, endDate, assignedTo } = req.body;
-  const db = new sqlite3.Database(dbPath);
-
-  db.run(
-    `INSERT INTO tasks (epicId, name, budget, startDate, endDate, assignedTo) VALUES (?, ?, ?, ?, ?, ?)`,
-    [epicId, name, budget, startDate, endDate, assignedTo],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-      } else {
-        res.json({ id: this.lastID, message: 'Tarea creada' });
-      }
-      db.close();
-    }
-  );
-});
-
-// POST: Crear riesgo
-router.post('/risk', (req: Request, res: Response) => {
-  const { projectId, description, severity, assignedTo } = req.body;
-  const db = new sqlite3.Database(dbPath);
-
-  db.run(
-    `INSERT INTO risks (projectId, description, severity, assignedTo) VALUES (?, ?, ?, ?)`,
-    [projectId, description, severity, assignedTo],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-      } else {
-        res.json({ id: this.lastID, message: 'Riesgo creado' });
-      }
-      db.close();
-    }
-  );
+router.post('/project', async (req: any, res: any) => {
+  try {
+    const { clientId, name, budget, startDate, endDate } = req.body;
+    const result = await pool.query(
+      'INSERT INTO projects (clientId, name, budget, startDate, endDate) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [clientId, name, budget, startDate, endDate]
+    );
+    res.json({ id: result.rows[0].id, message: 'Proyecto creado' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;

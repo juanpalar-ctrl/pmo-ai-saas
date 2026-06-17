@@ -1,14 +1,11 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import { allSkills } from '../skills/index';
-import sqlite3 from 'sqlite3';
-import path from 'path';
+import { pool } from '../db';
 
 const router = express.Router();
-const dbPath = path.join(__dirname, '../../pmo.db');
 
-// GET: Traer todos los Skills disponibles
-router.get('/', (_req: Request, res: Response) => {
-  const skillsData = Object.values(allSkills).map(skill => ({
+router.get('/', (_req: any, res: any) => {
+  const skillsData = Object.values(allSkills).map((skill: any) => ({
     name: skill.name,
     icon: skill.icon,
     description: skill.description,
@@ -18,57 +15,47 @@ router.get('/', (_req: Request, res: Response) => {
   res.json(skillsData);
 });
 
-// POST: Guardar Skill seleccionado por cliente
-router.post('/select', (req: Request, res: Response) => {
-  const { clientName, clientEmail, selectedSkill } = req.body;
-
-  const db = new sqlite3.Database(dbPath);
-
-  db.run(
-    'INSERT INTO clients (name, email, selectedSkill) VALUES (?, ?, ?)',
-    [clientName, clientEmail, selectedSkill],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-      } else {
-        res.json({ 
-          success: true, 
-          clientId: this.lastID,
-          message: `Cliente ${clientName} creado con Skill ${selectedSkill}`
-        });
-      }
-      db.close();
-    }
-  );
+router.post('/select', async (req: any, res: any) => {
+  try {
+    const { clientName, clientEmail, selectedSkill } = req.body;
+    const result = await pool.query(
+      'INSERT INTO clients (name, email, selectedSkill) VALUES ($1, $2, $3) RETURNING id',
+      [clientName, clientEmail, selectedSkill]
+    );
+    res.json({ 
+      success: true, 
+      clientId: result.rows[0].id,
+      message: `Cliente ${clientName} creado con Skill ${selectedSkill}`
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// GET: Traer datos de un cliente específico
-router.get('/:clientId', (req: Request, res: Response) => {
-  const { clientId } = req.params;
-  const db = new sqlite3.Database(dbPath);
-
-  db.get(
-    'SELECT * FROM clients WHERE id = ?',
-    [clientId],
-    (_err, client: any) => {
-      if (client) {
-        const skill = allSkills[client.selectedSkill.toLowerCase() as keyof typeof allSkills];
-        res.json({
-          client,
-          skill: {
-            name: skill.name,
-            icon: skill.icon,
-            description: skill.description,
-            generalMetrics: skill.metrics.general,
-            specificMetrics: skill.metrics.specific
-          }
-        });
-      } else {
-        res.status(404).json({ error: 'Cliente no encontrado' });
-      }
-      db.close();
+router.get('/:clientId', async (req: any, res: any) => {
+  try {
+    const { clientId } = req.params;
+    const result = await pool.query('SELECT * FROM clients WHERE id = $1', [clientId]);
+    const client = result.rows[0];
+    
+    if (client) {
+      const skill = (allSkills as any)[client.selectedSkill.toLowerCase()];
+      res.json({
+        client,
+        skill: {
+          name: skill.name,
+          icon: skill.icon,
+          description: skill.description,
+          generalMetrics: skill.metrics.general,
+          specificMetrics: skill.metrics.specific
+        }
+      });
+    } else {
+      res.status(404).json({ error: 'Cliente no encontrado' });
     }
-  );
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;
