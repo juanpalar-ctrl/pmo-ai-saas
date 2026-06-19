@@ -1,71 +1,37 @@
-// ============================================
-// ARCHIVO PRINCIPAL DEL SERVIDOR
-// Este archivo inicia el servidor Express
-// ============================================
-
-import express, { Express, Request, Response } from 'express';
+import 'dotenv/config';
+import express from 'express';
 import path from 'path';
-import { config } from './config/environment';
-import skillsRouter from './routes/skills';
-import programsRouter from './routes/programs';
 import analysisRouter from './routes/analysis';
 import dataRouter from './routes/data';
 import devRouter from './routes/dev';
-const app: Express = express();
 
-// ============================================
-// MIDDLEWARE (Procesadores de peticiones)
-// ============================================
+// VERIFICAR CLAVE ANTES DE ARRANCAR
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('❌ ANTHROPIC_API_KEY no está definida');
+  process.exit(1);
+}
 
-// Permite recibir datos en formato JSON
+console.log('✅ ANTHROPIC_API_KEY cargada correctamente');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
 
-// Sirve archivos estáticos (HTML, CSS, imágenes)
-// desde la carpeta public
-app.use(express.static(path.join(__dirname, '../src/public')));
-
-// ============================================
-// RUTAS API (Endpoints para trabajar con datos)
-// ============================================
-
-// /api/skills → Maneja los frameworks (Scrum, Kanban, SAFe)
-app.use('/api/skills', skillsRouter);
-
-// /api/programs → Maneja proyectos, epics, tareas
-app.use('/api/programs', programsRouter);
 app.use('/api/analysis', analysisRouter);
 app.use('/api/data', dataRouter);
 app.use('/api/dev', devRouter);
-// ============================================
-// RUTAS PRINCIPALES
-// ============================================
 
-// Ruta raíz: sirve el Dashboard
 app.get('/', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../src/public/dashboard.html'));
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Ruta de salud: verifica si el servidor está vivo
 app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'PMO SaaS Backend está funcionando',
-    timestamp: new Date().toISOString(),
-  });
+  res.json({ status: 'ok' });
 });
 
-// ============================================
-// INICIAR SERVIDOR
-// ============================================
-
-// Puerto: 3001 en desarrollo, 10000 en Render
-const PORT = parseInt(process.env.PORT || '3001', 10);
-
-// Host: 0.0.0.0 permite que Render acceda desde cualquier interfaz
-const HOST = '0.0.0.0';
-
-// Inicia el servidor y muestra mensajes
-app.listen(PORT, HOST, () => {
+app.listen(PORT, () => {
   console.log(`✅ Servidor ejecutándose en http://localhost:${PORT}`);
-  console.log(`🔧 Ambiente: ${config.nodeEnv}`);
+  console.log(`🔧 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });

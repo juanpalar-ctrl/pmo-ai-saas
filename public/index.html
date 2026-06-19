@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PMO SaaS</title>
+  <style>
+    body { font-family: Arial; padding: 40px; max-width: 500px; margin: 50px auto; }
+    button { width: 100%; padding: 10px; background: blue; color: white; cursor: pointer; border: none; font-weight: bold; }
+    button:disabled { background: gray; cursor: not-allowed; }
+    .loading { display: none; text-align: center; margin-top: 20px; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid blue; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .status { color: #666; margin-top: 10px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>📊 PMO SaaS</h1>
+  <p>Análisis de Proyectos con IA</p>
+  
+  <form id="form">
+    <div style="margin-bottom: 20px;">
+      <label>Organización:</label><br>
+      <input type="text" id="org" style="width: 100%; padding: 8px;" required>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label>Framework:</label><br>
+      <select id="fw" style="width: 100%; padding: 8px;" required>
+        <option value="">Selecciona</option>
+        <option value="scrum">Scrum</option>
+        <option value="kanban">Kanban</option>
+        <option value="waterfall">Waterfall</option>
+        <option value="safe">SAFe</option>
+      </select>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label>Archivo Excel:</label><br>
+      <input type="file" id="file" accept=".xlsx" style="width: 100%; padding: 8px;" required>
+    </div>
+    
+    <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p id="status" class="status">Cargando archivo...</p>
+    </div>
+  </form>
+
+  <script>
+    document.getElementById('form').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('btn');
+      const loading = document.getElementById('loading');
+      const status = document.getElementById('status');
+      
+      btn.disabled = true;
+      loading.style.display = 'block';
+      
+      try {
+        status.textContent = '📥 Cargando archivo...';
+        const fd = new FormData();
+        fd.append('file', document.getElementById('file').files[0]);
+        await fetch('/api/data/upload-excel', {method: 'POST', body: fd});
+        
+        status.textContent = '📋 Obteniendo proyecto...';
+        const list = await fetch('/api/data/projects?limit=1');
+        const json = await list.json();
+        const pid = json.data[0].projectId;
+        
+        status.textContent = `🤖 Analizando proyecto ${pid} (Risk Agent)...`;
+        const fw = document.getElementById('fw').value;
+        
+        status.textContent = `💰 Analizando (Economic Agent)...`;
+        const analyze = await fetch(`/api/analysis/${pid}`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({framework: fw})
+        });
+        
+        status.textContent = '✅ Redirigiendo a resultados...';
+        setTimeout(() => {
+          window.location = `/api/analysis/${pid}/view?framework=${fw}`;
+        }, 1000);
+        
+      } catch(e) {
+        alert('ERROR: ' + e.message);
+        btn.disabled = false;
+        loading.style.display = 'none';
+        console.error(e);
+      }
+    };
+  </script>
+</body>
+</html>
