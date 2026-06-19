@@ -4,56 +4,68 @@
   <meta charset="UTF-8">
   <title>PMO SaaS</title>
   <style>
-    body { font-family: Arial; padding: 40px; max-width: 500px; margin: 50px auto; }
-    button { width: 100%; padding: 10px; background: blue; color: white; cursor: pointer; border: none; font-weight: bold; }
-    button:disabled { background: gray; cursor: not-allowed; }
-    .loading { display: none; text-align: center; margin-top: 20px; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid blue; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .box { background: white; padding: 50px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    h1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5em; margin-bottom: 10px; }
+    .subtitle { color: #666; margin-bottom: 40px; font-size: 1.1em; }
+    .group { margin-bottom: 25px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #333; }
+    input, select { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; font-family: inherit; }
+    input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    button { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 20px; font-size: 1.1em; }
+    button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading { text-align: center; margin-top: 20px; display: none; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .status { color: #666; margin-top: 10px; font-size: 14px; }
+    .status { color: #667eea; font-weight: 600; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>📊 PMO SaaS</h1>
-  <p>Análisis de Proyectos con IA</p>
-  
-  <form id="form">
-    <div style="margin-bottom: 20px;">
-      <label>Organización:</label><br>
-      <input type="text" id="org" style="width: 100%; padding: 8px;" required>
-    </div>
+  <div class="box">
+    <h1>📊 PMO SaaS</h1>
+    <p class="subtitle">Análisis Multi-Agente IA para tus Proyectos</p>
     
-    <div style="margin-bottom: 20px;">
-      <label>Framework:</label><br>
-      <select id="fw" style="width: 100%; padding: 8px;" required>
-        <option value="">Selecciona</option>
-        <option value="scrum">Scrum</option>
-        <option value="kanban">Kanban</option>
-        <option value="waterfall">Waterfall</option>
-        <option value="safe">SAFe</option>
-      </select>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-      <label>Archivo Excel:</label><br>
-      <input type="file" id="file" accept=".xlsx" style="width: 100%; padding: 8px;" required>
-    </div>
-    
-    <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
-
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p id="status" class="status">Cargando archivo...</p>
-    </div>
-  </form>
+    <form id="form">
+      <div class="group">
+        <label for="org">Nombre de la Organización</label>
+        <input type="text" id="org" placeholder="Ej: Acme Corp" required>
+      </div>
+      
+      <div class="group">
+        <label for="fw">Framework de Gestión</label>
+        <select id="fw" required>
+          <option value="">Selecciona framework...</option>
+          <option value="scrum">🏃 Scrum</option>
+          <option value="kanban">📊 Kanban</option>
+          <option value="waterfall">📈 Waterfall</option>
+          <option value="safe">🎯 SAFe</option>
+        </select>
+      </div>
+      
+      <div class="group">
+        <label for="file">Cargar Archivo Excel (.xlsx)</label>
+        <input type="file" id="file" accept=".xlsx" required>
+      </div>
+      
+      <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
+      
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p id="status" class="status">Procesando...</p>
+      </div>
+    </form>
+  </div>
 
   <script>
     document.getElementById('form').onsubmit = async (e) => {
       e.preventDefault();
-      
       const btn = document.getElementById('btn');
       const loading = document.getElementById('loading');
       const status = document.getElementById('status');
+      const orgName = document.getElementById('org').value;
+      const fw = document.getElementById('fw').value;
       
       btn.disabled = true;
       loading.style.display = 'block';
@@ -69,26 +81,22 @@
         const json = await list.json();
         const pid = json.data[0].projectId;
         
-        status.textContent = `🤖 Analizando proyecto ${pid} (Risk Agent)...`;
-        const fw = document.getElementById('fw').value;
-        
-        status.textContent = `💰 Analizando (Economic Agent)...`;
-        const analyze = await fetch(`/api/analysis/${pid}`, {
+        status.textContent = `🤖 Analizando proyecto...`;
+        await fetch(`/api/analysis/${pid}`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({framework: fw})
+          body: JSON.stringify({framework: fw, orgName})
         });
         
-        status.textContent = '✅ Redirigiendo a resultados...';
+        status.textContent = '✅ Redirigiendo...';
         setTimeout(() => {
-          window.location = `/api/analysis/${pid}/view?framework=${fw}`;
-        }, 1000);
+          window.location = `/api/analysis/${pid}/view?org=${encodeURIComponent(orgName)}`;
+        }, 500);
         
       } catch(e) {
         alert('ERROR: ' + e.message);
         btn.disabled = false;
         loading.style.display = 'none';
-        console.error(e);
       }
     };
   </script>

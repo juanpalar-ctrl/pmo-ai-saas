@@ -35,7 +35,9 @@ router.get('/:projectId/latest', async (req: any, res: any) => {
 
 router.get('/:projectId/view', async (req: any, res: any) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId;
+    const org = req.query.org || 'Sin especificar';
+    
     const result = await pool.query(
       `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
       [parseInt(projectId)]
@@ -50,61 +52,97 @@ router.get('/:projectId/view', async (req: any, res: any) => {
     const economic = data.economic?.analysis?.analysis || {};
     const reports = data.reports || {};
 
+    const riskItems = (risk.topRisks || []).map((r: any) => `
+      <div class="item">
+        <strong>${r.title || r.description}</strong>
+        <p>${r.description || ''}</p>
+        <small>Probabilidad: ${((r.probability || 0) * 100).toFixed(0)}% | Impacto: ${r.impact || 'N/A'}</small>
+      </div>
+    `).join('');
+
     const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Análisis</title>
+  <title>Análisis - PMO SaaS</title>
   <style>
-    body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
     .container { max-width: 1200px; margin: 0 auto; }
-    .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
-    .section { background: white; padding: 25px; margin: 20px 0; border-radius: 8px; }
-    h2 { color: white; background: #667eea; padding: 15px; margin: -25px -25px 20px -25px; border-radius: 8px 8px 0 0; }
-    .risk h2 { background: #f5576c; }
-    .economic h2 { background: #00f2fe; }
-    .report h2 { background: #43e97b; }
-    h3 { color: #333; margin-top: 20px; }
-    .item { background: #f9f9f9; padding: 15px; margin: 10px 0; border-left: 4px solid #667eea; border-radius: 4px; }
+    .header { background: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .header h1 { color: #333; font-size: 2.5em; border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 10px; }
+    .header-info { color: #666; font-size: 1.1em; }
+    .section { background: white; padding: 25px; margin: 20px 0; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    h2 { color: white; margin: 0 -25px 20px -25px; padding: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0; }
+    .risk h2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .economic h2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .report h2 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .metric { display: inline-block; margin: 15px 20px 15px 0; }
+    .metric-label { color: #666; font-size: 0.9em; }
+    .metric-value { font-size: 2.2em; font-weight: bold; color: #667eea; }
+    .item { background: #f9f9f9; padding: 15px; border-left: 4px solid #667eea; margin: 10px 0; border-radius: 4px; }
+    h3 { color: #667eea; margin-top: 25px; margin-bottom: 15px; font-size: 1.3em; }
+    .report-content { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.8; white-space: pre-wrap; border-left: 4px solid #667eea; }
+    .back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+    .back-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4); }
   </style>
 </head>
 <body>
   <div class="container">
+    <a href="/" class="back-btn">← Nuevo Análisis</a>
+    
     <div class="header">
-      <h1>📊 Análisis Multi-Agente - Proyecto ${projectId}</h1>
+      <h1>📊 Análisis Multi-Agente IA</h1>
+      <div class="header-info">
+        <p><strong>Organización:</strong> ${decodeURIComponent(org)}</p>
+        <p><strong>Proyecto ID:</strong> ${projectId}</p>
+        <p><strong>Generado:</strong> ${new Date(result.rows[0].generatedat).toLocaleString('es-CO')}</p>
+      </div>
     </div>
     
     <div class="section risk">
       <h2>🎯 Análisis de Riesgos</h2>
-      <p><strong>Score:</strong> ${risk.overallRiskScore || 'N/A'}</p>
-      <p><strong>Delay Probability:</strong> ${((risk.delayProbability || 0) * 100).toFixed(1)}%</p>
+      <div class="metric">
+        <div class="metric-label">Score de Riesgo</div>
+        <div class="metric-value">${risk.overallRiskScore || 'N/A'}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Probabilidad de Delay</div>
+        <div class="metric-value">${((risk.delayProbability || 0) * 100).toFixed(1)}%</div>
+      </div>
       
-      <h3>Top Riesgos</h3>
-      ${risk.topRisks?.slice(0, 5).map((r: any) => `
-        <div class="item">
-          <strong>${r.title || r.description}</strong>
-          <p>${r.description || ''}</p>
-          <small>Probabilidad: ${((r.probability || 0) * 100).toFixed(0)}%</small>
-        </div>
-      `).join('') || '<p>Sin riesgos</p>'}
+      <h3>Top Riesgos Identificados</h3>
+      ${riskItems || '<p>Sin riesgos identificados</p>'}
     </div>
     
     <div class="section economic">
       <h2>💰 Análisis Económico</h2>
-      <p><strong>Budget Status:</strong> ${economic.budget_status || 'N/A'}</p>
-      <p><strong>Worst Case Total:</strong> $${(economic.worst_case_total_cost || 0).toLocaleString()}</p>
-      <p><strong>Cost of Delay:</strong> $${(economic.cost_of_delay || 0).toLocaleString()}</p>
-      <p><strong>Daily Burn Rate:</strong> $${(economic.daily_burn_rate || 0).toLocaleString()}</p>
+      <div class="metric">
+        <div class="metric-label">Estado del Budget</div>
+        <div class="metric-value" style="color: #0066cc; font-size: 1.5em;">${economic.budget_status || 'N/A'}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Peor Caso</div>
+        <div class="metric-value" style="color: #0066cc;">$${(economic.worst_case_total_cost || 0).toLocaleString()}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Costo del Delay</div>
+        <div class="metric-value" style="color: #0066cc;">$${(economic.cost_of_delay || 0).toLocaleString()}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Daily Burn Rate</div>
+        <div class="metric-value" style="color: #0066cc;">$${(economic.daily_burn_rate || 0).toLocaleString()}</div>
+      </div>
     </div>
     
     <div class="section report">
-      <h2>📄 Reportes</h2>
+      <h2>📄 Reportes Ejecutivos</h2>
       
-      <h3>Senior Report</h3>
-      <div class="item">${(reports.senior_report || 'No disponible').replace(/\n/g, '<br>')}</div>
+      <h3>👔 Senior Report</h3>
+      <div class="report-content">${(reports.senior_report || 'No disponible').replace(/\n/g, '<br>')}</div>
       
-      <h3>Technical Report</h3>
-      <div class="item">${(reports.technical_report || 'No disponible').replace(/\n/g, '<br>')}</div>
+      <h3>🔧 Technical Report</h3>
+      <div class="report-content">${(reports.technical_report || 'No disponible').replace(/\n/g, '<br>')}</div>
     </div>
   </div>
 </body>
@@ -114,7 +152,7 @@ router.get('/:projectId/view', async (req: any, res: any) => {
     res.send(html);
     
   } catch (error: any) {
-    res.status(500).send(`Error: ${error.message}`);
+    res.status(500).send(`<h1>Error: ${error.message}</h1>`);
   }
 });
 
