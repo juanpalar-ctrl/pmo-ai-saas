@@ -1,6 +1,16 @@
 // ============================================
 // ORQUESTADOR MULTI-AGENTE
-// Coordina los 3 agentes en secuencia
+// 
+// PROPÓSITO: Coordina la ejecución de los 3 agentes IA
+// en secuencia y guarda resultados en BD.
+//
+// FLUJO:
+// 1. Obtiene datos del proyecto (desde BD)
+// 2. Agente 1 (Riesgos) analiza
+// 3. Agente 2 (Económico) analiza (recibe output de 1)
+// 4. Agente 3 (Reportes) genera (recibe output de 1+2)
+// 5. Guarda análisis completo en BD
+// 6. Retorna JSON con todos los análisis
 // ============================================
 
 import { pool } from '../db';
@@ -8,9 +18,26 @@ import { riskAgent } from '../agents/riskAgent';
 import { economicAgent } from '../agents/economicAgent';
 import { reportingAgent } from '../agents/reportingAgent';
 import { AgentInput } from '../types/agents';
+import { projectRepository } from '../repositories/projectRepository';
 
 export class MultiAgentOrchestrator {
   
+  /**
+   * ANALIZAR PROYECTO
+   * 
+   * FUNCIÓN PRINCIPAL: Ejecuta análisis completo multi-agente
+   * 
+   * @param projectId - ID del proyecto a analizar
+   * @returns JSON con riskAnalysis, economicAnalysis, reports
+   * 
+   * FLUJO:
+   * 1. Obtiene datos del proyecto
+   * 2. Ejecuta Agente 1 (Riesgos)
+   * 3. Ejecuta Agente 2 (Económico) con output de 1
+   * 4. Ejecuta Agente 3 (Reportes) con outputs de 1+2
+   * 5. Guarda en BD
+   * 6. Retorna resultados
+   */
   async analyzeProject(projectId: number) {
     console.log(`\n${'='.repeat(60)}`);
     console.log(`📊 INICIANDO ANÁLISIS MULTI-AGENTE - Proyecto ID: ${projectId}`);
@@ -27,12 +54,14 @@ export class MultiAgentOrchestrator {
       console.log('✅ Agente 1 completado');
       
       // 3. EJECUTAR AGENTE 2: ECONÓMICO
+      // NOTA: Le pasamos output del Agente 1
       console.log('\n' + '─'.repeat(60));
       economicAgent.setRiskAnalysis(riskAnalysis);
       const economicAnalysis = await economicAgent.analyze(projectData);
       console.log('✅ Agente 2 completado');
       
       // 4. EJECUTAR AGENTE 3: REPORTES
+      // NOTA: Le pasamos outputs de Agentes 1 y 2
       console.log('\n' + '─'.repeat(60));
       reportingAgent.setAnalysisOutputs(riskAnalysis, economicAnalysis);
       const reports = await reportingAgent.analyze(projectData);
@@ -68,44 +97,54 @@ export class MultiAgentOrchestrator {
     }
   }
   
-  // Helper: obtener datos del proyecto
+  /**
+   * OBTENER DATOS DEL PROYECTO
+   * 
+   * FUNCIÓN: Trae datos del proyecto desde BD usando Repository.
+   * Antes traía datos dummy. Ahora trae datos REALES desde PostgreSQL.
+   * 
+   * FLUJO:
+   * 1. Llama al Repository (capa de abstracción BD)
+   * 2. Si no existe → lanza error
+   * 3. Si existe → log + retorna datos
+   * 
+   * @param projectId - ID del proyecto a analizar
+   * @returns Datos completos del proyecto para agentes IA
+   * 
+   * NOTA: Usa Repository para abstraer acceso a BD.
+   * Si cambias de BD, solo cambias en Repository.
+   */
   private async getProjectData(projectId: number): Promise<AgentInput> {
-    // Datos mock para testing
-    return {
-      projectId,
-      projectName: 'Transformación Digital',
-      status: 'In Progress',
-      timeline: {
-        startDate: '2026-01-15',
-        endDate: '2026-06-30',
-        daysElapsed: 156,
-        daysRemaining: 12,
-        percentageComplete: 92.8,
-      },
-      teamVelocity: [45, 48, 42, 50, 40],
-      workPending: {
-        epicsRemaining: 2,
-        tasksRemaining: 23,
-        totalStoryPoints: 120,
-      },
-      budget: {
-        totalBudget: 500000,
-        spent: 432000,
-        remaining: 68000,
-      },
-      resources: [
-        { role: 'Architect', count: 1, costPerMonth: 15000 },
-        { role: 'Senior Developer', count: 3, costPerMonth: 8000 },
-        { role: 'QA', count: 2, costPerMonth: 4000 },
-      ],
-      risks: [
-        { description: 'Legacy integration', severity: 'critical', probability: 0.8 },
-        { description: 'Team capacity', severity: 'high', probability: 0.6 },
-      ],
-    };
+    // Obtener del Repository (abstracción de BD)
+    const projectData = await projectRepository.getProjectForAnalysis(projectId);
+    
+    // Si no existe, error
+    if (!projectData) {
+      throw new Error(`❌ Proyecto ${projectId} no encontrado en BD`);
+    }
+    
+    // Log de confirmación
+    console.log(`\n📂 Usando datos REALES: ${projectData.projectName}`);
+    
+    // Retornar datos para agentes
+    return projectData as AgentInput;
   }
   
-  // Helper: guardar análisis en BD
+  /**
+   * GUARDAR ANÁLISIS EN BASE DE DATOS
+   * 
+   * FUNCIÓN: Guarda los resultados del análisis multi-agente
+   * en la tabla ai_analyses para auditoría y reportes.
+   * 
+   * @param data - Contiene:
+   *   - projectId: ID del proyecto
+   *   - riskAnalysis: Output del Agente 1
+   *   - economicAnalysis: Output del Agente 2
+   *   - reports: Output del Agente 3
+   * 
+   * NOTA: Si la tabla no existe aún, muestra advertencia (no falla)
+   * La tabla se creará en próximo paso.
+   */
   private async saveAnalysisToDatabase(data: any) {
     try {
       await pool.query(
@@ -129,5 +168,7 @@ export class MultiAgentOrchestrator {
   }
 }
 
-// Exportar instancia
+// Exportar instancia del orquestador
+// Se importa así: import { orchestrator } from '../services/multiAgentOrchestrator'
 export const orchestrator = new MultiAgentOrchestrator();
+
