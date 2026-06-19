@@ -1,24 +1,49 @@
 // ============================================
-// CONEXIÓN A BASE DE DATOS POSTGRESQL
-// Este archivo crea la conexión y la exporta
-// para usarla en todas las rutas
+// CONFIGURACIÓN DE BASE DE DATOS
+// 
+// PROPÓSITO: Pool de conexiones a PostgreSQL
+// 
+// NOTA: Usa SSL para conexiones a Render
 // ============================================
 
 import { Pool } from 'pg';
 
-// Crear un "Pool" (grupo de conexiones a la BD)
-// En lugar de una sola conexión, mantenemos varias
-// activas para mejor rendimiento
-const pool = new Pool({
-  // URL de conexión a PostgreSQL
-  // Viene del archivo .env o de Render
-  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/pmo_saas',
+/**
+ * CREAR POOL DE CONEXIONES
+ * 
+ * FUNCIÓN: Mantiene múltiples conexiones abiertas
+ * para mejor performance.
+ * 
+ * CONFIGURACIÓN:
+ * - connectionString: URL de la BD (desde .env)
+ * - ssl: true para Render (requiere SSL/TLS)
+ * - max: máximo 20 conexiones simultáneas
+ */
+export const pool = new Pool({
+  // URL completa de la BD (incluye credenciales)
+  connectionString: process.env.DATABASE_URL,
   
-  // SSL: Si estamos en producción (Render), usar SSL
-  // Si estamos en desarrollo local, no usar SSL
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // SSL/TLS requerido por Render
+  ssl: {
+    rejectUnauthorized: false, // Acepta certificados auto-firmados
+  },
+  
+  // Máximo de conexiones en el pool
+  max: 20,
+  
+  // Timeout de conexión (5 segundos)
+  connectionTimeoutMillis: 5000,
 });
 
-// Exportar el pool para usarlo en las rutas
-// Ejemplo: pool.query('SELECT * FROM clients')
-export { pool };
+/**
+ * MANEJAR ERRORES DEL POOL
+ * 
+ * FUNCIÓN: Si hay error, lo loguea y continúa
+ * (el pool intenta reconectar automáticamente)
+ */
+pool.on('error', (err) => {
+  console.error('❌ Error inesperado en pool de BD:', err);
+});
+
+// Log de confirmación
+console.log('✅ Pool de PostgreSQL configurado con SSL');

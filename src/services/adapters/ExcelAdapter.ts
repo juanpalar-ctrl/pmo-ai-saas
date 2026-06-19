@@ -32,7 +32,7 @@ export class ExcelAdapter implements IDataAdapter {
    */
   constructor(private filePath: string) {}
   
-  /**
+ /**
    * READ - Leer datos del Excel
    * 
    * FLUJO:
@@ -40,15 +40,9 @@ export class ExcelAdapter implements IDataAdapter {
    * 2. Abre con librería XLSX
    * 3. Lee primera hoja
    * 4. Convierte a array de objetos
-   * 5. Valida cada fila
-   * 6. Retorna solo las válidas
-   * 
-   * @returns Array de ProjectData listos para guardar en BD
-   * 
-   * LANZA ERROR si:
-   * - Archivo no existe
-   * - No hay hojas en Excel
-   * - Error de lectura
+   * 5. PARSEA strings JSON a objetos (paso crítico)
+   * 6. Valida cada fila
+   * 7. Retorna solo las válidas
    */
   async read(): Promise<ProjectData[]> {
     console.log(`\n📂 ${this.name}: Leyendo ${this.filePath}`);
@@ -72,9 +66,12 @@ export class ExcelAdapter implements IDataAdapter {
       const worksheet = workbook.Sheets[sheetName];
       
       // Convertir Excel a array JSON
-      // Cada fila del Excel → objeto JavaScript
-      const rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
+      let rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
       console.log(`📄 Se leyeron ${rawData.length} filas del Excel`);
+      
+      // PASO CRÍTICO: Parsear strings JSON a objetos
+      // Excel guarda objetos como texto, necesitan ser parseados
+      rawData = rawData.map(row => this.parseJsonFields(row));
       
       // Validar y filtrar filas
       const validProjects: ProjectData[] = [];
@@ -100,6 +97,48 @@ export class ExcelAdapter implements IDataAdapter {
       console.error(`❌ Error leyendo Excel: ${error.message}`);
       throw error;
     }
+  }
+  
+  /**
+   * PARSEAR CAMPOS JSON
+   * 
+   * FUNCIÓN CRÍTICA: Excel guarda objetos complejos como strings JSON.
+   * Este método los convierte a objetos reales.
+   * 
+   * EJEMPLO:
+   * ENTRADA: { timeline: "{\"startDate\":\"2026-01-15\"...}" }
+   * SALIDA:  { timeline: { startDate: "2026-01-15"... } }
+   * 
+   * @param row - Fila del Excel
+   * @returns Fila con campos JSON parseados
+   */
+  private parseJsonFields(row: any): any {
+    // Campos que Excel almacena como strings JSON
+    const jsonFields = [
+      'timeline',
+      'teamVelocity',
+      'workPending',
+      'budget',
+      'resources',
+      'risks',
+    ];
+    
+    // Para cada campo, intenta parsearlo
+    const parsed = { ...row };
+    
+    for (const field of jsonFields) {
+      if (parsed[field] && typeof parsed[field] === 'string') {
+        try {
+          // Si es string, intenta parsearlo a objeto
+          parsed[field] = JSON.parse(parsed[field]);
+        } catch (error) {
+          // Si falla, déjalo como está (Zod lo rechazará)
+          console.warn(`⚠️ No se pudo parsear campo ${field}: ${parsed[field]}`);
+        }
+      }
+    }
+    
+    return parsed;
   }
   
   /**
