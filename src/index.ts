@@ -8,7 +8,7 @@ import path from 'path';
 import { config } from './config/environment';
 import skillsRouter from './routes/skills';
 import programsRouter from './routes/programs';
-
+import analysisRouter from './routes/analysis';
 const app: Express = express();
 
 // ============================================
@@ -31,7 +31,7 @@ app.use('/api/skills', skillsRouter);
 
 // /api/programs → Maneja proyectos, epics, tareas
 app.use('/api/programs', programsRouter);
-
+app.use('/api/analysis', analysisRouter);
 // ============================================
 // RUTAS PRINCIPALES
 // ============================================
