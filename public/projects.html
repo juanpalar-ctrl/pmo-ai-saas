@@ -95,7 +95,7 @@
       </div>
 
       <!-- KPI SUMMARY -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
         <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 p-4 rounded-lg">
           <span class="text-xs text-gray-600 font-semibold block uppercase">Total Budget</span>
           <span class="text-3xl font-bold text-cyan-600 mt-2" id="kpi-budget">$0</span>
@@ -107,6 +107,14 @@
         <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 p-4 rounded-lg">
           <span class="text-xs text-gray-600 font-semibold block uppercase">Progreso</span>
           <span class="text-3xl font-bold text-green-600 mt-2" id="kpi-progress">0%</span>
+        </div>
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 p-4 rounded-lg">
+          <span class="text-xs text-gray-600 font-semibold block uppercase">Variación Costo (CV)</span>
+          <span class="text-3xl font-bold text-orange-600 mt-2" id="kpi-cv">$0</span>
+        </div>
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-4 rounded-lg">
+          <span class="text-xs text-gray-600 font-semibold block uppercase">Saldo en Caja</span>
+          <span class="text-3xl font-bold text-purple-600 mt-2" id="kpi-saldo">$0</span>
         </div>
       </div>
     </div>
@@ -233,10 +241,16 @@
       const economic = analysisData.economic?.analysis?.analysis || {};
       const metrics = analysisData.metrics || {};
 
+      // COLORES DINÁMICOS basados en CPI
+      const cpiValue = parseFloat(metrics.cpi) || 1;
+      let cpiColor = 'green';
+      if (cpiValue < 0.8) cpiColor = 'red';
+      else if (cpiValue < 1.0) cpiColor = 'amber';
+
       const cards = [
         { icon: '🎯', label: 'Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%`, color: 'red' },
         { icon: '💰', label: 'Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%`, color: 'amber' },
-        { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance', color: 'cyan' },
+        { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance', color: cpiColor },
         { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: 'green' },
         { icon: '⏱️', label: 'SPI', value: metrics.spi || 'N/A', detail: 'Schedule Performance', color: 'blue' },
         { icon: '📌', label: 'Framework', value: (activeFramework || 'N/A').toUpperCase(), detail: 'Methodology', color: 'purple' }
@@ -310,9 +324,18 @@
       const totalSpent = tasks.reduce((s, t) => s + t.actual, 0);
       const avgProgress = Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
 
+      const cv = totalBudget - totalSpent;  // CV = Budget - Actual (simplificado para Gantt)
+      const remaining = totalBudget - totalSpent;  // Saldo en Caja
+      
       document.getElementById('kpi-budget').textContent = `$${totalBudget.toLocaleString()}`;
       document.getElementById('kpi-spent').textContent = `$${totalSpent.toLocaleString()}`;
       document.getElementById('kpi-progress').textContent = `${avgProgress}%`;
+      
+      // CV y Saldo si existen los elementos
+      const cvElement = document.getElementById('kpi-cv');
+      const saldoElement = document.getElementById('kpi-saldo');
+      if (cvElement) cvElement.textContent = `$${cv.toLocaleString()}`;
+      if (saldoElement) saldoElement.textContent = `$${remaining.toLocaleString()}`;
     }
 
     function logout() {
