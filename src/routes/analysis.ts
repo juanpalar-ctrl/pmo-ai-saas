@@ -1,15 +1,72 @@
 import express from 'express';
 import { orchestrator } from '../services/multiAgentOrchestrator';
 import { pool } from '../db';
+import { generateMockAnalysis, isMockEnabled, getCacheDurationHours } from '../utils/mockAnalysis';
 
 const router = express.Router();
+
+// Función para verificar si análisis es válido en cache
+async function getCachedAnalysis(projectId: number) {
+  const cacheHours = getCacheDurationHours();
+  const result = await pool.query(
+    `SELECT output, generatedat FROM ai_analyses 
+     WHERE projectid = $1 
+     AND generatedat > NOW() - INTERVAL '${cacheHours} hours'
+     ORDER BY generatedat DESC LIMIT 1`,
+    [projectId]
+  );
+  return result.rows[0] || null;
+}
 
 router.post('/:projectId', async (req: any, res: any) => {
   try {
     const { projectId } = req.params;
-    const { framework } = req.body;
-    const result = await orchestrator.analyzeProject(parseInt(projectId), framework || 'scrum');
-    res.json({ success: true, data: result });
+    const { framework, forceRefresh } = req.body;
+    const fw = framework || 'scrum';
+
+    // Si USE_MOCK_DATA está activado, devolver mock sin llamar API
+    if (isMockEnabled() && !forceRefresh) {
+      const mockData = generateMockAnalysis(fw);
+      
+      // Guardar en BD para mantener consistencia
+      await pool.query(
+        `INSERT INTO ai_analyses (projectid, output) VALUES ($1, $2)
+         ON CONFLICT (projectid) DO UPDATE SET output = $2, generatedat = NOW()`,
+        [projectId, mockData]
+      );
+      
+      return res.json({ 
+        success: true, 
+        data: mockData,
+        cached: false,
+        usedMock: true,
+        message: '✅ Mock data (testing mode) - No API credits spent'
+      });
+    }
+
+    // Verificar cache (24h por defecto)
+    const cached = await getCachedAnalysis(projectId);
+    if (cached && !forceRefresh) {
+      return res.json({ 
+        success: true, 
+        data: cached.output,
+        cached: true,
+        cachedAt: cached.generatedat,
+        message: '📦 Cached analysis - No API credits spent'
+      });
+    }
+
+    // Si llegamos aquí, ejecutar análisis real (gasta API credits)
+    const result = await orchestrator.analyzeProject(projectId, fw);
+    
+    return res.json({ 
+      success: true, 
+      data: result,
+      cached: false,
+      usedMock: false,
+      message: '✨ Fresh analysis - API credits spent'
+    });
+    
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
