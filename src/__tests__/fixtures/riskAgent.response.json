@@ -1,0 +1,34 @@
+{
+  "overallRiskScore": "HIGH",
+  "delayProbability": 0.65,
+  "topRisks": [
+    {
+      "title": "Ambiguous Requirements",
+      "description": "Team requirements are not clearly defined leading to scope creep",
+      "probability": 0.7,
+      "impact": "HIGH"
+    },
+    {
+      "title": "Resource Availability",
+      "description": "Key team members may not be available for entire project duration",
+      "probability": 0.5,
+      "impact": "MEDIUM"
+    },
+    {
+      "title": "Technical Debt",
+      "description": "Legacy codebase may slow down development and introduce bugs",
+      "probability": 0.6,
+      "impact": "HIGH"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "Conduct requirements workshop with stakeholders",
+      "priority": "HIGH"
+    },
+    {
+      "action": "Plan resource allocation early",
+      "priority": "HIGH"
+    }
+  ]
+}
