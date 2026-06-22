@@ -1,10 +1,7 @@
 // ============================================
 // TIPOS CENTRALES - Core Domain Types
-// Estos NO se usan en ningún lado todavía
-// Safe to add sin romper nada
 // ============================================
 
-// Tipos para análisis de riesgo
 export interface RiskAnalysisOutput {
   topRisks: Array<{
     description: string;
@@ -17,10 +14,9 @@ export interface RiskAnalysisOutput {
   recommendations?: string[];
 }
 
-// Tipos para análisis económico
 export interface EconomicAnalysisOutput {
   budget_status: 'CRITICAL' | 'WARNING' | 'HEALTHY' | 'EXCELLENT';
-  budget_health: number; // 0-1
+  budget_health: number;
   cpi: number;
   spi: number;
   recommendations: string[];
@@ -28,7 +24,7 @@ export interface EconomicAnalysisOutput {
   scheduleVariance?: number;
 }
 
-// Salida final del análisis
+// AnalysisOutput - Compatible con lo que retorna orchestrator
 export interface AnalysisOutput {
   risk: any;
   economic: any;
@@ -37,20 +33,19 @@ export interface AnalysisOutput {
     technical_report: string;
   };
   metrics: {
-    pv: number;
-    ev: number;
-    ac: number;
-    cv: number;
-    cpi: number;
-    spi: number;
-    roi: number;
+    pv: string | number;
+    ev: string | number;
+    ac: string | number;
+    cv: string | number;
+    cpi: string | number;
+    spi: string | number;
+    roi: string | number;
     framework?: string;
-    percentComplete?: number;
+    percentComplete?: string | number;
   };
   timestamp: string;
 }
 
-// DTO para input de análisis
 export interface AnalysisInputDTO {
   projectId: number;
   projectName: string;
@@ -58,7 +53,6 @@ export interface AnalysisInputDTO {
   forceRefresh?: boolean;
 }
 
-// Tipos para inputs de análisis de proyecto
 export interface ProjectAnalysisInput {
   projectId: number;
   projectName: string;
