@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login - PMO SaaS</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .box { background: white; padding: 50px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    h1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2em; margin-bottom: 10px; text-align: center; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+    .group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #333; }
+    input { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; }
+    input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 20px; font-size: 1em; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4); }
+    .error { color: #d32f2f; font-size: 0.9em; margin-top: 5px; display: none; }
+    .success { color: #388e3c; font-size: 0.9em; margin-top: 5px; display: none; }
+    .toggle { text-align: center; margin-top: 20px; }
+    .toggle a { color: #667eea; text-decoration: none; font-weight: 600; cursor: pointer; }
+    .toggle a:hover { text-decoration: underline; }
+    .loading { display: none; text-align: center; margin-top: 20px; }
+    .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>📊 PMO SaaS</h1>
+    <p class="subtitle" id="subtitle">Inicia sesión</p>
+    
+    <!-- FORMULARIO LOGIN -->
+    <form id="loginForm" class="form-section">
+      <div class="group">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="tu@email.com" required>
+      </div>
+      
+      <div class="group">
+        <label for="loginPassword">Contraseña</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" required>
+      </div>
+      
+      <button type="submit">Acceder</button>
+      <div class="error" id="loginError"></div>
+    </form>
+
+    <!-- FORMULARIO SIGNUP -->
+    <form id="signupForm" class="form-section hidden">
+      <div class="group">
+        <label for="signupEmail">Email</label>
+        <input type="email" id="signupEmail" placeholder="tu@email.com" required>
+      </div>
+      
+      <div class="group">
+        <label for="signupPassword">Contraseña</label>
+        <input type="password" id="signupPassword" placeholder="Mínimo 8 caracteres" required>
+      </div>
+      
+      <div class="group">
+        <label for="signupConfirm">Confirmar contraseña</label>
+        <input type="password" id="signupConfirm" placeholder="Confirma tu contraseña" required>
+      </div>
+      
+      <button type="submit">Crear Cuenta</button>
+      <div class="error" id="signupError"></div>
+    </form>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="toggle" id="toggleLink">
+      ¿No tienes cuenta? <a onclick="toggleForms()" style="cursor: pointer;">Regístrate</a>
+    </div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const toggleLink = document.getElementById('toggleLink');
+    const subtitle = document.getElementById('subtitle');
+    const loading = document.getElementById('loading');
+
+    function toggleForms() {
+      loginForm.classList.toggle('hidden');
+      signupForm.classList.toggle('hidden');
+      toggleLink.innerHTML = loginForm.classList.contains('hidden') 
+        ? '¿Ya tienes cuenta? <a onclick="toggleForms()" style="cursor: pointer;">Inicia sesión</a>'
+        : '¿No tienes cuenta? <a onclick="toggleForms()" style="cursor: pointer;">Regístrate</a>';
+      subtitle.textContent = loginForm.classList.contains('hidden') ? 'Crear cuenta' : 'Inicia sesión';
+    }
+
+    // LOGIN
+    loginForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errorDiv = document.getElementById('loginError');
+
+      if (!email || !password) {
+        errorDiv.textContent = 'Email y contraseña requeridos';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      loading.style.display = 'block';
+      errorDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.error || 'Error al iniciar sesión';
+          errorDiv.style.display = 'block';
+          loading.style.display = 'none';
+          return;
+        }
+
+        window.location = '/';
+      } catch (err) {
+        errorDiv.textContent = 'Error: ' + err.message;
+        errorDiv.style.display = 'block';
+        loading.style.display = 'none';
+      }
+    };
+
+    // SIGNUP
+    signupForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const confirm = document.getElementById('signupConfirm').value;
+      const errorDiv = document.getElementById('signupError');
+
+      if (!email || !password || !confirm) {
+        errorDiv.textContent = 'Todos los campos son requeridos';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      if (password !== confirm) {
+        errorDiv.textContent = 'Las contraseñas no coinciden';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      if (password.length < 8) {
+        errorDiv.textContent = 'Contraseña mínimo 8 caracteres';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      loading.style.display = 'block';
+      errorDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.error || 'Error al registrarse';
+          errorDiv.style.display = 'block';
+          loading.style.display = 'none';
+          return;
+        }
+
+        // Signup exitoso - ir al dashboard
+        window.location = '/';
+      } catch (err) {
+        errorDiv.textContent = 'Error: ' + err.message;
+        errorDiv.style.display = 'block';
+        loading.style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>
