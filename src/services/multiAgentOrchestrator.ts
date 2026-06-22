@@ -1,77 +1,52 @@
 import { riskAgent } from '../agents/riskAgent';
 import { economicAgent } from '../agents/economicAgent';
+import { reportingAgent } from '../agents/reportingAgent';
 import { pool } from '../db';
+import { calculateProjectMetrics } from './metricsCalculator';
 
-export class MultiAgentOrchestrator {
-  
-  async analyzeProject(projectId: number, framework: string = 'scrum') {
-    console.log(`\n🎯 Iniciando análisis para proyecto ${projectId} (${framework})`);
-    
-    try {
-      // Obtener proyecto de la BD
-      const projectRes = await pool.query(
-        `SELECT * FROM project_data WHERE projectid = $1 LIMIT 1`,
-        [projectId]
-      );
-      
-      if (projectRes.rows.length === 0) {
-        throw new Error(`Proyecto ${projectId} no encontrado`);
-      }
-      
-      const project = projectRes.rows[0];
-      
-      // Set framework
-      riskAgent.setFramework(framework);
-      economicAgent.setFramework(framework);
-      
-      // 1. Risk Agent
-      console.log('1️⃣ Risk Agent...');
-      const riskAnalysis = await riskAgent.analyze({
-        projectId,
-        projectName: project.projectname,
-        status: project.status,
-        timeline: { percentageComplete: 45, daysRemaining: 30 },
-        budget: { total: 500000, spent: 200000 }
-      });
-      
-      // 2. Economic Agent
-      console.log('2️⃣ Economic Agent...');
-      const economicAnalysis = await economicAgent.analyze({
-        projectId,
-        projectName: project.projectname,
-        status: project.status,
-        timeline: { percentageComplete: 45, daysRemaining: 30 },
-        budget: { total: 500000, spent: 200000 }
-      });
-      
-      // 3. Reportes básicos
-      const reports = {
-        senior_report: `Análisis Ejecutivo - ${project.projectname}`,
-        technical_report: `Análisis Técnico - ${project.projectname}`
-      };
-      
-      // 4. Guardar en BD
-      const output = {
-        risk: riskAnalysis,
-        economic: economicAnalysis,
-        reports,
-        framework,
-        generatedAt: new Date().toISOString()
-      };
-      
-      await pool.query(
-        `INSERT INTO ai_analyses (projectid, agenttype, output) VALUES ($1, $2, $3)`,
-        [projectId, 'multi_agent', JSON.stringify(output)]
-      );
-      
-      console.log('✅ Análisis guardado en BD');
-      return output;
-      
-    } catch (error: any) {
-      console.error('❌ Error en orchestrador:', error.message);
-      throw error;
-    }
+export const orchestrator = {
+  async analyzeProject(projectId: number, framework: string) {
+    const metrics = await calculateProjectMetrics(projectId, framework);
+
+    const input = {
+      projectId,
+      projectName: metrics.projectName,
+      timeline: { percentageComplete: parseFloat(metrics.percentComplete as string), daysRemaining: 30 },
+      budget: { total: parseFloat(metrics.pv as string), spent: parseFloat(metrics.ac as string) }
+    };
+
+    riskAgent.setFramework(framework);
+    const riskAnalysis = await riskAgent.analyze(input);
+
+    economicAgent.setFramework(framework);
+    const economicAnalysis = await economicAgent.analyze(input);
+
+    reportingAgent.setAnalysisOutputs(riskAnalysis, economicAnalysis);
+    const reportingAnalysis: any = await reportingAgent.analyze(input);
+
+    // EXTRAER reportes del nivel correcto
+    const seniorReport = reportingAnalysis.analysis?.senior_report || reportingAnalysis.senior_report || 'Reporte disponible';
+    const technicalReport = reportingAnalysis.analysis?.technical_report || reportingAnalysis.technical_report || 'Reporte disponible';
+
+    const output = {
+      risk: riskAnalysis,
+      economic: economicAnalysis,
+      reports: {
+        senior_report: seniorReport,
+        technical_report: technicalReport
+      },
+      metrics: {
+        pv: metrics.pv, ev: metrics.ev, ac: metrics.ac, cv: metrics.cv, cpi: metrics.cpi, spi: metrics.spi, roi: metrics.roi,
+        framework, percentComplete: metrics.percentComplete
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    await pool.query(
+      `INSERT INTO ai_analyses (projectid, agenttype, output, generatedat) VALUES ($1, $2, $3, NOW())`,
+      [projectId, 'combined', JSON.stringify(output)]
+    );
+
+    return output;
   }
-}
-
-export const orchestrator = new MultiAgentOrchestrator();
+};
