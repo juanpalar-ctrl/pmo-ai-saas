@@ -10,10 +10,6 @@
   <style>
     body { background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%); min-height: 100vh; }
     .logo-img { width: 50px; height: 50px; object-fit: contain; }
-    .metric-card { background: white; border-radius: 12px; padding: 20px; border-left: 4px solid #00BCD4; }
-    .metric-label { font-size: 0.8rem; color: #999; font-weight: 600; text-transform: uppercase; }
-    .metric-value { font-size: 1.8rem; font-weight: 700; color: #00897B; margin-top: 10px; }
-    .metric-detail { font-size: 0.85rem; color: #666; margin-top: 8px; }
     .report-section { margin-bottom: 20px; padding: 16px; background: #f0f9fa; border-left: 4px solid #00BCD4; border-radius: 8px; }
     .report-section h3 { color: #00897B; font-weight: 700; margin-bottom: 10px; }
     .report-section p { color: #333; line-height: 1.6; margin-bottom: 8px; }
@@ -57,17 +53,17 @@
       </button>
     </div>
 
-    <!-- METRICS + CHART -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div id="metrics-panel" class="lg:col-span-1 flex flex-col space-y-4"></div>
-      <div class="lg:col-span-2 bg-white rounded-xl p-6 shadow-lg">
-        <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
-          <h3 class="font-bold text-lg text-gray-800" id="chart-title">Progreso del Proyecto</h3>
-          <span class="text-xs bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">Actualizado</span>
-        </div>
-        <div class="relative w-full h-[320px]">
-          <canvas id="frameworkChart"></canvas>
-        </div>
+    <!-- METRICS GRID (3 COLUMNS) -->
+    <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <!-- CHART -->
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
+        <h3 class="font-bold text-lg text-gray-800" id="chart-title">Progreso del Proyecto</h3>
+        <span class="text-xs bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">Actualizado</span>
+      </div>
+      <div class="relative w-full h-[320px]">
+        <canvas id="frameworkChart"></canvas>
       </div>
     </div>
 
@@ -129,10 +125,10 @@
 
       <div class="flex gap-2 border-b border-cyan-200">
         <button onclick="showReport('senior')" id="tab-senior" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
-          <i class="fa-solid fa-crown text-amber-500"></i> Reporte Ejecutivo
+          <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
         </button>
         <button onclick="showReport('technical')" id="tab-technical" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
-          <i class="fa-solid fa-wrench text-cyan-600"></i> Reporte Técnico
+          <i class="fa-solid fa-wrench text-cyan-600"></i> Técnico
         </button>
       </div>
 
@@ -197,12 +193,7 @@
       sections.forEach(section => {
         const title = section.split('\n')[0];
         const content = section.split('\n').slice(1).join('\n');
-        html += `
-          <div class="report-section">
-            <h3>${title}</h3>
-            <p>${content || ''}</p>
-          </div>
-        `;
+        html += `<div class="report-section"><h3>${title}</h3><p>${content || ''}</p></div>`;
       });
       container.innerHTML = html || `<p class="text-gray-500">Reporte no disponible</p>`;
     }
@@ -243,19 +234,23 @@
       const metrics = analysisData.metrics || {};
 
       const cards = [
-        { label: '🎯 Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%` },
-        { label: '💰 Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%` },
-        { label: '📊 CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance Index' },
-        { label: '📈 ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment' },
-        { label: '⏱️ SPI', value: metrics.spi || 'N/A', detail: 'Schedule Performance' },
-        { label: '📌 Framework', value: (activeFramework || 'N/A').toUpperCase(), detail: 'Methodology' }
+        { icon: '🎯', label: 'Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%`, color: 'red' },
+        { icon: '💰', label: 'Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%`, color: 'amber' },
+        { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance', color: 'cyan' },
+        { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: 'green' },
+        { icon: '⏱️', label: 'SPI', value: metrics.spi || 'N/A', detail: 'Schedule Performance', color: 'blue' },
+        { icon: '📌', label: 'Framework', value: (activeFramework || 'N/A').toUpperCase(), detail: 'Methodology', color: 'purple' }
       ];
 
       panel.innerHTML = cards.map(c => `
-        <div class="metric-card shadow-md">
-          <div class="metric-label">${c.label}</div>
-          <div class="metric-value">${c.value}</div>
-          <div class="metric-detail">${c.detail}</div>
+        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 border-cyan-400 hover:shadow-lg transition">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
+              <p class="text-2xl font-bold text-cyan-700 mt-3">${c.value}</p>
+              <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
+            </div>
+          </div>
         </div>
       `).join('');
     }
@@ -302,7 +297,7 @@
             <td class="p-4"><input type="range" min="0" max="100" value="${t.progress}" class="w-16" style="accent-color: #00BCD4;" /></td>
             <td class="p-4">
               <div class="relative h-8 bg-cyan-100 rounded-lg overflow-hidden border border-cyan-200">
-                <div style="left: ${leftPos}%; width: ${width}%; height: 100%" class="absolute bg-gradient-to-r from-cyan-400 to-teal-600 rounded-lg flex items-center">
+                <div style="left: ${leftPos}%; width: ${width}%; height: 100%" class="absolute bg-gradient-to-r from-cyan-400 to-teal-600 rounded-lg">
                   <div style="width: ${t.progress}%" class="absolute inset-0 bg-green-500/70 rounded-lg"></div>
                 </div>
               </div>
