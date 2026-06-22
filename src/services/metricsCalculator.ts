@@ -23,7 +23,11 @@ export async function calculateProjectMetrics(projectId: number, framework: stri
   const percentComplete = (completedWork / totalWork) * 100;
 
   // EVM CALCULATIONS
-  const pv = (percentComplete / 100) * totalPlannedCost;
+  // PV basado en tiempo transcurrido (del proyecto)
+  const daysElapsed = project.timeline?.dayselapsed || 156;
+  const daysTotal = (project.timeline?.daysremaining || 12) + daysElapsed;
+  const planPercent = (daysElapsed / daysTotal) * 100;
+  const pv = (planPercent / 100) * totalPlannedCost;
   const ev = (completedWork / totalWork) * totalPlannedCost;
   const ac = totalActualCost;
   const cv = ev - ac;

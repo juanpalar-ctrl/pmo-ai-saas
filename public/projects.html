@@ -153,7 +153,7 @@
   </main>
 
   <script>
-    let activeFramework = 'scrum';
+    let activeFramework = new URLSearchParams(location.search).get('framework') || 'scrum';
     let myChart = null;
     let analysisData = null;
 
