@@ -154,6 +154,7 @@
 
   <script>
     let activeFramework = new URLSearchParams(location.search).get('framework') || 'scrum';
+    setTimeout(() => switchFramework(activeFramework), 500);
     let myChart = null;
     let analysisData = null;
 
@@ -163,7 +164,7 @@
       const data = await res.json();
       document.getElementById('userEmail').textContent = data.user.email;
       await loadAnalysis();
-      switchFramework('scrum');
+      switchFramework(activeFramework);
       loadReports();
     };
 
