@@ -248,26 +248,38 @@
       if (cpiValue < 0.8) cpiColor = 'red';
       else if (cpiValue < 1.0) cpiColor = 'amber';
 
+      const colorMap = {
+        red: { border: 'border-red-400', text: 'text-red-700' },
+        amber: { border: 'border-amber-400', text: 'text-amber-700' },
+        green: { border: 'border-green-400', text: 'text-green-700' },
+        blue: { border: 'border-blue-400', text: 'text-blue-700' },
+        purple: { border: 'border-purple-400', text: 'text-purple-700' },
+        cyan: { border: 'border-cyan-400', text: 'text-cyan-700' }
+      };
+
       const cards = [
         { icon: '🎯', label: 'Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%`, color: 'red' },
         { icon: '💰', label: 'Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%`, color: 'amber' },
         { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance', color: cpiColor },
-        { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: 'green' },
+        { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: parseFloat(metrics.roi || 0) < 0 ? 'red' : 'green' },
         { icon: '⏱️', label: 'SPI', value: metrics.spi || 'N/A', detail: 'Schedule Performance', color: 'blue' },
         { icon: '📌', label: 'Framework', value: (activeFramework || 'N/A').toUpperCase(), detail: 'Methodology', color: 'purple' }
       ];
 
-      panel.innerHTML = cards.map(c => `
-        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 border-cyan-400 hover:shadow-lg transition">
+      panel.innerHTML = cards.map(c => {
+        const colors = colorMap[c.color] || colorMap.cyan;
+        return `
+        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 ${colors.border} hover:shadow-lg transition">
           <div class="flex items-start justify-between">
             <div>
               <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
-              <p class="text-2xl font-bold text-cyan-700 mt-3">${c.value}</p>
+              <p class="text-2xl font-bold ${colors.text} mt-3">${c.value}</p>
               <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
             </div>
           </div>
         </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function renderChart() {
@@ -335,7 +347,10 @@
       // CV y Saldo si existen los elementos
       const cvElement = document.getElementById('kpi-cv');
       const saldoElement = document.getElementById('kpi-saldo');
-      if (cvElement) cvElement.textContent = `$${cv.toLocaleString()}`;
+      if (cvElement) {
+        cvElement.textContent = `$${cv.toLocaleString()}`;
+        cvElement.className = cv >= 0 ? 'text-3xl font-bold text-green-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
+      }
       if (saldoElement) saldoElement.textContent = `$${remaining.toLocaleString()}`;
     }
 
