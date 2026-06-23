@@ -118,7 +118,7 @@
       </div>
       <div class="group">
         <label for="file">Cargar Archivo Excel (.xlsx)</label>
-        <input type="file" id="file" accept=".xlsx" required>
+        <input type="file" id="file" accept=".xlsx,.csv" required>
       </div>
       <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
       <div class="loading" id="loading" style="display: none; text-align: center; margin-top: 20px;">
@@ -177,11 +177,73 @@
           window.location = `/projects?framework=${fw}&projectId=${pid}`;
         }, 500);
       } catch(e) {
-        alert('ERROR: ' + e.message);
+        showToast('Error: ' + e.message);
         btn.disabled = false;
         loading.style.display = 'none';
       }
+
+    function showToast(message, type = 'error') {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toast-icon');
+      const msg = document.getElementById('toast-message');
+      
+      icon.textContent = type === 'error' ? '❌' : '✅';
+      msg.textContent = message;
+      toast.style.display = 'block';
+      
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    function showErrorModal() {
+      document.getElementById('error-modal').style.display = 'flex';
+    }
+
+    function hideErrorModal() {
+      document.getElementById('error-modal').style.display = 'none';
+    }
+
+    function retryAnalysis() {
+      hideErrorModal();
+      const form = document.getElementById('form');
+      form.onsubmit(new Event('submit'));
+    }
+
+    function cancelAnalysis() {
+      hideErrorModal();
+      document.getElementById('status').textContent = 'Cancelado';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('btn').disabled = false;
+    }
+
     };
   </script>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" style="position: fixed; top: 20px; right: 20px; background: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; display: none; max-width: 400px; animation: slideIn 0.3s ease;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span id="toast-icon" style="font-size: 20px;">⚠️</span>
+      <span id="toast-message" style="font-size: 14px; color: #333;"></span>
+    </div>
+  </div>
+
+  <!-- MODAL ERROR CRÍTICO -->
+  <div id="error-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+      <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+      <h2 style="color: #e53e3e; font-size: 20px; font-weight: bold; margin-bottom: 12px;">Error de Procesamiento</h2>
+      <p style="color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.6;">Nuestros analistas IA están saturados en este momento. Por favor, intenta más tarde.</p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button onclick="retryAnalysis()" style="background: #00BCD4; color: white; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Reintentar</button>
+        <button onclick="cancelAnalysis()" style="background: #e0e0e0; color: #333; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
 </body>
 </html>
