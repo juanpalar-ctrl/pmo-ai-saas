@@ -157,8 +157,25 @@
       try {
         status.textContent = '📥 Cargando archivo...';
         const fd = new FormData();
-        fd.append('file', document.getElementById('file').files[0]);
-        await fetch('/api/data/upload-excel', {method: 'POST', body: fd});
+        const file = document.getElementById('file').files[0];
+        fd.append('file', file);
+        
+        const uploadRes = await fetch('/api/data/upload-excel', {method: 'POST', body: fd});
+        const uploadJson = await uploadRes.json();
+        uploadedFilePath = uploadJson.filePath;
+        
+        status.textContent = '🔍 Detectando columnas...';
+        const detectionRes = await fetch('/api/data/detect-columns', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filePath: uploadedFilePath })
+        });
+        const detection = await detectionRes.json();
+        
+        // Mostrar modal de confirmación
+        showMappingModal(detection.mapping, detection.headers);
+        loading.style.display = 'none';
+        return;
         
         status.textContent = '📋 Obteniendo proyecto...';
         const list = await fetch('/api/data/projects?limit=1');
@@ -215,6 +232,61 @@
       document.getElementById('btn').disabled = false;
     }
 
+
+    let currentMapping = null;
+    let uploadedFilePath = null;
+
+    function showMappingModal(mapping, headers) {
+      currentMapping = mapping;
+      const fields = document.getElementById('mapping-fields');
+      
+      const fieldMap = [
+        { key: 'projectName', label: 'Nombre del Proyecto' },
+        { key: 'budget', label: 'Presupuesto' },
+        { key: 'spent', label: 'Gasto Real' },
+        { key: 'startDate', label: 'Fecha de Inicio' },
+        { key: 'endDate', label: 'Fecha de Finalización' },
+        { key: 'progress', label: 'Progreso (%)' }
+      ];
+
+      fields.innerHTML = fieldMap.map(field => `
+        <div style="border: 1px solid #ddd; padding: 12px; border-radius: 6px;">
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px;">${field.label}</label>
+          <select id="mapping-${field.key}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+            <option value="">-- No seleccionado --</option>
+            ${headers.map(h => `<option value="${h}" ${mapping[field.key] === h ? 'selected' : ''}>${h}</option>`).join('')}
+          </select>
+        </div>
+      `).join('');
+
+      document.getElementById('mapping-modal').style.display = 'block';
+    }
+
+    function closeMappingModal() {
+      document.getElementById('mapping-modal').style.display = 'none';
+    }
+
+    function confirmMapping() {
+      const fieldMap = ['projectName', 'budget', 'spent', 'startDate', 'endDate', 'progress'];
+      const confirmedMapping = {};
+
+      fieldMap.forEach(key => {
+        confirmedMapping[key] = document.getElementById(`mapping-${key}`).value || null;
+      });
+
+      console.log('✅ Mapeo confirmado:', confirmedMapping);
+      closeMappingModal();
+      
+      // Aquí guardarías el mapeo en BD y procederías con el análisis
+      submitWithMapping(confirmedMapping);
+    }
+
+    function submitWithMapping(mapping) {
+      // Continuar con el análisis usando el mapeo confirmado
+      console.log('📊 Procediendo con análisis usando mapeo:', mapping);
+      // TODO: Implementar envío a BD
+    }
+
     };
   </script>
 
@@ -245,5 +317,23 @@
       to { transform: translateX(0); opacity: 1; }
     }
   </style>
+
+  <!-- MODAL CONFIRMACIÓN DE MAPEO -->
+  <div id="mapping-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; overflow-y: auto;">
+    <div style="background: white; max-width: 600px; margin: 40px auto; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+      <h2 style="color: #333; font-size: 20px; font-weight: bold; margin-bottom: 20px;">🔍 Confirmación de Mapeo de Columnas</h2>
+      
+      <p style="color: #666; font-size: 14px; margin-bottom: 24px;">Hemos detectado las siguientes columnas. ¿Son correctas?</p>
+      
+      <div id="mapping-fields" style="display: grid; gap: 16px; margin-bottom: 24px;">
+        <!-- Se llena dinámicamente -->
+      </div>
+      
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button onclick="closeMappingModal()" style="background: #e0e0e0; color: #333; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancelar</button>
+        <button onclick="confirmMapping()" style="background: #00BCD4; color: white; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Confirmar Mapeo</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
