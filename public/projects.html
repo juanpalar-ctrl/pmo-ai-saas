@@ -13,150 +13,175 @@
     .report-section { margin-bottom: 20px; padding: 16px; background: #f0f9fa; border-left: 4px solid #00BCD4; border-radius: 8px; }
     .report-section h3 { color: #00897B; font-weight: 700; margin-bottom: 10px; }
     .report-section p { color: #333; line-height: 1.6; margin-bottom: 8px; }
+    .history-card { padding: 12px; background: white; border-left: 3px solid #00BCD4; margin-bottom: 10px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .history-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateX(4px); }
+    .history-card-title { font-weight: 600; color: #333; font-size: 0.9em; margin-bottom: 4px; }
+    .history-card-meta { font-size: 0.75em; color: #666; line-height: 1.4; }
   </style>
 </head>
 <body class="text-gray-800 font-sans">
 
-  <!-- NAVBAR -->
-  <header class="border-b border-cyan-600 bg-white/95 sticky top-0 z-50 px-6 py-4 flex items-center justify-between shadow-lg">
-    <div class="flex items-center space-x-3">
-      <img src="logo.jpeg" alt="LARA" class="logo-img">
-      <div>
-        <h1 class="font-bold text-lg text-gray-800">LARA Portfolio</h1>
-        <p class="text-xs text-cyan-600 font-semibold">Intelligence Accelerated</p>
+  <!-- LAYOUT CONTAINER -->
+  <div class="flex h-screen">
+    
+    <!-- SIDEBAR HISTORIAL (izquierda) -->
+    <div class="w-80 bg-white shadow-lg overflow-y-auto border-r border-cyan-200">
+      <div class="sticky top-0 bg-gradient-to-r from-cyan-500 to-teal-600 text-white p-4 z-10">
+        <h3 class="font-bold text-sm">📋 Historial Reciente</h3>
+        <p class="text-xs opacity-90 mt-1">Últimos 10 proyectos analizados</p>
       </div>
-    </div>
-    <div class="flex items-center space-x-4">
-      <span id="userEmail" class="text-sm text-gray-600 font-semibold"></span>
-      <button onclick="logout()" class="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
-        Cerrar sesión
-      </button>
-    </div>
-  </header>
-
-  <!-- MAIN CONTENT -->
-  <main class="max-w-7xl mx-auto p-6 space-y-6">
-
-    <!-- FRAMEWORK TABS -->
-    <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
-      <button onclick="switchFramework('scrum')" id="tab-scrum" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
-        <i class="fa-solid fa-rotate text-emerald-500"></i> Scrum
-      </button>
-      <button onclick="switchFramework('kanban')" id="tab-kanban" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
-        <i class="fa-solid fa-columns text-cyan-600"></i> Kanban
-      </button>
-      <button onclick="switchFramework('waterfall')" id="tab-waterfall" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
-        <i class="fa-solid fa-water text-amber-500"></i> Waterfall
-      </button>
-      <button onclick="switchFramework('safe')" id="tab-safe" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
-        <i class="fa-solid fa-network-wired text-teal-600"></i> SAFe
-      </button>
-    </div>
-
-    <!-- METRICS GRID (3 COLUMNS) -->
-    <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-
-    <!-- CHART -->
-    <div class="bg-white rounded-xl p-6 shadow-lg">
-      <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
-        <h3 class="font-bold text-lg text-gray-800" id="chart-title">Progreso del Proyecto</h3>
-        <span class="text-xs bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">Actualizado</span>
-      </div>
-      <div class="relative w-full h-[320px]">
-        <canvas id="frameworkChart"></canvas>
+      <div id="history-list" class="p-4 space-y-2">
+        <div class="text-center text-gray-500 py-8">
+          <i class="fas fa-spinner fa-spin"></i> Cargando...
+        </div>
       </div>
     </div>
 
-    <!-- GANTT CHART -->
-    <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
-      <div class="flex items-center justify-between border-b border-cyan-200 pb-4">
+    <!-- MAIN CONTENT (derecha) -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      <!-- NAVBAR -->
+      <header class="border-b border-cyan-600 bg-white/95 px-6 py-4 flex items-center justify-between shadow-lg">
         <div class="flex items-center space-x-3">
-          <i class="fa-solid fa-timeline text-cyan-600 text-2xl"></i>
+          <img src="logo.jpeg" alt="LARA" class="logo-img">
           <div>
-            <h3 class="font-bold text-lg text-gray-800">Cronograma Gantt Interactivo</h3>
-            <p class="text-xs text-gray-500 mt-1">Edita costos y progreso para actualizar métricas</p>
+            <h1 class="font-bold text-lg text-gray-800">LARA Portfolio</h1>
+            <p class="text-xs text-cyan-600 font-semibold">Intelligence Accelerated</p>
           </div>
         </div>
-      </div>
+        <div class="flex items-center space-x-4">
+          <span id="userEmail" class="text-sm text-gray-600 font-semibold"></span>
+          <button onclick="logout()" class="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
+            Cerrar sesión
+          </button>
+        </div>
+      </header>
 
-      <div class="overflow-x-auto border border-cyan-200 rounded-xl">
-        <table class="w-full text-left border-collapse min-w-[800px]">
-          <thead>
-            <tr class="bg-cyan-50 border-b border-cyan-200 text-xs font-bold text-gray-700">
-              <th class="p-4 w-1/4">Entregable</th>
-              <th class="p-4 w-[12%]">Presupuesto</th>
-              <th class="p-4 w-[12%]">Real</th>
-              <th class="p-4 w-[12%]">Progreso</th>
-              <th class="p-4 w-1/3">Timeline</th>
-            </tr>
-          </thead>
-          <tbody id="gantt-body" class="divide-y divide-cyan-100 text-sm text-gray-700"></tbody>
-        </table>
-      </div>
+      <!-- SCROLLABLE MAIN CONTENT -->
+      <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
-      <!-- KPI SUMMARY -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 p-4 rounded-lg">
-          <span class="text-xs text-gray-600 font-semibold block uppercase">Total Budget</span>
-          <span class="text-3xl font-bold text-cyan-600 mt-2" id="kpi-budget">$0</span>
+        <!-- FRAMEWORK TABS -->
+        <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
+          <button onclick="switchFramework('scrum')" id="tab-scrum" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
+            <i class="fa-solid fa-rotate text-emerald-500"></i> Scrum
+          </button>
+          <button onclick="switchFramework('kanban')" id="tab-kanban" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
+            <i class="fa-solid fa-columns text-cyan-600"></i> Kanban
+          </button>
+          <button onclick="switchFramework('waterfall')" id="tab-waterfall" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
+            <i class="fa-solid fa-water text-amber-500"></i> Waterfall
+          </button>
+          <button onclick="switchFramework('safe')" id="tab-safe" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
+            <i class="fa-solid fa-network-wired text-teal-600"></i> SAFe
+          </button>
         </div>
-        <div class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 p-4 rounded-lg">
-          <span class="text-xs text-gray-600 font-semibold block uppercase">Gasto Real</span>
-          <span class="text-3xl font-bold text-red-600 mt-2" id="kpi-spent">$0</span>
-        </div>
-        <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 p-4 rounded-lg">
-          <span class="text-xs text-gray-600 font-semibold block uppercase">Progreso</span>
-          <span class="text-3xl font-bold text-green-600 mt-2" id="kpi-progress">0%</span>
-        </div>
-        <div class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 p-4 rounded-lg">
-          <span class="text-xs text-gray-600 font-semibold block uppercase">Variación Costo (CV)</span>
-          <span class="text-3xl font-bold text-orange-600 mt-2" id="kpi-cv">$0</span>
-        </div>
-        <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-4 rounded-lg">
-          <span class="text-xs text-gray-600 font-semibold block uppercase">Saldo en Caja</span>
-          <span class="text-3xl font-bold text-purple-600 mt-2" id="kpi-saldo">$0</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- REPORTES SECTION -->
-    <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
-      <div class="flex items-center justify-between border-b border-cyan-200 pb-4">
-        <div class="flex items-center space-x-3">
-          <i class="fa-solid fa-file-lines text-cyan-600 text-2xl"></i>
-          <div>
-            <h3 class="font-bold text-lg text-gray-800">Reportes Especializados</h3>
-            <p class="text-xs text-gray-500 mt-1">Generados por IA - Adaptados por audiencia</p>
+        <!-- METRICS GRID -->
+        <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+        <!-- CHART -->
+        <div class="bg-white rounded-xl p-6 shadow-lg">
+          <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
+            <h3 class="font-bold text-lg text-gray-800">Progreso del Proyecto</h3>
+            <span class="text-xs bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">Actualizado</span>
+          </div>
+          <div class="relative w-full h-[320px]">
+            <canvas id="frameworkChart"></canvas>
           </div>
         </div>
-      </div>
 
-      <div class="flex gap-2 border-b border-cyan-200">
-        <button onclick="showReport('senior')" id="tab-senior" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
-          <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
-        </button>
-        <button onclick="showReport('technical')" id="tab-technical" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
-          <i class="fa-solid fa-wrench text-cyan-600"></i> Técnico
-        </button>
-      </div>
+        <!-- GANTT CHART -->
+        <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
+          <div class="flex items-center justify-between border-b border-cyan-200 pb-4">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-timeline text-cyan-600 text-2xl"></i>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">Cronograma Gantt Interactivo</h3>
+                <p class="text-xs text-gray-500 mt-1">Edita costos y progreso para actualizar métricas</p>
+              </div>
+            </div>
+          </div>
 
-      <div id="report-senior" class="space-y-4 hidden" style="max-height: 600px; overflow-y: auto;"></div>
-      <div id="report-technical" class="space-y-4 hidden" style="max-height: 600px; overflow-y: auto;"></div>
+          <div class="overflow-x-auto border border-cyan-200 rounded-xl">
+            <table class="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr class="bg-cyan-50 border-b border-cyan-200 text-xs font-bold text-gray-700">
+                  <th class="p-4 w-1/4">Entregable</th>
+                  <th class="p-4 w-[12%]">Presupuesto</th>
+                  <th class="p-4 w-[12%]">Real</th>
+                  <th class="p-4 w-[12%]">Progreso</th>
+                  <th class="p-4 w-1/3">Timeline</th>
+                </tr>
+              </thead>
+              <tbody id="gantt-body" class="divide-y divide-cyan-100 text-sm text-gray-700"></tbody>
+            </table>
+          </div>
+
+          <!-- KPI SUMMARY -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 p-4 rounded-lg">
+              <span class="text-xs text-gray-600 font-semibold block uppercase">Total Budget</span>
+              <span class="text-3xl font-bold text-cyan-600 mt-2" id="kpi-budget">$0</span>
+            </div>
+            <div class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 p-4 rounded-lg">
+              <span class="text-xs text-gray-600 font-semibold block uppercase">Gasto Real</span>
+              <span class="text-3xl font-bold text-red-600 mt-2" id="kpi-spent">$0</span>
+            </div>
+            <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 p-4 rounded-lg">
+              <span class="text-xs text-gray-600 font-semibold block uppercase">Progreso</span>
+              <span class="text-3xl font-bold text-green-600 mt-2" id="kpi-progress">0%</span>
+            </div>
+            <div class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 p-4 rounded-lg">
+              <span class="text-xs text-gray-600 font-semibold block uppercase">Variación Costo (CV)</span>
+              <span class="text-3xl font-bold text-orange-600 mt-2" id="kpi-cv">$0</span>
+            </div>
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-4 rounded-lg">
+              <span class="text-xs text-gray-600 font-semibold block uppercase">Saldo en Caja</span>
+              <span class="text-3xl font-bold text-purple-600 mt-2" id="kpi-saldo">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORTES SECTION -->
+        <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
+          <div class="flex items-center justify-between border-b border-cyan-200 pb-4">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-file-lines text-cyan-600 text-2xl"></i>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">Reportes Especializados</h3>
+                <p class="text-xs text-gray-500 mt-1">Generados por IA - Adaptados por audiencia</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 border-b border-cyan-200">
+            <button onclick="showReport('senior')" id="tab-senior" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
+              <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
+            </button>
+            <button onclick="showReport('technical')" id="tab-technical" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
+              <i class="fa-solid fa-wrench text-cyan-600"></i> Técnico
+            </button>
+          </div>
+
+          <div id="report-senior" class="space-y-4 hidden" style="max-height: 600px; overflow-y: auto;"></div>
+          <div id="report-technical" class="space-y-4 hidden" style="max-height: 600px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- BACK BUTTON -->
+        <div class="text-center mt-8">
+          <a href="/" class="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg text-sm font-semibold shadow-md inline-block">
+            ← Volver al Dashboard
+          </a>
+        </div>
+      </main>
     </div>
-
-    <!-- BACK BUTTON -->
-    <div class="text-center mt-8">
-      <a href="/" class="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg text-sm font-semibold shadow-md inline-block">
-        ← Volver al Dashboard
-      </a>
-    </div>
-  </main>
+  </div>
 
   <script>
     let activeFramework = new URLSearchParams(location.search).get('framework') || 'scrum';
-    setTimeout(() => switchFramework(activeFramework), 500);
     let myChart = null;
     let analysisData = null;
+    let lastProjectId = null;
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
@@ -164,6 +189,7 @@
       const data = await res.json();
       document.getElementById('userEmail').textContent = data.user.email;
       await loadAnalysis();
+      await loadHistory();
       switchFramework(activeFramework);
       loadReports();
     };
@@ -173,10 +199,40 @@
         const projectId = new URLSearchParams(location.search).get('projectId');
         const res = await fetch(`/api/analysis/${projectId}/latest`);
         const data = await res.json();
-        analysisData = data.data;
+        if (data.success) {
+          analysisData = data.data;
+        }
       } catch (err) {
         console.error('Error loading analysis:', err);
       }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/data/projects/history/latest');
+        const data = await res.json();
+        
+        if (data.success && data.data.length > 0) {
+          const historyList = document.getElementById('history-list');
+          historyList.innerHTML = data.data.map(project => `
+            <div class="history-card" onclick="navigateToProject(${project.projectId}, '${project.framework}')">
+              <div class="history-card-title">${project.projectName}</div>
+              <div class="history-card-meta">
+                <div>📅 ${new Date(project.timestamp).toLocaleDateString()}</div>
+                <div>🎯 ${project.framework.toUpperCase()}</div>
+                <div>💰 $${(project.totalBudget || 0).toLocaleString()}</div>
+                </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Error loading history:', err);
+        document.getElementById('history-list').innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Error cargando historial</p>';
+      }
+    }
+
+    function navigateToProject(projectId, framework) {
+      window.location = `/projects?projectId=${projectId}&framework=${framework}`;
     }
 
     async function loadReports() {
@@ -223,6 +279,18 @@
 
     function switchFramework(fw) {
       activeFramework = fw;
+      
+      const currentProjectId = new URLSearchParams(location.search).get('projectId');
+      if (currentProjectId !== lastProjectId) {
+        lastProjectId = currentProjectId;
+        loadAnalysis().then(() => {
+          renderMetrics();
+          renderChart();
+          renderGantt();
+        });
+        return;
+      }
+      
       document.querySelectorAll('[id^="tab-"]').forEach(btn => {
         btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
         btn.classList.add('text-gray-700');
@@ -242,32 +310,43 @@
       const economic = analysisData.economic?.analysis?.analysis || {};
       const metrics = analysisData.metrics || {};
 
-      // COLORES DINÁMICOS basados en CPI
       const cpiValue = parseFloat(metrics.cpi) || 1;
       let cpiColor = 'green';
       if (cpiValue < 0.8) cpiColor = 'red';
       else if (cpiValue < 1.0) cpiColor = 'amber';
 
+      const colorMap = {
+        red: { border: 'border-red-400', text: 'text-red-700' },
+        amber: { border: 'border-amber-400', text: 'text-amber-700' },
+        green: { border: 'border-green-400', text: 'text-green-700' },
+        blue: { border: 'border-blue-400', text: 'text-blue-700' },
+        purple: { border: 'border-purple-400', text: 'text-purple-700' },
+        cyan: { border: 'border-cyan-400', text: 'text-cyan-700' }
+      };
+
       const cards = [
         { icon: '🎯', label: 'Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%`, color: 'red' },
         { icon: '💰', label: 'Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%`, color: 'amber' },
         { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance', color: cpiColor },
-        { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: 'green' },
+        { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: parseFloat(metrics.roi || 0) < 0 ? 'red' : 'green' },
         { icon: '⏱️', label: 'SPI', value: metrics.spi || 'N/A', detail: 'Schedule Performance', color: 'blue' },
         { icon: '📌', label: 'Framework', value: (activeFramework || 'N/A').toUpperCase(), detail: 'Methodology', color: 'purple' }
       ];
 
-      panel.innerHTML = cards.map(c => `
-        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 border-cyan-400 hover:shadow-lg transition">
+      panel.innerHTML = cards.map(c => {
+        const colors = colorMap[c.color] || colorMap.cyan;
+        return `
+        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 ${colors.border} hover:shadow-lg transition">
           <div class="flex items-start justify-between">
             <div>
               <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
-              <p class="text-2xl font-bold text-cyan-700 mt-3">${c.value}</p>
+              <p class="text-2xl font-bold ${colors.text} mt-3">${c.value}</p>
               <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
             </div>
           </div>
         </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function renderChart() {
@@ -321,22 +400,28 @@
         `;
       }).join('');
 
-      const totalBudget = tasks.reduce((s, t) => s + t.plan, 0);
-      const totalSpent = tasks.reduce((s, t) => s + t.actual, 0);
-      const avgProgress = Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
-
-      const cv = totalBudget - totalSpent;  // CV = Budget - Actual (simplificado para Gantt)
-      const remaining = totalBudget - totalSpent;  // Saldo en Caja
+      const metrics = analysisData?.metrics || {};
+      const totalBudget = parseFloat(metrics.pv) || tasks.reduce((s, t) => s + t.plan, 0);
+      const totalSpent = parseFloat(metrics.ac) || tasks.reduce((s, t) => s + t.actual, 0);
+      const avgProgress = parseFloat(metrics.percentComplete) || Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
+      const cv = parseFloat(metrics.cv) || (totalBudget - totalSpent);
+      const remaining = parseFloat(metrics.cv) || (totalBudget - totalSpent);
       
-      document.getElementById('kpi-budget').textContent = `$${totalBudget.toLocaleString()}`;
-      document.getElementById('kpi-spent').textContent = `$${totalSpent.toLocaleString()}`;
-      document.getElementById('kpi-progress').textContent = `${avgProgress}%`;
+      document.getElementById('kpi-budget').textContent = `$${Math.round(totalBudget).toLocaleString()}`;
+      document.getElementById('kpi-spent').textContent = `$${Math.round(totalSpent).toLocaleString()}`;
+      document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
       
-      // CV y Saldo si existen los elementos
       const cvElement = document.getElementById('kpi-cv');
       const saldoElement = document.getElementById('kpi-saldo');
-      if (cvElement) cvElement.textContent = `$${cv.toLocaleString()}`;
-      if (saldoElement) saldoElement.textContent = `$${remaining.toLocaleString()}`;
+      
+      if (cvElement) {
+        cvElement.textContent = `$${Math.round(cv).toLocaleString()}`;
+        cvElement.className = cv >= 0 ? 'text-3xl font-bold text-green-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
+      }
+      if (saldoElement) {
+        saldoElement.textContent = `$${Math.round(remaining).toLocaleString()}`;
+        saldoElement.className = remaining >= 0 ? 'text-3xl font-bold text-purple-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
+      }
     }
 
     function logout() {

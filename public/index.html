@@ -78,9 +78,13 @@
       font-size: 1.1em;
     }
     button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0, 188, 212, 0.4); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     .user-info { text-align: right; margin-bottom: 20px; padding: 10px; background: #F0F4F3; border-radius: 8px; }
     .logout-btn { background: #999; padding: 8px 16px; font-size: 0.9em; margin-top: 10px; width: auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .alert { padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: 600; }
+    .alert-error { background: #FFEBEE; color: #C62828; border-left: 4px solid #C62828; }
+    .alert-success { background: #E8F5E9; color: #2E7D32; border-left: 4px solid #2E7D32; }
   </style>
 </head>
 <body>
@@ -118,13 +122,14 @@
       </div>
       <div class="group">
         <label for="file">Cargar Archivo Excel (.xlsx)</label>
-        <input type="file" id="file" accept=".xlsx,.csv" required>
+        <input type="file" id="file" accept=".xlsx" required>
       </div>
       <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
       <div class="loading" id="loading" style="display: none; text-align: center; margin-top: 20px;">
         <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto;"></div>
         <p id="status" style="color: #00BCD4; font-weight: 600; margin-top: 10px;">Procesando...</p>
       </div>
+      <div id="alert" style="display: none;"></div>
     </form>
   </div>
 
@@ -143,46 +148,62 @@
       });
     }
 
+    function showAlert(message, isError = false) {
+      const alertDiv = document.getElementById('alert');
+      alertDiv.className = isError ? 'alert alert-error' : 'alert alert-success';
+      alertDiv.textContent = message;
+      alertDiv.style.display = 'block';
+    }
+
     document.getElementById('form').onsubmit = async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btn');
       const loading = document.getElementById('loading');
       const status = document.getElementById('status');
+      const alertDiv = document.getElementById('alert');
       const orgName = document.getElementById('org').value;
       const fw = document.getElementById('fw').value;
       
       btn.disabled = true;
       loading.style.display = 'block';
+      alertDiv.style.display = 'none';
       
       try {
         status.textContent = '📥 Cargando archivo...';
         const fd = new FormData();
-        const file = document.getElementById('file').files[0];
-        fd.append('file', file);
-        
+        fd.append('file', document.getElementById('file').files[0]);
         const uploadRes = await fetch('/api/data/upload-excel', {method: 'POST', body: fd});
-        const uploadJson = await uploadRes.json();
-        uploadedFilePath = uploadJson.filePath;
+        const uploadData = await uploadRes.json();
         
-        status.textContent = '🔍 Detectando columnas...';
-        const detectionRes = await fetch('/api/data/detect-columns', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ filePath: uploadedFilePath })
-        });
-        const detection = await detectionRes.json();
-        
-        // Mostrar modal de confirmación
-        showMappingModal(detection.mapping, detection.headers);
-        loading.style.display = 'none';
-        return;
-        
+        // ✅ VALIDAR: ¿Se guardaron proyectos?
+        if (!uploadData.success || uploadData.count === 0) {
+          showAlert(
+            `❌ El archivo no contiene proyectos válidos. Se rechazaron ${uploadData.rejected || 'todas las'} filas. Verifica que el Excel tenga la estructura correcta.`,
+            true
+          );
+          btn.disabled = false;
+          loading.style.display = 'none';
+          return;
+        }
+
         status.textContent = '📋 Obteniendo proyecto...';
         const list = await fetch('/api/data/projects?limit=1');
         const json = await list.json();
+        
+        // ✅ VALIDAR: ¿Hay datos en la BD?
+        if (!json.success || !json.data || json.data.length === 0) {
+          showAlert(
+            '❌ No se encontraron proyectos en la base de datos. Por favor intenta de nuevo.',
+            true
+          );
+          btn.disabled = false;
+          loading.style.display = 'none';
+          return;
+        }
+
         const pid = json.data[0].projectId;
         
-        status.textContent = `🤖 Analizando proyecto...`;
+        status.textContent = `🤖 Analizando proyecto ${pid}...`;
         await fetch(`/api/analysis/${pid}`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
@@ -194,146 +215,11 @@
           window.location = `/projects?framework=${fw}&projectId=${pid}`;
         }, 500);
       } catch(e) {
-        showToast('Error: ' + e.message);
+        showAlert(`❌ ERROR: ${e.message}`, true);
         btn.disabled = false;
         loading.style.display = 'none';
       }
-
-    function showToast(message, type = 'error') {
-      const toast = document.getElementById('toast');
-      const icon = document.getElementById('toast-icon');
-      const msg = document.getElementById('toast-message');
-      
-      icon.textContent = type === 'error' ? '❌' : '✅';
-      msg.textContent = message;
-      toast.style.display = 'block';
-      
-      setTimeout(() => { toast.style.display = 'none'; }, 4000);
-    }
-
-    function showErrorModal() {
-      document.getElementById('error-modal').style.display = 'flex';
-    }
-
-    function hideErrorModal() {
-      document.getElementById('error-modal').style.display = 'none';
-    }
-
-    function retryAnalysis() {
-      hideErrorModal();
-      const form = document.getElementById('form');
-      form.onsubmit(new Event('submit'));
-    }
-
-    function cancelAnalysis() {
-      hideErrorModal();
-      document.getElementById('status').textContent = 'Cancelado';
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('btn').disabled = false;
-    }
-
-
-    let currentMapping = null;
-    let uploadedFilePath = null;
-
-    function showMappingModal(mapping, headers) {
-      currentMapping = mapping;
-      const fields = document.getElementById('mapping-fields');
-      
-      const fieldMap = [
-        { key: 'projectName', label: 'Nombre del Proyecto' },
-        { key: 'budget', label: 'Presupuesto' },
-        { key: 'spent', label: 'Gasto Real' },
-        { key: 'startDate', label: 'Fecha de Inicio' },
-        { key: 'endDate', label: 'Fecha de Finalización' },
-        { key: 'progress', label: 'Progreso (%)' }
-      ];
-
-      fields.innerHTML = fieldMap.map(field => `
-        <div style="border: 1px solid #ddd; padding: 12px; border-radius: 6px;">
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 6px;">${field.label}</label>
-          <select id="mapping-${field.key}" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
-            <option value="">-- No seleccionado --</option>
-            ${headers.map(h => `<option value="${h}" ${mapping[field.key] === h ? 'selected' : ''}>${h}</option>`).join('')}
-          </select>
-        </div>
-      `).join('');
-
-      document.getElementById('mapping-modal').style.display = 'block';
-    }
-
-    function closeMappingModal() {
-      document.getElementById('mapping-modal').style.display = 'none';
-    }
-
-    function confirmMapping() {
-      const fieldMap = ['projectName', 'budget', 'spent', 'startDate', 'endDate', 'progress'];
-      const confirmedMapping = {};
-
-      fieldMap.forEach(key => {
-        confirmedMapping[key] = document.getElementById(`mapping-${key}`).value || null;
-      });
-
-      console.log('✅ Mapeo confirmado:', confirmedMapping);
-      closeMappingModal();
-      
-      // Aquí guardarías el mapeo en BD y procederías con el análisis
-      submitWithMapping(confirmedMapping);
-    }
-
-    function submitWithMapping(mapping) {
-      // Continuar con el análisis usando el mapeo confirmado
-      console.log('📊 Procediendo con análisis usando mapeo:', mapping);
-      // TODO: Implementar envío a BD
-    }
-
     };
   </script>
-
-  <!-- TOAST NOTIFICATION -->
-  <div id="toast" style="position: fixed; top: 20px; right: 20px; background: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; display: none; max-width: 400px; animation: slideIn 0.3s ease;">
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <span id="toast-icon" style="font-size: 20px;">⚠️</span>
-      <span id="toast-message" style="font-size: 14px; color: #333;"></span>
-    </div>
-  </div>
-
-  <!-- MODAL ERROR CRÍTICO -->
-  <div id="error-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 12px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-      <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-      <h2 style="color: #e53e3e; font-size: 20px; font-weight: bold; margin-bottom: 12px;">Error de Procesamiento</h2>
-      <p style="color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.6;">Nuestros analistas IA están saturados en este momento. Por favor, intenta más tarde.</p>
-      <div style="display: flex; gap: 12px; justify-content: center;">
-        <button onclick="retryAnalysis()" style="background: #00BCD4; color: white; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Reintentar</button>
-        <button onclick="cancelAnalysis()" style="background: #e0e0e0; color: #333; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <style>
-    @keyframes slideIn {
-      from { transform: translateX(400px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-  </style>
-
-  <!-- MODAL CONFIRMACIÓN DE MAPEO -->
-  <div id="mapping-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; overflow-y: auto;">
-    <div style="background: white; max-width: 600px; margin: 40px auto; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-      <h2 style="color: #333; font-size: 20px; font-weight: bold; margin-bottom: 20px;">🔍 Confirmación de Mapeo de Columnas</h2>
-      
-      <p style="color: #666; font-size: 14px; margin-bottom: 24px;">Hemos detectado las siguientes columnas. ¿Son correctas?</p>
-      
-      <div id="mapping-fields" style="display: grid; gap: 16px; margin-bottom: 24px;">
-        <!-- Se llena dinámicamente -->
-      </div>
-      
-      <div style="display: flex; gap: 12px; justify-content: flex-end;">
-        <button onclick="closeMappingModal()" style="background: #e0e0e0; color: #333; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancelar</button>
-        <button onclick="confirmMapping()" style="background: #00BCD4; color: white; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Confirmar Mapeo</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>

@@ -15,18 +15,17 @@ export async function calculateProjectMetrics(projectId: number, framework: stri
   const workData = project.workpendingdata || {};
 
   // Extraer valores correctamente
-  const totalPlannedCost = parseFloat(budgetData.planned) || 100000;
+  const totalPlannedCost = parseFloat(budgetData.totalBudget) || 100000;
   const totalActualCost = parseFloat(budgetData.spent) || 50000;
   const totalWork = parseFloat(workData.total) || 100;
   const completedWork = parseFloat(workData.completed) || 50;
 
   const percentComplete = (completedWork / totalWork) * 100;
 
-  // EVM CALCULATIONS
-  // PV basado en tiempo transcurrido (del proyecto)
-  const daysElapsed = project.timeline?.dayselapsed || 156;
-  const daysTotal = (project.timeline?.daysremaining || 12) + daysElapsed;
-  const planPercent = (daysElapsed / daysTotal) * 100;
+  // EVM CALCULATIONS - PV basado en tiempo, no en progreso
+  const daysElapsed = project.timelinedata?.daysElapsed || 0;
+  const daysTotal = (project.timelinedata?.daysRemaining || 0) + daysElapsed;
+  const planPercent = daysTotal > 0 ? (daysElapsed / daysTotal) * 100 : 0;
   const pv = (planPercent / 100) * totalPlannedCost;
   const ev = (completedWork / totalWork) * totalPlannedCost;
   const ac = totalActualCost;
