@@ -1,0 +1,10 @@
+{
+  "budget_status": "WARNING",
+  "budget_health": 0.72,
+  "cpi": 0.95,
+  "spi": 0.88,
+  "recommendations": [
+    "Monitor budget spending closely",
+    "Optimize resource allocation"
+  ]
+}
