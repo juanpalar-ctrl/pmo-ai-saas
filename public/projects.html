@@ -11,9 +11,8 @@
     body { background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%); min-height: 100vh; }
     .logo-img { width: 50px; height: 50px; object-fit: contain; }
     .report-section { margin-bottom: 20px; padding: 16px; background: #f0f9fa; border-left: 4px solid #00BCD4; border-radius: 8px; }
-    .report-section h3 { color: #00897B; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-    .report-section p, .report-section li { color: #333; line-height: 1.6; margin-bottom: 8px; }
-    .report-section ul { margin-left: 20px; }
+    .report-section h3 { color: #00897B; font-weight: 700; margin-bottom: 10px; }
+    .report-section p { color: #333; line-height: 1.6; margin-bottom: 8px; }
   </style>
 </head>
 <body class="text-gray-800 font-sans">
@@ -54,17 +53,17 @@
       </button>
     </div>
 
-    <!-- METRICS + CHART -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div id="metrics-panel" class="lg:col-span-1 flex flex-col space-y-6"></div>
-      <div class="lg:col-span-2 bg-white rounded-xl p-6 shadow-lg">
-        <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
-          <h3 class="font-bold text-lg text-gray-800" id="chart-title">Progreso del Proyecto</h3>
-          <span class="text-xs bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">Actualizado</span>
-        </div>
-        <div class="relative w-full h-[320px]">
-          <canvas id="frameworkChart"></canvas>
-        </div>
+    <!-- METRICS GRID (3 COLUMNS) -->
+    <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <!-- CHART -->
+    <div class="bg-white rounded-xl p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
+        <h3 class="font-bold text-lg text-gray-800" id="chart-title">Progreso del Proyecto</h3>
+        <span class="text-xs bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">Actualizado</span>
+      </div>
+      <div class="relative w-full h-[320px]">
+        <canvas id="frameworkChart"></canvas>
       </div>
     </div>
 
@@ -96,7 +95,7 @@
       </div>
 
       <!-- KPI SUMMARY -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
         <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 p-4 rounded-lg">
           <span class="text-xs text-gray-600 font-semibold block uppercase">Total Budget</span>
           <span class="text-3xl font-bold text-cyan-600 mt-2" id="kpi-budget">$0</span>
@@ -108,6 +107,14 @@
         <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 p-4 rounded-lg">
           <span class="text-xs text-gray-600 font-semibold block uppercase">Progreso</span>
           <span class="text-3xl font-bold text-green-600 mt-2" id="kpi-progress">0%</span>
+        </div>
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 p-4 rounded-lg">
+          <span class="text-xs text-gray-600 font-semibold block uppercase">Variación Costo (CV)</span>
+          <span class="text-3xl font-bold text-orange-600 mt-2" id="kpi-cv">$0</span>
+        </div>
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-4 rounded-lg">
+          <span class="text-xs text-gray-600 font-semibold block uppercase">Saldo en Caja</span>
+          <span class="text-3xl font-bold text-purple-600 mt-2" id="kpi-saldo">$0</span>
         </div>
       </div>
     </div>
@@ -126,10 +133,10 @@
 
       <div class="flex gap-2 border-b border-cyan-200">
         <button onclick="showReport('senior')" id="tab-senior" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
-          <i class="fa-solid fa-crown text-amber-500"></i> Reporte Ejecutivo (C-Level)
+          <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
         </button>
         <button onclick="showReport('technical')" id="tab-technical" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-cyan-600 transition">
-          <i class="fa-solid fa-wrench text-cyan-600"></i> Reporte Técnico (Operaciones)
+          <i class="fa-solid fa-wrench text-cyan-600"></i> Técnico
         </button>
       </div>
 
@@ -146,17 +153,31 @@
   </main>
 
   <script>
-    let activeFramework = 'scrum';
+    let activeFramework = new URLSearchParams(location.search).get('framework') || 'scrum';
+    setTimeout(() => switchFramework(activeFramework), 500);
     let myChart = null;
+    let analysisData = null;
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
       if (!res.ok) { window.location = '/login'; return; }
       const data = await res.json();
       document.getElementById('userEmail').textContent = data.user.email;
-      switchFramework('scrum');
+      await loadAnalysis();
+      switchFramework(activeFramework);
       loadReports();
     };
+
+    async function loadAnalysis() {
+      try {
+        const projectId = new URLSearchParams(location.search).get('projectId');
+        const res = await fetch(`/api/analysis/${projectId}/latest`);
+        const data = await res.json();
+        analysisData = data.data;
+      } catch (err) {
+        console.error('Error loading analysis:', err);
+      }
+    }
 
     async function loadReports() {
       try {
@@ -176,29 +197,13 @@
     function formatReport(type, text) {
       const container = document.getElementById(`report-${type}`);
       if (!text) return;
-
-      // Dividir por secciones (líneas que empiezan con números o palabras clave)
       const sections = text.split('\n\n').filter(s => s.trim());
-      
       let html = '';
       sections.forEach(section => {
-        // Detectar títulos
-        if (section.match(/^[\d\-]+\.|^\w+:/) || section.length < 100) {
-          const title = section.replace(/^[\d\-]+\.\s*/, '').split('\n')[0];
-          const content = section.split('\n').slice(1).join('\n');
-          
-          html += `
-            <div class="report-section">
-              <h3><i class="fa-solid fa-check-circle text-cyan-600"></i>${title}</h3>
-              <p>${content || ''}</p>
-            </div>
-          `;
-        } else {
-          // Párrafo normal
-          html += `<div class="report-section"><p>${section}</p></div>`;
-        }
+        const title = section.split('\n')[0];
+        const content = section.split('\n').slice(1).join('\n');
+        html += `<div class="report-section"><h3>${title}</h3><p>${content || ''}</p></div>`;
       });
-
       container.innerHTML = html || `<p class="text-gray-500">Reporte no disponible</p>`;
     }
 
@@ -207,7 +212,6 @@
       document.getElementById('report-technical').classList.add('hidden');
       document.getElementById('tab-senior').classList.remove('border-cyan-500', 'text-cyan-600');
       document.getElementById('tab-technical').classList.remove('border-cyan-500', 'text-cyan-600');
-
       if (type === 'senior') {
         document.getElementById('report-senior').classList.remove('hidden');
         document.getElementById('tab-senior').classList.add('border-b-2', 'border-cyan-500', 'text-cyan-600');
@@ -220,11 +224,11 @@
     function switchFramework(fw) {
       activeFramework = fw;
       document.querySelectorAll('[id^="tab-"]').forEach(btn => {
-        btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white', 'border-cyan-500');
+        btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
         btn.classList.add('text-gray-700');
       });
       document.getElementById(`tab-${fw}`).classList.remove('text-gray-700');
-      document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white', 'border-cyan-500');
+      document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
       renderMetrics();
       renderChart();
       renderGantt();
@@ -232,38 +236,35 @@
 
     function renderMetrics() {
       const panel = document.getElementById('metrics-panel');
-      const metrics = {
-        scrum: [
-          { label: 'Velocidad Promedio', value: '45 pts', icon: 'fa-tachometer-alt', color: 'cyan' },
-          { label: 'Sprints Completados', value: '5', icon: 'fa-check-circle', color: 'green' },
-          { label: 'Deuda Técnica', value: '12%', icon: 'fa-exclamation-triangle', color: 'amber' }
-        ],
-        kanban: [
-          { label: 'Cycle Time', value: '4.2 días', icon: 'fa-hourglass', color: 'cyan' },
-          { label: 'Throughput', value: '8 items/sem', icon: 'fa-arrow-right', color: 'green' },
-          { label: 'WIP Violations', value: '2', icon: 'fa-exclamation-circle', color: 'red' }
-        ],
-        waterfall: [
-          { label: 'Fase Actual', value: 'Implementación', icon: 'fa-building', color: 'cyan' },
-          { label: 'Cumplimiento', value: '92%', icon: 'fa-chart-pie', color: 'green' },
-          { label: 'Scope Creep', value: '15%', icon: 'fa-expand', color: 'amber' }
-        ],
-        safe: [
-          { label: 'PI Completion', value: '88%', icon: 'fa-tasks', color: 'cyan' },
-          { label: 'Predictability', value: '95%', icon: 'fa-star', color: 'green' },
-          { label: 'Dependencies', value: '7 activos', icon: 'fa-link', color: 'cyan' }
-        ]
-      };
+      if (!analysisData) return;
 
-      const data = metrics[activeFramework] || metrics.scrum;
-      panel.innerHTML = data.map(m => `
-        <div class="bg-white rounded-xl p-5 shadow-lg border border-cyan-100 hover:shadow-xl transition">
-          <div class="flex items-center justify-between">
+      const risk = analysisData.risk?.analysis?.analysis || {};
+      const economic = analysisData.economic?.analysis?.analysis || {};
+      const metrics = analysisData.metrics || {};
+
+      // COLORES DINÁMICOS basados en CPI
+      const cpiValue = parseFloat(metrics.cpi) || 1;
+      let cpiColor = 'green';
+      if (cpiValue < 0.8) cpiColor = 'red';
+      else if (cpiValue < 1.0) cpiColor = 'amber';
+
+      const cards = [
+        { icon: '🎯', label: 'Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%`, color: 'red' },
+        { icon: '💰', label: 'Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%`, color: 'amber' },
+        { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance', color: cpiColor },
+        { icon: '📈', label: 'ROI', value: `${metrics.roi || 0}%`, detail: 'Return on Investment', color: 'green' },
+        { icon: '⏱️', label: 'SPI', value: metrics.spi || 'N/A', detail: 'Schedule Performance', color: 'blue' },
+        { icon: '📌', label: 'Framework', value: (activeFramework || 'N/A').toUpperCase(), detail: 'Methodology', color: 'purple' }
+      ];
+
+      panel.innerHTML = cards.map(c => `
+        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 border-cyan-400 hover:shadow-lg transition">
+          <div class="flex items-start justify-between">
             <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">${m.label}</p>
-              <p class="text-2xl font-bold text-gray-800 mt-2">${m.value}</p>
+              <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
+              <p class="text-2xl font-bold text-cyan-700 mt-3">${c.value}</p>
+              <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
             </div>
-            <i class="fa-solid ${m.icon} text-4xl text-${m.color}-500 opacity-20"></i>
           </div>
         </div>
       `).join('');
@@ -274,56 +275,10 @@
       if (myChart) myChart.destroy();
 
       const chartConfigs = {
-        scrum: {
-          type: 'line',
-          data: {
-            labels: ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5'],
-            datasets: [{
-              label: 'Velocidad',
-              data: [38, 42, 45, 48, 45],
-              borderColor: '#00BCD4',
-              backgroundColor: 'rgba(0, 188, 212, 0.1)',
-              tension: 0.4,
-              fill: true
-            }]
-          }
-        },
-        kanban: {
-          type: 'bar',
-          data: {
-            labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
-            datasets: [{
-              label: 'Items Completados',
-              data: [7, 8, 9, 8],
-              backgroundColor: '#00BCD4'
-            }]
-          }
-        },
-        waterfall: {
-          type: 'line',
-          data: {
-            labels: ['Diseño', 'Dev', 'QA', 'Deploy'],
-            datasets: [{
-              label: 'Progreso (%)',
-              data: [100, 75, 40, 10],
-              borderColor: '#f59e0b',
-              fill: true,
-              backgroundColor: 'rgba(245, 158, 11, 0.1)'
-            }]
-          }
-        },
-        safe: {
-          type: 'radar',
-          data: {
-            labels: ['Velocidad', 'Calidad', 'Alineación', 'Entrega', 'Predictibilidad'],
-            datasets: [{
-              label: 'PI-04',
-              data: [85, 88, 90, 87, 95],
-              borderColor: '#00BCD4',
-              backgroundColor: 'rgba(0, 188, 212, 0.2)'
-            }]
-          }
-        }
+        scrum: { type: 'line', data: { labels: ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5'], datasets: [{ label: 'Velocidad', data: [38, 42, 45, 48, 45], borderColor: '#00BCD4', backgroundColor: 'rgba(0, 188, 212, 0.1)', tension: 0.4, fill: true }] } },
+        kanban: { type: 'bar', data: { labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'], datasets: [{ label: 'Items Completados', data: [7, 8, 9, 8], backgroundColor: '#00BCD4' }] } },
+        waterfall: { type: 'line', data: { labels: ['Diseño', 'Dev', 'QA', 'Deploy'], datasets: [{ label: 'Progreso (%)', data: [100, 75, 40, 10], borderColor: '#f59e0b', fill: true, backgroundColor: 'rgba(245, 158, 11, 0.1)' }] } },
+        safe: { type: 'radar', data: { labels: ['Velocidad', 'Calidad', 'Alineación', 'Entrega', 'Predictibilidad'], datasets: [{ label: 'PI-04', data: [85, 88, 90, 87, 95], borderColor: '#00BCD4', backgroundColor: 'rgba(0, 188, 212, 0.2)' }] } }
       };
 
       myChart = new Chart(ctx, {
@@ -331,13 +286,8 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#666', font: { size: 12 } } }
-          },
-          scales: activeFramework !== 'safe' ? {
-            x: { ticks: { color: '#666' } },
-            y: { ticks: { color: '#666' } }
-          } : {}
+          plugins: { legend: { labels: { color: '#666', font: { size: 12 } } } },
+          scales: activeFramework !== 'safe' ? { x: { ticks: { color: '#666' } }, y: { ticks: { color: '#666' } } } : {}
         }
       });
     }
@@ -362,7 +312,7 @@
             <td class="p-4"><input type="range" min="0" max="100" value="${t.progress}" class="w-16" style="accent-color: #00BCD4;" /></td>
             <td class="p-4">
               <div class="relative h-8 bg-cyan-100 rounded-lg overflow-hidden border border-cyan-200">
-                <div style="left: ${leftPos}%; width: ${width}%; height: 100%" class="absolute bg-gradient-to-r from-cyan-400 to-teal-600 rounded-lg flex items-center">
+                <div style="left: ${leftPos}%; width: ${width}%; height: 100%" class="absolute bg-gradient-to-r from-cyan-400 to-teal-600 rounded-lg">
                   <div style="width: ${t.progress}%" class="absolute inset-0 bg-green-500/70 rounded-lg"></div>
                 </div>
               </div>
@@ -375,9 +325,18 @@
       const totalSpent = tasks.reduce((s, t) => s + t.actual, 0);
       const avgProgress = Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
 
+      const cv = totalBudget - totalSpent;  // CV = Budget - Actual (simplificado para Gantt)
+      const remaining = totalBudget - totalSpent;  // Saldo en Caja
+      
       document.getElementById('kpi-budget').textContent = `$${totalBudget.toLocaleString()}`;
       document.getElementById('kpi-spent').textContent = `$${totalSpent.toLocaleString()}`;
       document.getElementById('kpi-progress').textContent = `${avgProgress}%`;
+      
+      // CV y Saldo si existen los elementos
+      const cvElement = document.getElementById('kpi-cv');
+      const saldoElement = document.getElementById('kpi-saldo');
+      if (cvElement) cvElement.textContent = `$${cv.toLocaleString()}`;
+      if (saldoElement) saldoElement.textContent = `$${remaining.toLocaleString()}`;
     }
 
     function logout() {
