@@ -109,7 +109,8 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
     const adapter = new ExcelAdapter(req.file.path);
     
     // Procesar archivo (leer, validar, guardar en BD)
-    await dataIngestService.ingestFromAdapter(adapter);
+    // Procesar archivo (leer, validar, guardar en BD)
+    const result = await dataIngestService.ingestFromAdapter(adapter);
     
     // Limpiar: eliminar archivo temporal
     fs.unlinkSync(req.file.path);
@@ -117,6 +118,8 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
     res.json({
       success: true,
       message: 'Proyectos cargados exitosamente',
+      count: result.count,
+      rejected: result.rejected,
       filename: req.file.filename,
     });
     

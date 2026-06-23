@@ -154,9 +154,11 @@
 
   <script>
     let activeFramework = new URLSearchParams(location.search).get('framework') || 'scrum';
-    setTimeout(() => switchFramework(activeFramework), 500);
     let myChart = null;
     let analysisData = null;
+    let lastProjectId = null;
+
+    setTimeout(() => switchFramework(activeFramework), 500);
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
@@ -173,7 +175,9 @@
         const projectId = new URLSearchParams(location.search).get('projectId');
         const res = await fetch(`/api/analysis/${projectId}/latest`);
         const data = await res.json();
-        analysisData = data.data;
+        if (data.success) {
+          analysisData = data.data;
+        }
       } catch (err) {
         console.error('Error loading analysis:', err);
       }
@@ -223,6 +227,19 @@
 
     function switchFramework(fw) {
       activeFramework = fw;
+      
+      // Detectar cambios de projectId y recargar análisis si cambió
+      const currentProjectId = new URLSearchParams(location.search).get('projectId');
+      if (currentProjectId !== lastProjectId) {
+        lastProjectId = currentProjectId;
+        loadAnalysis().then(() => {
+          renderMetrics();
+          renderChart();
+          renderGantt();
+        });
+        return;
+      }
+      
       document.querySelectorAll('[id^="tab-"]').forEach(btn => {
         btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
         btn.classList.add('text-gray-700');
@@ -333,25 +350,29 @@
         `;
       }).join('');
 
-      const totalBudget = tasks.reduce((s, t) => s + t.plan, 0);
-      const totalSpent = tasks.reduce((s, t) => s + t.actual, 0);
-      const avgProgress = Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
-
-      const cv = totalBudget - totalSpent;  // CV = Budget - Actual (simplificado para Gantt)
-      const remaining = totalBudget - totalSpent;  // Saldo en Caja
+      // Usar datos REALES del API en lugar de hardcoding
+      const metrics = analysisData?.metrics || {};
+      const totalBudget = parseFloat(metrics.pv) || tasks.reduce((s, t) => s + t.plan, 0);
+      const totalSpent = parseFloat(metrics.ac) || tasks.reduce((s, t) => s + t.actual, 0);
+      const avgProgress = parseFloat(metrics.percentComplete) || Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
+      const cv = parseFloat(metrics.cv) || (totalBudget - totalSpent);
+      const remaining = parseFloat(metrics.cv) || (totalBudget - totalSpent);
       
-      document.getElementById('kpi-budget').textContent = `$${totalBudget.toLocaleString()}`;
-      document.getElementById('kpi-spent').textContent = `$${totalSpent.toLocaleString()}`;
-      document.getElementById('kpi-progress').textContent = `${avgProgress}%`;
+      document.getElementById('kpi-budget').textContent = `$${Math.round(totalBudget).toLocaleString()}`;
+      document.getElementById('kpi-spent').textContent = `$${Math.round(totalSpent).toLocaleString()}`;
+      document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
       
-      // CV y Saldo si existen los elementos
       const cvElement = document.getElementById('kpi-cv');
       const saldoElement = document.getElementById('kpi-saldo');
+      
       if (cvElement) {
-        cvElement.textContent = `$${cv.toLocaleString()}`;
+        cvElement.textContent = `$${Math.round(cv).toLocaleString()}`;
         cvElement.className = cv >= 0 ? 'text-3xl font-bold text-green-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
       }
-      if (saldoElement) saldoElement.textContent = `$${remaining.toLocaleString()}`;
+      if (saldoElement) {
+        saldoElement.textContent = `$${Math.round(remaining).toLocaleString()}`;
+        saldoElement.className = remaining >= 0 ? 'text-3xl font-bold text-purple-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
+      }
     }
 
     function logout() {

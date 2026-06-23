@@ -78,9 +78,13 @@
       font-size: 1.1em;
     }
     button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0, 188, 212, 0.4); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     .user-info { text-align: right; margin-bottom: 20px; padding: 10px; background: #F0F4F3; border-radius: 8px; }
     .logout-btn { background: #999; padding: 8px 16px; font-size: 0.9em; margin-top: 10px; width: auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .alert { padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: 600; }
+    .alert-error { background: #FFEBEE; color: #C62828; border-left: 4px solid #C62828; }
+    .alert-success { background: #E8F5E9; color: #2E7D32; border-left: 4px solid #2E7D32; }
   </style>
 </head>
 <body>
@@ -125,6 +129,7 @@
         <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto;"></div>
         <p id="status" style="color: #00BCD4; font-weight: 600; margin-top: 10px;">Procesando...</p>
       </div>
+      <div id="alert" style="display: none;"></div>
     </form>
   </div>
 
@@ -143,29 +148,62 @@
       });
     }
 
+    function showAlert(message, isError = false) {
+      const alertDiv = document.getElementById('alert');
+      alertDiv.className = isError ? 'alert alert-error' : 'alert alert-success';
+      alertDiv.textContent = message;
+      alertDiv.style.display = 'block';
+    }
+
     document.getElementById('form').onsubmit = async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btn');
       const loading = document.getElementById('loading');
       const status = document.getElementById('status');
+      const alertDiv = document.getElementById('alert');
       const orgName = document.getElementById('org').value;
       const fw = document.getElementById('fw').value;
       
       btn.disabled = true;
       loading.style.display = 'block';
+      alertDiv.style.display = 'none';
       
       try {
         status.textContent = '📥 Cargando archivo...';
         const fd = new FormData();
         fd.append('file', document.getElementById('file').files[0]);
-        await fetch('/api/data/upload-excel', {method: 'POST', body: fd});
+        const uploadRes = await fetch('/api/data/upload-excel', {method: 'POST', body: fd});
+        const uploadData = await uploadRes.json();
         
+        // ✅ VALIDAR: ¿Se guardaron proyectos?
+        if (!uploadData.success || uploadData.count === 0) {
+          showAlert(
+            `❌ El archivo no contiene proyectos válidos. Se rechazaron ${uploadData.rejected || 'todas las'} filas. Verifica que el Excel tenga la estructura correcta.`,
+            true
+          );
+          btn.disabled = false;
+          loading.style.display = 'none';
+          return;
+        }
+
         status.textContent = '📋 Obteniendo proyecto...';
         const list = await fetch('/api/data/projects?limit=1');
         const json = await list.json();
+        
+        // ✅ VALIDAR: ¿Hay datos en la BD?
+        if (!json.success || !json.data || json.data.length === 0) {
+          showAlert(
+            '❌ No se encontraron proyectos en la base de datos. Por favor intenta de nuevo.',
+            true
+          );
+          btn.disabled = false;
+          loading.style.display = 'none';
+          return;
+        }
+
         const pid = json.data[0].projectId;
         
-        status.textContent = `🤖 Analizando proyecto...`;
+        status.textContent = `🤖 Analizando proyecto ${pid}...`;
         await fetch(`/api/analysis/${pid}`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
@@ -177,7 +215,7 @@
           window.location = `/projects?framework=${fw}&projectId=${pid}`;
         }, 500);
       } catch(e) {
-        alert('ERROR: ' + e.message);
+        showAlert(`❌ ERROR: ${e.message}`, true);
         btn.disabled = false;
         loading.style.display = 'none';
       }
