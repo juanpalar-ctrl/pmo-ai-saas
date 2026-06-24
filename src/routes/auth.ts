@@ -36,7 +36,7 @@ router.post('/signup', async (req: Request, res: Response) => {
     );
 
     const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '10m' });
 
     res.cookie('auth_token', token, {
       httpOnly: true,
@@ -78,7 +78,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '10m' });
 
     res.cookie('auth_token', token, {
       httpOnly: true,
