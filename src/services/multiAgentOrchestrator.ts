@@ -24,7 +24,6 @@ export const orchestrator = {
     reportingAgent.setAnalysisOutputs(riskAnalysis, economicAnalysis);
     const reportingAnalysis: any = await reportingAgent.analyze(input);
 
-    // EXTRAER reportes del nivel correcto
     const seniorReport = reportingAnalysis.analysis?.senior_report || reportingAnalysis.senior_report || 'Reporte disponible';
     const technicalReport = reportingAnalysis.analysis?.technical_report || reportingAnalysis.technical_report || 'Reporte disponible';
 

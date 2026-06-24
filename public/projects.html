@@ -21,26 +21,18 @@
 </head>
 <body class="text-gray-800 font-sans">
 
-  <!-- LAYOUT CONTAINER -->
   <div class="flex h-screen">
-    
-    <!-- SIDEBAR HISTORIAL (izquierda) -->
     <div class="w-80 bg-white shadow-lg overflow-y-auto border-r border-cyan-200">
       <div class="sticky top-0 bg-gradient-to-r from-cyan-500 to-teal-600 text-white p-4 z-10">
         <h3 class="font-bold text-sm">📋 Historial Reciente</h3>
         <p class="text-xs opacity-90 mt-1">Últimos 10 proyectos analizados</p>
       </div>
       <div id="history-list" class="p-4 space-y-2">
-        <div class="text-center text-gray-500 py-8">
-          <i class="fas fa-spinner fa-spin"></i> Cargando...
-        </div>
+        <div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
       </div>
     </div>
 
-    <!-- MAIN CONTENT (derecha) -->
     <div class="flex-1 flex flex-col overflow-hidden">
-      
-      <!-- NAVBAR -->
       <header class="border-b border-cyan-600 bg-white/95 px-6 py-4 flex items-center justify-between shadow-lg">
         <div class="flex items-center space-x-3">
           <img src="logo.jpeg" alt="LARA" class="logo-img">
@@ -51,47 +43,13 @@
         </div>
         <div class="flex items-center space-x-4">
           <span id="userEmail" class="text-sm text-gray-600 font-semibold"></span>
-          <button id="admin-nav-btn" onclick="toggleAdminPanel()" style="display: none;" class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
-            🔐 Admin
-          </button>
           <button onclick="logout()" class="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
             Cerrar sesión
           </button>
         </div>
       </header>
 
-      <!-- ADMIN PANEL (oculto por defecto) -->
-      <div id="admin-panel-container" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto;">
-        <div class="bg-white rounded-xl m-8 p-6 shadow-2xl max-w-2xl mx-auto mt-20">
-          <div class="flex items-center justify-between mb-6 border-b border-cyan-200 pb-4">
-            <div class="flex items-center space-x-3">
-              <i class="fa-solid fa-shield text-purple-600 text-2xl"></i>
-              <h2 class="font-bold text-xl text-gray-800">Consola de Administración</h2>
-            </div>
-            <button onclick="toggleAdminPanel()" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
-          </div>
-          
-          <div class="mb-6">
-            <h3 class="font-semibold text-lg text-gray-800 mb-4">Usuarios Pendientes de Aprobación</h3>
-            <div id="pending-users-list" class="space-y-3">
-              <div class="text-center text-gray-500 py-8">
-                <i class="fas fa-spinner fa-spin"></i> Cargando...
-              </div>
-            </div>
-          </div>
-          
-          <div class="flex justify-end gap-3 border-t border-cyan-200 pt-4">
-            <button onclick="toggleAdminPanel()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- SCROLLABLE MAIN CONTENT -->
       <main class="flex-1 overflow-y-auto p-6 space-y-6">
-
-        <!-- FRAMEWORK TABS -->
         <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
           <button onclick="switchFramework('scrum')" id="tab-scrum" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-cyan-100 text-gray-700">
             <i class="fa-solid fa-rotate text-emerald-500"></i> Scrum
@@ -107,10 +65,8 @@
           </button>
         </div>
 
-        <!-- METRICS GRID -->
         <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
-        <!-- CHART -->
         <div class="bg-white rounded-xl p-6 shadow-lg">
           <div class="flex items-center justify-between mb-4 border-b border-cyan-200 pb-4">
             <h3 class="font-bold text-lg text-gray-800">Progreso del Proyecto</h3>
@@ -121,14 +77,13 @@
           </div>
         </div>
 
-        <!-- GANTT CHART -->
         <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
           <div class="flex items-center justify-between border-b border-cyan-200 pb-4">
             <div class="flex items-center space-x-3">
               <i class="fa-solid fa-timeline text-cyan-600 text-2xl"></i>
               <div>
                 <h3 class="font-bold text-lg text-gray-800">Cronograma Gantt Interactivo</h3>
-                <p class="text-xs text-gray-500 mt-1">Edita costos y progreso para actualizar métricas</p>
+                <p class="text-xs text-gray-500 mt-1">Datos del análisis importado</p>
               </div>
             </div>
           </div>
@@ -148,7 +103,6 @@
             </table>
           </div>
 
-          <!-- KPI SUMMARY -->
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 p-4 rounded-lg">
               <span class="text-xs text-gray-600 font-semibold block uppercase">Total Budget</span>
@@ -173,7 +127,6 @@
           </div>
         </div>
 
-        <!-- REPORTES SECTION -->
         <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
           <div class="flex items-center justify-between border-b border-cyan-200 pb-4">
             <div class="flex items-center space-x-3">
@@ -198,7 +151,6 @@
           <div id="report-technical" class="space-y-4 hidden" style="max-height: 600px; overflow-y: auto;"></div>
         </div>
 
-        <!-- BACK BUTTON -->
         <div class="text-center mt-8">
           <a href="/" class="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white px-6 py-3 rounded-lg text-sm font-semibold shadow-md inline-block">
             ← Volver al Dashboard
@@ -209,25 +161,15 @@
   </div>
 
   <script>
-    let activeFramework = new URLSearchParams(location.search).get('framework') || 'scrum';
+    let activeFramework = 'scrum';
     let myChart = null;
     let analysisData = null;
-    let lastProjectId = null;
-
-    let currentUserRole = 'user';
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
       if (!res.ok) { window.location = '/login'; return; }
       const data = await res.json();
-      
-      currentUserRole = data.user.role || 'user';
       document.getElementById('userEmail').textContent = data.user.email;
-      
-      if (currentUserRole === 'admin') {
-        document.getElementById('admin-nav-btn').style.display = 'inline-block';
-        loadPendingUsers();
-      }
       
       await loadAnalysis();
       await loadHistory();
@@ -235,17 +177,25 @@
       loadReports();
     };
 
-    async function loadAnalysis() {
-      try {
-        const projectId = new URLSearchParams(location.search).get('projectId');
-        const res = await fetch(`/api/analysis/${projectId}/latest`);
-        const data = await res.json();
-        if (data.success) {
-          analysisData = data.data;
-        }
-      } catch (err) {
-        console.error('Error loading analysis:', err);
+   async function loadAnalysis() {
+  try {
+    const projectId = new URLSearchParams(location.search).get('id');
+    const token = localStorage.getItem('token');
+    
+    const res = await fetch(`/api/data/analysis/${projectId}/latest`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
+    });
+    const data = await res.json();
+    
+    if (data.success && data.data) {
+      analysisData = data.data;
+    }
+  } catch (err) {
+    console.error('Error loading analysis:', err);
+  }
+
     }
 
     async function loadHistory() {
@@ -262,7 +212,7 @@
                 <div>📅 ${new Date(project.timestamp).toLocaleDateString()}</div>
                 <div>🎯 ${project.framework.toUpperCase()}</div>
                 <div>💰 $${(project.totalBudget || 0).toLocaleString()}</div>
-                </div>
+              </div>
             </div>
           `).join('');
         }
@@ -273,22 +223,28 @@
     }
 
     function navigateToProject(projectId, framework) {
-      window.location = `/projects?projectId=${projectId}&framework=${framework}`;
+      window.location = `/projects?id=${projectId}&framework=${framework}`;
     }
 
-    async function loadReports() {
-      try {
-        const projectId = new URLSearchParams(location.search).get('projectId');
-        const res = await fetch(`/api/analysis/${projectId}/latest`);
-        const data = await res.json();
-        const reports = data.data?.reports;
-        if (reports) {
-          formatReport('senior', reports.senior_report);
-          formatReport('technical', reports.technical_report);
-        }
-      } catch (err) {
-        console.error('Error loading reports:', err);
+   async function loadReports() {
+  try {
+    const projectId = new URLSearchParams(location.search).get('id');
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/data/analysis/${projectId}/latest`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
+    });
+    const data = await res.json();
+    const reports = data.data?.reports;
+    if (reports) {
+      formatReport('senior', reports.senior_report);
+      formatReport('technical', reports.technical_report);
+    }
+  } catch (err) {
+    console.error('Error loading reports:', err);
+  }
+
     }
 
     function formatReport(type, text) {
@@ -318,32 +274,19 @@
       }
     }
 
-  function switchFramework(fw) {
-  activeFramework = fw;
-  
-  // Resaltar botón SIEMPRE (antes de cualquier retorno)
-  document.querySelectorAll('[id^="tab-"]').forEach(btn => {
-    btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
-    btn.classList.add('text-gray-700');
-  });
-  document.getElementById(`tab-${fw}`).classList.remove('text-gray-700');
-  document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
-  
-  const currentProjectId = new URLSearchParams(location.search).get('projectId');
-  if (currentProjectId !== lastProjectId) {
-    lastProjectId = currentProjectId;
-    loadAnalysis().then(() => {
+    function switchFramework(fw) {
+      activeFramework = fw;
+      document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
+        btn.classList.add('text-gray-700');
+      });
+      document.getElementById(`tab-${fw}`).classList.remove('text-gray-700');
+      document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
+      
       renderMetrics();
       renderChart();
       renderGantt();
-    });
-    return;
-  }
-  
-  renderMetrics();
-  renderChart();
-  renderGantt();
-}
+    }
 
     function renderMetrics() {
       const panel = document.getElementById('metrics-panel');
@@ -379,15 +322,15 @@
       panel.innerHTML = cards.map(c => {
         const colors = colorMap[c.color] || colorMap.cyan;
         return `
-        <div class="bg-white rounded-xl p-5 shadow-md border-t-4 ${colors.border} hover:shadow-lg transition">
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
-              <p class="text-2xl font-bold ${colors.text} mt-3">${c.value}</p>
-              <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
+          <div class="bg-white rounded-xl p-5 shadow-md border-t-4 ${colors.border} hover:shadow-lg transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
+                <p class="text-2xl font-bold ${colors.text} mt-3">${c.value}</p>
+                <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
+              </div>
             </div>
           </div>
-        </div>
         `;
       }).join('');
     }
@@ -416,11 +359,20 @@
 
     function renderGantt() {
       const body = document.getElementById('gantt-body');
+      
+      if (!analysisData || !analysisData.metrics) {
+        body.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin datos disponibles</td></tr>';
+        return;
+      }
+      
+      const metrics = analysisData.metrics || {};
+      const totalBudget = parseFloat(metrics.pv) || 0;
+      const totalSpent = parseFloat(metrics.ac) || 0;
+      const avgProgress = parseFloat(metrics.percentComplete) || 0;
+      const cv = parseFloat(metrics.cv) || (totalBudget - totalSpent);
+      
       const tasks = [
-        { id: 1, name: 'Análisis', plan: 5000, actual: 5200, progress: 100, start: 0, duration: 1 },
-        { id: 2, name: 'Desarrollo', plan: 25000, actual: 24800, progress: 85, start: 1, duration: 2 },
-        { id: 3, name: 'Testing', plan: 8000, actual: 7500, progress: 50, start: 3, duration: 1 },
-        { id: 4, name: 'Deploy', plan: 3000, actual: 0, progress: 0, start: 4, duration: 1 }
+        { name: 'Proyecto Importado', plan: totalBudget, actual: totalSpent, progress: avgProgress, start: 0, duration: 1 }
       ];
 
       body.innerHTML = tasks.map(t => {
@@ -429,8 +381,8 @@
         return `
           <tr class="hover:bg-cyan-50 transition">
             <td class="p-4 font-semibold text-gray-800">${t.name}</td>
-            <td class="p-4 font-mono text-gray-700">$${t.plan.toLocaleString()}</td>
-            <td class="p-4 font-mono text-gray-700">$${t.actual.toLocaleString()}</td>
+            <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString()}</td>
+            <td class="p-4 font-mono text-gray-700">$${Math.round(t.actual).toLocaleString()}</td>
             <td class="p-4"><input type="range" min="0" max="100" value="${t.progress}" class="w-16" style="accent-color: #00BCD4;" /></td>
             <td class="p-4">
               <div class="relative h-8 bg-cyan-100 rounded-lg overflow-hidden border border-cyan-200">
@@ -443,135 +395,21 @@
         `;
       }).join('');
 
-      const metrics = analysisData?.metrics || {};
-      const totalBudget = parseFloat(metrics.pv) || tasks.reduce((s, t) => s + t.plan, 0);
-      const totalSpent = parseFloat(metrics.ac) || tasks.reduce((s, t) => s + t.actual, 0);
-      const avgProgress = parseFloat(metrics.percentComplete) || Math.round(tasks.reduce((s, t) => s + t.progress, 0) / tasks.length);
-      const cv = parseFloat(metrics.cv) || (totalBudget - totalSpent);
-      const remaining = parseFloat(metrics.cv) || (totalBudget - totalSpent);
-      
       document.getElementById('kpi-budget').textContent = `$${Math.round(totalBudget).toLocaleString()}`;
       document.getElementById('kpi-spent').textContent = `$${Math.round(totalSpent).toLocaleString()}`;
       document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
       
-      const cvElement = document.getElementById('kpi-cv');
-      const saldoElement = document.getElementById('kpi-saldo');
+      document.getElementById('kpi-cv').textContent = `$${Math.round(cv).toLocaleString()}`;
+      document.getElementById('kpi-cv').className = cv >= 0 ? 'text-3xl font-bold text-green-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
       
-      if (cvElement) {
-        cvElement.textContent = `$${Math.round(cv).toLocaleString()}`;
-        cvElement.className = cv >= 0 ? 'text-3xl font-bold text-green-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
-      }
-      if (saldoElement) {
-        saldoElement.textContent = `$${Math.round(remaining).toLocaleString()}`;
-        saldoElement.className = remaining >= 0 ? 'text-3xl font-bold text-purple-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
-      }
+      document.getElementById('kpi-saldo').textContent = `$${Math.round(cv).toLocaleString()}`;
+      document.getElementById('kpi-saldo').className = cv >= 0 ? 'text-3xl font-bold text-purple-600 mt-2' : 'text-3xl font-bold text-red-600 mt-2';
     }
 
     function logout() {
       fetch('/api/auth/logout', { method: 'POST' }).then(() => {
         window.location = '/login';
       });
-    }
-
-    /**
-     * PASO 11: ADMIN PANEL TOGGLE
-     * Muestra/oculta el panel de administración
-     */
-    function toggleAdminPanel() {
-      const panel = document.getElementById('admin-panel-container');
-      if (panel.style.display === 'none' || panel.style.display === '') {
-        panel.style.display = 'block';
-      } else {
-        panel.style.display = 'none';
-      }
-    }
-
-    /**
-     * PASO 11: CARGAR USUARIOS PENDIENTES
-     * GET /api/admin/pending-users (protegido con adminAuthMiddleware)
-     */
-    async function loadPendingUsers() {
-      try {
-        const res = await fetch('/api/admin/pending-users');
-        const data = await res.json();
-        
-        if (!data.users || data.users.length === 0) {
-          document.getElementById('pending-users-list').innerHTML = 
-            '<p class="text-gray-500 text-center py-8">No hay usuarios pendientes de aprobación</p>';
-          return;
-        }
-        
-        const html = data.users.map(user => `
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p class="font-semibold text-gray-800">${user.email}</p>
-              <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString()}</p>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="approveUser(${user.id})" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                ✓ Aprobar
-              </button>
-              <button onclick="rejectUser(${user.id})" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                ✕ Rechazar
-              </button>
-            </div>
-          </div>
-        `).join('');
-        
-        document.getElementById('pending-users-list').innerHTML = html;
-      } catch (error) {
-        console.error('Error loading pending users:', error);
-        document.getElementById('pending-users-list').innerHTML = 
-          '<p class="text-red-500 text-center py-4">Error cargando usuarios</p>';
-      }
-    }
-
-    /**
-     * PASO 11: APROBAR USUARIO
-     * POST /api/admin/update-status (protegido con adminAuthMiddleware)
-     */
-    async function approveUser(userId) {
-      try {
-        const res = await fetch('/api/admin/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, newStatus: 'approved' })
-        });
-        
-        const data = await res.json();
-        if (res.ok) {
-          console.log('✅ Usuario aprobado:', data.user.email);
-          loadPendingUsers(); // Recargar lista
-        } else {
-          console.error('❌ Error:', data.error);
-        }
-      } catch (error) {
-        console.error('Error approving user:', error);
-      }
-    }
-
-    /**
-     * PASO 11: RECHAZAR USUARIO
-     * POST /api/admin/update-status (protegido con adminAuthMiddleware)
-     */
-    async function rejectUser(userId) {
-      try {
-        const res = await fetch('/api/admin/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, newStatus: 'rejected' })
-        });
-        
-        const data = await res.json();
-        if (res.ok) {
-          console.log('✅ Usuario rechazado:', data.user.email);
-          loadPendingUsers(); // Recargar lista
-        } else {
-          console.error('❌ Error:', data.error);
-        }
-      } catch (error) {
-        console.error('Error rejecting user:', error);
-      }
     }
   </script>
 </body>

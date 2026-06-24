@@ -102,8 +102,7 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!isValid) {
       return res.status(401).json({ error: AUTH_MESSAGES.INVALID_CREDENTIALS });
     }
-
-    // Generate JWT with role claim using jwtService
+// Generate JWT with role claim using jwtService
     const token = signToken(user.id, user.email, user.role);
 
     res.cookie('auth_token', token, {
@@ -116,6 +115,7 @@ router.post('/login', async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: AUTH_MESSAGES.LOGIN_SUCCESS,
+      token: token,  // ← AGREGAR ESTA LÍNEA
       user: {
         id: user.id,
         email: user.email,
@@ -128,7 +128,6 @@ router.post('/login', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error en servidor' });
   }
 });
-
 /**
  * POST /api/auth/logout
  * Clear authentication token and end session.

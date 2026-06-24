@@ -165,19 +165,22 @@
     }
 
     document.getElementById('loginForm').onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email, password})
-      });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        window.location = '/';
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  
+  const data = await res.json();
+  
+  if (res.ok) {
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+    window.location = '/';
       } else if (data.code === 'ERR_PENDING_APPROVAL') {
         const alertDiv = document.createElement('div');
         alertDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #FFF3CD; border: 1px solid #FFD700; color: #856404; padding: 20px; border-radius: 8px; max-width: 500px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 16px; line-height: 1.6;';
@@ -189,18 +192,23 @@
       }
     };
 
-    document.getElementById('signupForm').onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('signupEmail').value;
-      const password = document.getElementById('signupPassword').value;
-      const confirm = document.getElementById('signupPasswordConfirm').value;
-      if (password !== confirm) { alert('Las contraseñas no coinciden'); return; }
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email, password})
-      });
-      if (res.ok) window.location = '/';
+   document.getElementById('signupForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('signupEmail').value;
+  const password = document.getElementById('signupPassword').value;
+  const confirm = document.getElementById('signupPasswordConfirm').value;
+  if (password !== confirm) { alert('Las contraseñas no coinciden'); return; }
+  const res = await fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, password})
+  });
+  if (res.ok) {
+    if (res.data?.token) {
+      localStorage.setItem('token', res.data.token);
+    }
+    window.location = '/';
+  }
       else alert('Error al crear cuenta');
     };
   </script>
@@ -276,7 +284,7 @@
         });
 
         const data = await res.json();
-
+        localStorage.setItem('token', data.token);
         alertDiv.className = 'alert alert-success';
         alertDiv.textContent = `✅ ${data.message}`;
         

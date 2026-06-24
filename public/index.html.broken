@@ -133,6 +133,7 @@
       font-size: 0.85em; 
       margin-top: 10px;
     }
+    
     #toast-container {
       position: fixed;
       top: 20px;
@@ -140,6 +141,7 @@
       z-index: 9999;
       pointer-events: none;
     }
+    
     .toast {
       background: white;
       border-left: 4px solid #f59e0b;
@@ -154,44 +156,87 @@
       align-items: flex-start;
       gap: 12px;
     }
+    
     @keyframes slideInRight {
-      from { transform: translateX(400px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
+    
     @keyframes slideOutRight {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(400px); opacity: 0; }
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
     }
-    .toast.hide { animation: slideOutRight 0.3s ease-out forwards; }
-    .toast-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
-    .toast-content { flex: 1; }
-    .toast-title { font-weight: 600; color: #333; font-size: 14px; margin-bottom: 4px; }
-    .toast-message { color: #666; font-size: 13px; line-height: 1.4; }
-  </style>
+    
+    .toast.hide {
+      animation: slideOutRight 0.3s ease-out forwards;
+    }
+    
+    .toast-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    
+    .toast-content {
+      flex: 1;
+    }
+    
+    .toast-title {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .toast-message {
+      color: #666;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+   </style>
 </head>
 <body>
   <div id="toast-container"></div>
+
   <div class="box">
     <div id="userInfo">
       <p>👋 Bienvenido, <strong id="userName"></strong></p>
       <button onclick="logout()">Cerrar sesión</button>
     </div>
+
     <div class="header">
-      <div class="logo"><img src="logo.jpeg" alt="LARA Logo"></div>
+      <div class="logo">
+        <img src="logo.jpeg" alt="LARA Logo">
+      </div>
       <div class="brand">
         <h1>LARA</h1>
         <p>Intelligence Accelerated</p>
       </div>
     </div>
+
     <form id="form">
       <div class="form-group">
         <label for="org">Nombre Organización</label>
         <input type="text" id="org" placeholder="Acme Corp" required>
       </div>
+
       <div class="form-group">
         <label for="file">Archivo Excel con Proyectos</label>
         <input type="file" id="file" accept=".xlsx" required>
       </div>
+
       <div class="form-group">
         <label for="fw">Metodología</label>
         <select id="fw" required>
@@ -201,48 +246,73 @@
           <option value="safe">SAFe</option>
         </select>
       </div>
+
       <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
-      <div class="loading" id="loading">
+      <div class="loading" id="loading" style="display: none; text-align: center; margin-top: 20px;">
         <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto;"></div>
-        <p style="color: #00BCD4; font-weight: 600; margin-top: 10px;">Procesando...</p>
+        <p id="status" style="color: #00BCD4; font-weight: 600; margin-top: 10px;">Procesando...</p>
       </div>
-      <div id="alert"></div>
+      <div id="alert" style="display: none;"></div>
     </form>
   </div>
 
-  <!-- MODAL MAPEO -->
+  <!-- MODAL DE MAPEO DE COLUMNAS (Fase 3) -->
   <div id="mappingModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-      <div style="background: linear-gradient(to right, #00BCD4, #26C6DA); color: white; padding: 24px;">
+      <div style="background: linear-gradient(to right, #00BCD4, #26C6DA); color: white; padding: 24px; border-bottom: 1px solid #e0e0e0;">
         <h2 style="font-size: 1.5em; font-weight: bold; margin: 0;">Mapeo de Columnas</h2>
-        <p style="font-size: 0.9em; margin: 8px 0 0 0; opacity: 0.9;">Confirma el mapeo de tus columnas</p>
+        <p style="font-size: 0.9em; margin: 8px 0 0 0; opacity: 0.9;">Confirma cómo mapeamos tus columnas a nuestros campos estándar</p>
       </div>
+
       <div style="padding: 24px;">
+        <div style="background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <h3 style="font-size: 0.9em; font-weight: 600; color: #333; margin-bottom: 12px;">Vista Previa de Datos</h3>
+          <div id="sampleDataPreview" style="font-size: 0.8em; overflow-x: auto;"></div>
+        </div>
+
         <div id="mappingForm"></div>
+
         <div id="validationMessage" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.9em; margin-top: 16px;"></div>
       </div>
+
       <div style="background: #f5f5f5; padding: 16px 24px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; gap: 12px;">
-        <button onclick="closeMappingModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
-        <button onclick="confirmMapping()" id="confirmMappingBtn" style="background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar</button>
+        <button onclick="closeMappingModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Cancelar
+        </button>
+        <button onclick="confirmMapping()" id="confirmMappingBtn" style="background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          Confirmar Mapeo
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- SPINNER -->
   <div id="detectingSpinner" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;">
       <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
-      <p style="margin-top: 16px; color: #333; font-weight: 600;">Analizando columnas...</p>
+      <p style="margin-top: 16px; color: #333; font-weight: 600;">Analizando columnas con IA...</p>
     </div>
   </div>
 
   <script>
-    let currentDetectionState = {
-      headers: [],
-      sampleRows: [],
-      suggestions: [],
-      tempFilename: '',
-    };
+    function showToast(title, message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <div class="toast-icon">⚠️</div>
+        <div class="toast-content">
+          <div class="toast-title">${title}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('hide');
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, 5000);
+    }
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
@@ -265,127 +335,182 @@
       alertDiv.style.display = 'block';
     }
 
-    function showToast(title, message) {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.innerHTML = `
-        <div class="toast-icon">⚠️</div>
-        <div class="toast-content">
-          <div class="toast-title">${title}</div>
-          <div class="toast-message">${message}</div>
-        </div>
-      `;
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 300);
-      }, 5000);
-    }
+    // ========== FASE 3: MAPEO DE COLUMNAS ==========
+    let currentDetectionState = {
+      headers: [],
+      sampleRows: [],
+      suggestions: [],
+      tempFilename: '',
+      confirmedMapping: {},
+    };
 
     document.getElementById('form').onsubmit = async (e) => {
       e.preventDefault();
       const file = document.getElementById('file').files[0];
-      if (!file) { showAlert('Selecciona archivo', true); return; }
+      const btn = document.getElementById('btn');
+      const loading = document.getElementById('loading');
       
-      document.getElementById('btn').disabled = true;
-      document.getElementById('loading').style.display = 'block';
+      if (!file) {
+        showAlert('❌ Por favor selecciona un archivo', true);
+        return;
+      }
       
-      await uploadAndDetectColumns(file);
+      btn.disabled = true;
+      loading.style.display = 'block';
       
-      document.getElementById('btn').disabled = false;
-      document.getElementById('loading').style.display = 'none';
+      await handleMappingFileUpload(file);
+      
+      btn.disabled = false;
+      loading.style.display = 'none';
     };
 
-    async function uploadAndDetectColumns(file) {
+    async function handleMappingFileUpload(file) {
       const formData = new FormData();
       formData.append('file', file);
+
       const spinner = document.getElementById('detectingSpinner');
       spinner.style.display = 'flex';
 
       try {
         const token = localStorage.getItem('token');
+        
         const response = await fetch('/api/data/mapping/detect-columns', {
           method: 'POST',
           body: formData,
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error);
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to detect columns');
         }
 
         const result = await response.json();
-        currentDetectionState = {
-          headers: result.data.headers,
-          sampleRows: result.data.sampleRows,
-          suggestions: result.data.suggestions,
-          tempFilename: result.data.tempFilename,
+const detectionData = result.data;
+
+currentDetectionState = {
+  headers: detectionData.headers,
+  sampleRows: detectionData.sampleRows,
+  suggestions: detectionData.suggestions,
+  tempFilename: detectionData.tempFilename,
+  confirmedMapping: {},
         };
 
-        showMappingModal();
+        populateMappingModal(detectionData);
+        document.getElementById('mappingModal').style.display = 'flex';
       } catch (error) {
-        showAlert('Error: ' + error.message, true);
+        console.error('Detection error:', error);
+        showAlert('Error al detectar columnas: ' + error.message, true);
       } finally {
         spinner.style.display = 'none';
       }
     }
 
-    function showMappingModal() {
+    function populateMappingModal(data) {
+      const previewDiv = document.getElementById('sampleDataPreview');
+      previewDiv.innerHTML = '';
+
+      let html = '<table style="width: 100%; border-collapse: collapse; font-size: 0.8em;">';
+      html += '<thead><tr style="background: #e0e0e0;">';
+      data.headers.forEach((h) => {
+        html += `<th style="border: 1px solid #ccc; padding: 8px; text-align: left; font-weight: 600;">${h}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      data.sampleRows.forEach((row) => {
+        html += '<tr>';
+        data.headers.forEach((h) => {
+          const val = String(row[h] || '').substring(0, 30);
+          html += `<td style="border: 1px solid #ccc; padding: 8px;">${val}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      previewDiv.innerHTML = html;
+
       const formDiv = document.getElementById('mappingForm');
       formDiv.innerHTML = '';
 
-      const fieldOptions = [
-        { value: '', label: '(No mapear)' },
-        { value: 'project_name', label: 'Nombre de Proyecto *' },
-        { value: 'status', label: 'Estado' },
-        { value: 'estimated_cost', label: 'Costo Estimado' },
-        { value: 'actual_cost', label: 'Costo Real' },
-        { value: 'progress_percent', label: 'Progreso (%)' },
-        { value: 'start_date', label: 'Fecha Inicio' },
-        { value: 'end_date', label: 'Fecha Fin' },
-        { value: 'risks', label: 'Riesgos' },
-      ];
+      data.headers.forEach((header) => {
+        const suggestion = data.suggestions.find((s) => s.originalHeader === header);
+        console.log(`Header: "${header}" => Suggestion:`, suggestion);
 
-      currentDetectionState.headers.forEach((header) => {
-        const suggestion = currentDetectionState.suggestions.find(s => s.originalHeader === header);
-        
+        const fieldOptions = [
+  { value: null, label: '(No mapear)' },
+  { value: 'project_name', label: 'Nombre de Proyecto *' },
+  { value: 'status', label: 'Estado del Proyecto' },
+  { value: 'estimated_cost', label: 'Costo Estimado' },
+  { value: 'actual_cost', label: 'Costo Real' },
+  { value: 'progress_percent', label: 'Progreso (%)' },
+  { value: 'start_date', label: 'Fecha Inicio' },
+  { value: 'end_date', label: 'Fecha Fin' },
+  { value: 'risks', label: 'Riesgos Identificados' },
+
+        ];
+
         const div = document.createElement('div');
         div.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px;';
 
         const label = document.createElement('label');
-        label.style.cssText = 'width: 30%; font-weight: 600; font-size: 0.9em;';
+        label.style.cssText = 'width: 30%; font-weight: 600; font-size: 0.9em; color: #333;';
         label.textContent = `"${header}"`;
 
         const select = document.createElement('select');
         select.style.cssText = 'flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em;';
-        select.dataset.header = header;
+        select.dataset.originalHeader = header;
 
         fieldOptions.forEach((opt) => {
           const option = document.createElement('option');
-          option.value = opt.value;
+          option.value = opt.value === null ? '' : opt.value;
           option.textContent = opt.label;
-          if (suggestion?.suggestedField === opt.value) option.selected = true;
+          option.selected = suggestion?.suggestedField === opt.value;
           select.appendChild(option);
         });
 
+        const reasoning = document.createElement('span');
+        reasoning.style.cssText = 'width: 30%; font-size: 0.8em; color: #666; font-style: italic;';
+        if (suggestion) {
+          reasoning.textContent = `(${(suggestion.confidence * 100).toFixed(0)}%) ${suggestion.reasoning || ''}`;
+        }
+
         div.appendChild(label);
         div.appendChild(select);
+        div.appendChild(reasoning);
         formDiv.appendChild(div);
-      });
 
-      document.getElementById('mappingModal').style.display = 'flex';
+        currentDetectionState.confirmedMapping[header] = suggestion?.suggestedField || null;
+      });
     }
 
-    async function confirmMapping() {
-      const mapping = {};
-      document.querySelectorAll('#mappingForm select').forEach(s => {
-        mapping[s.dataset.header] = s.value || null;
-      });
+ function buildConfirmedMapping() {
+  const mapping = {};
+  const selects = document.querySelectorAll('#mappingForm select');
+  selects.forEach((select) => {
+    const originalHeader = select.dataset.originalHeader;
+    const value = select.value;
+    mapping[originalHeader] = value || null;
+  });
+  return mapping;
+}
 
-      if (!Object.values(mapping).includes('project_name')) {
-        showValidationMessage('error', 'Mapea "Nombre de Proyecto"');
+function validateMapping(mapping) {
+  const errors = [];
+  const hasProjectName = Object.values(mapping).includes('project_name');
+  if (!hasProjectName) {
+    errors.push('Debes mapear al menos el campo "Nombre de Proyecto" (obligatorio)');
+  }
+  return errors;
+}
+
+    async function confirmMapping() {
+      const mapping = buildConfirmedMapping();
+      const errors = validateMapping(mapping);
+
+      if (errors.length > 0) {
+        showValidationMessage('error', errors.join('\n'));
         return;
       }
 
@@ -395,9 +520,10 @@
 
       try {
         const token = localStorage.getItem('token');
+        
         const response = await fetch('/api/data/mapping/save-mapping', {
           method: 'POST',
-          headers: {
+          headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -408,33 +534,45 @@
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error);
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save mapping');
         }
 
-        const data = await response.json();
+        const result = await response.json();
 
         closeMappingModal();
-        showAlert('✅ Mapeo guardado. Ejecutando agentes...', false);
-        setTimeout(() => { window.location = `/projects?id=${data.projectId}`; }, 2000);
+        showAlert('✅ Mapeo guardado exitosamente. Redirigiendo...', false);
+
+        setTimeout(() => {
+          window.location.href = '/projects';
+        }, 1500);
       } catch (error) {
-        showValidationMessage('error', error.message);
+        console.error('Save error:', error);
+        showValidationMessage('error', 'Error al guardar mapeo: ' + error.message);
         btn.disabled = false;
-        btn.textContent = 'Confirmar';
+        btn.textContent = 'Confirmar Mapeo';
       }
     }
 
     function closeMappingModal() {
       document.getElementById('mappingModal').style.display = 'none';
       document.getElementById('mappingForm').innerHTML = '';
+      document.getElementById('sampleDataPreview').innerHTML = '';
     }
 
     function showValidationMessage(type, message) {
       const msgDiv = document.getElementById('validationMessage');
-      msgDiv.style.display = 'block';
-      msgDiv.style.background = type === 'error' ? '#FFEBEE' : '#E8F5E9';
-      msgDiv.style.color = type === 'error' ? '#C62828' : '#2E7D32';
+      if (type === 'error') {
+        msgDiv.style.background = '#FFEBEE';
+        msgDiv.style.color = '#C62828';
+        msgDiv.style.borderLeft = '4px solid #C62828';
+      } else {
+        msgDiv.style.background = '#E8F5E9';
+        msgDiv.style.color = '#2E7D32';
+        msgDiv.style.borderLeft = '4px solid #2E7D32';
+      }
       msgDiv.textContent = message;
+      msgDiv.style.display = 'block';
     }
   </script>
 
