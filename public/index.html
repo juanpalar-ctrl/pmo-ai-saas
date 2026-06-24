@@ -378,51 +378,79 @@
       document.getElementById('mappingModal').style.display = 'flex';
     }
 
-    async function confirmMapping() {
-      const mapping = {};
-      document.querySelectorAll('#mappingForm select').forEach(s => {
-        mapping[s.dataset.header] = s.value || null;
-      });
+   async function confirmMapping() {
+  const mapping = {};
+  document.querySelectorAll('#mappingForm select').forEach(s => {
+    mapping[s.dataset.header] = s.value || null;
+  });
 
-      if (!Object.values(mapping).includes('project_name')) {
-        showValidationMessage('error', 'Mapea "Nombre de Proyecto"');
-        return;
-      }
+  if (!Object.values(mapping).includes('project_name')) {
+    showValidationMessage('error', 'Mapea "Nombre de Proyecto"');
+    return;
+  }
 
-      const btn = document.getElementById('confirmMappingBtn');
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
+  const btn = document.getElementById('confirmMappingBtn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
 
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/data/mapping/save-mapping', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            tempFilename: currentDetectionState.tempFilename,
-            confirmedMapping: mapping,
-          }),
-        });
+  const loadingModal = document.createElement('div');
+  loadingModal.id = 'execution-loading-modal';
+  loadingModal.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  `;
+  loadingModal.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px;">
+      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+      <p style="margin-top: 20px; color: #333; font-weight: 600; font-size: 1.1em;">Ejecutando agentes de IA...</p>
+      <p style="margin-top: 10px; color: #666; font-size: 0.9em;">Analizando riesgos, presupuesto y reportes</p>
+      <p style="margin-top: 15px; color: #999; font-size: 0.85em;">Esto puede tomar 1-2 minutos</p>
+    </div>
+  `;
 
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error);
-        }
+  try {
+    const token = localStorage.getItem('token');
+    
+    closeMappingModal();
+    document.body.appendChild(loadingModal);
 
-        const data = await response.json();
+    const response = await fetch('/api/data/mapping/save-mapping', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        tempFilename: currentDetectionState.tempFilename,
+        confirmedMapping: mapping,
+      }),
+    });
 
-        closeMappingModal();
-        showAlert('✅ Mapeo guardado. Ejecutando agentes...', false);
-        setTimeout(() => { window.location = `/projects?id=${data.projectId}`; }, 2000);
-      } catch (error) {
-        showValidationMessage('error', error.message);
-        btn.disabled = false;
-        btn.textContent = 'Confirmar';
-      }
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error desconocido');
     }
+
+    // REDIRIGIR INMEDIATAMENTE cuando la respuesta llega (agentes ya terminaron)
+    window.location = `/projects?id=${data.projectId}`;
+
+  } catch (error) {
+    const modal = document.getElementById('execution-loading-modal');
+    if (modal) modal.remove();
+    
+    showAlert('Error: ' + error.message, true);
+    btn.disabled = false;
+    btn.textContent = 'Confirmar';
+  }
+
+
+}
 
     function closeMappingModal() {
       document.getElementById('mappingModal').style.display = 'none';
