@@ -206,7 +206,13 @@
       font-size: 13px;
       line-height: 1.4;
     }
-  </style>
+      #timeout-modal {
+      display: none !important;
+    }
+    #timeout-modal[style*="display: flex"] {
+      display: flex !important;
+    }
+    </style>
 </head>
 <body>
   <!-- TOAST CONTAINER -->
@@ -469,7 +475,7 @@
   </script>
 
   <!-- MODAL DE TIMEOUT (Agentes Saturados) -->
-  <div id="timeout-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+  <div id="timeout-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 99999; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 16px; padding: 40px; max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;">
       <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
       <h2 style="font-size: 1.5em; font-weight: bold; color: #333; margin-bottom: 12px;">Agentes Saturados</h2>

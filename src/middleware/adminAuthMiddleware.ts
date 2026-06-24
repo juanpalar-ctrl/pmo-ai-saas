@@ -28,7 +28,7 @@ export function adminAuthMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  const token = req.cookies?.token;
+  const token = req.cookies?.auth_token;
 
   if (!token) {
     res.status(401).json({ error: ADMIN_MESSAGES.UNAUTHORIZED_ADMIN });

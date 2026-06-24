@@ -145,8 +145,20 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({email, password})
       });
-      if (res.ok) window.location = '/';
-      else alert('Email o contraseña incorrectos');
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        window.location = '/';
+      } else if (data.code === 'ERR_PENDING_APPROVAL') {
+        const alertDiv = document.createElement('div');
+        alertDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #FFF3CD; border: 1px solid #FFD700; color: #856404; padding: 20px; border-radius: 8px; max-width: 500px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 16px; line-height: 1.6;';
+        alertDiv.innerHTML = `<strong>⏳ Cuenta en espera de aprobación</strong><br>${data.message}`;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+      } else {
+        alert('Email o contraseña incorrectos');
+      }
     };
 
     document.getElementById('signupForm').onsubmit = async (e) => {
