@@ -277,30 +277,32 @@
       }
     }
 
-    function switchFramework(fw) {
-      activeFramework = fw;
-      
-      const currentProjectId = new URLSearchParams(location.search).get('projectId');
-      if (currentProjectId !== lastProjectId) {
-        lastProjectId = currentProjectId;
-        loadAnalysis().then(() => {
-          renderMetrics();
-          renderChart();
-          renderGantt();
-        });
-        return;
-      }
-      
-      document.querySelectorAll('[id^="tab-"]').forEach(btn => {
-        btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
-        btn.classList.add('text-gray-700');
-      });
-      document.getElementById(`tab-${fw}`).classList.remove('text-gray-700');
-      document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
+  function switchFramework(fw) {
+  activeFramework = fw;
+  
+  // Resaltar botón SIEMPRE (antes de cualquier retorno)
+  document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+    btn.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
+    btn.classList.add('text-gray-700');
+  });
+  document.getElementById(`tab-${fw}`).classList.remove('text-gray-700');
+  document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-teal-600', 'text-white');
+  
+  const currentProjectId = new URLSearchParams(location.search).get('projectId');
+  if (currentProjectId !== lastProjectId) {
+    lastProjectId = currentProjectId;
+    loadAnalysis().then(() => {
       renderMetrics();
       renderChart();
       renderGantt();
-    }
+    });
+    return;
+  }
+  
+  renderMetrics();
+  renderChart();
+  renderGantt();
+}
 
     function renderMetrics() {
       const panel = document.getElementById('metrics-panel');
