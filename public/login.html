@@ -82,7 +82,30 @@
     .toggle a { color: #00BCD4; cursor: pointer; font-weight: 600; text-decoration: none; }
     .form-section { display: none; }
     .form-section.active { display: block; }
-  </style>
+  
+    #loginForm, #forgotPasswordSection {
+      display: none;
+    }
+    
+    #loginForm.active {
+      display: block;
+    }
+    
+    #forgotPasswordSection.active {
+      display: flex;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%);
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+    </style>
 </head>
 <body>
   <div class="box">
@@ -107,6 +130,11 @@
         <input type="password" id="loginPassword" placeholder="••••••••" required>
       </div>
       <button type="submit">🚀 Iniciar Sesión</button>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="#" onclick="showForgotPassword(); return false;" style="color: #00BCD4; text-decoration: none; font-size: 0.9em; font-weight: 600;">
+          ¿Olvidaste tu contraseña?
+        </a>
+      </div>
       <div class="toggle">¿No tienes cuenta? <a onclick="toggleForm()">Regístrate aquí</a></div>
     </form>
 
@@ -174,6 +202,102 @@
       });
       if (res.ok) window.location = '/';
       else alert('Error al crear cuenta');
+    };
+  </script>
+
+  <!-- FORGOT PASSWORD FORM -->
+  <div id="forgotPasswordSection">
+    <div class="box">
+      <div class="header">
+        <div class="logo">
+          <img src="logo.jpeg" alt="LARA Logo">
+        </div>
+        <div class="brand">
+          <h1>LARA</h1>
+          <p>Intelligence Accelerated</p>
+        </div>
+      </div>
+
+      <h2 style="color: #333; margin-bottom: 10px;">Recuperar Contraseña</h2>
+      <p style="color: #666; margin-bottom: 30px; font-size: 0.95em;">Ingresa tu email para recibir instrucciones de reset</p>
+
+      <form id="forgotPasswordForm">
+        <div class="form-group">
+          <label for="forgotEmail">Email</label>
+          <input type="email" id="forgotEmail" placeholder="tu@email.com" required>
+        </div>
+
+        <button type="submit" id="forgotBtn">📧 Enviar Instrucciones</button>
+        <div id="forgotAlert" style="display: none;"></div>
+      </form>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="#" onclick="showLoginForm(); return false;" style="color: #00BCD4; text-decoration: none; font-size: 0.9em; font-weight: 600;">
+          ← Volver al Login
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle entre formularios
+    function showForgotPassword() {
+      document.getElementById('loginForm').classList.remove('active');
+      document.getElementById('forgotPasswordSection').classList.add('active');
+    }
+
+    function showLoginForm() {
+      document.getElementById('loginForm').classList.add('active');
+      document.getElementById('forgotPasswordSection').classList.remove('active');
+    }
+    
+    // Mostrar login por defecto al cargar
+    window.onload = function() {
+      document.getElementById('loginForm').classList.add('active');
+    };
+
+    // Forgot password form submit
+    document.getElementById('forgotPasswordForm').onsubmit = async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('forgotEmail').value;
+      const btn = document.getElementById('forgotBtn');
+      const alertDiv = document.getElementById('forgotAlert');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Enviando...';
+      alertDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+
+        alertDiv.className = 'alert alert-success';
+        alertDiv.textContent = `✅ ${data.message}`;
+        
+        // Si en desarrollo, mostrar el link
+        if (data.resetLink) {
+          alertDiv.innerHTML += `<br><br><strong>Link de reset (desarrollo):</strong><br><a href="${data.resetLink}" target="_blank" style="color: #00BCD4; word-break: break-all;">${data.resetLink}</a>`;
+        }
+        
+        alertDiv.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '📧 Enviar Instrucciones';
+
+        // Limpiar formulario
+        document.getElementById('forgotEmail').value = '';
+      } catch (error) {
+        alertDiv.className = 'alert alert-error';
+        alertDiv.textContent = '❌ Error: ' + error.message;
+        alertDiv.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '📧 Enviar Instrucciones';
+      }
     };
   </script>
 </body>

@@ -7,6 +7,7 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db';
+import { createPasswordResetToken, resetPasswordWithToken } from '../services/passwordResetService';
 import { signToken, verifyToken } from '../services/jwtService';
 import { AUTH_MESSAGES } from '../config/messages';
 
@@ -166,5 +167,67 @@ router.get('/me', (req: Request, res: Response) => {
     res.status(401).json({ error: 'Token inválido' });
   }
 });
+
+
+/**
+ * POST /api/auth/forgot-password
+ * Request a password reset token.
+ * Body: { email: string }
+ */
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email requerido' });
+    }
+
+    const result = await createPasswordResetToken(email);
+
+    // Retornar éxito sin importar si el email existe (por seguridad)
+    res.json({
+      success: true,
+      message: 'Si la cuenta existe, recibirás un email con instrucciones de reset',
+      resetLink: result?.resetLink || null, // Solo en development/mock
+    });
+  } catch (error: any) {
+    console.error('Forgot password error:', error.message);
+    res.status(500).json({ error: 'Error en servidor' });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password with valid token.
+ * Body: { token: string, newPassword: string }
+ */
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token y contraseña requeridos' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Contraseña mínimo 8 caracteres' });
+    }
+
+    const success = await resetPasswordWithToken(token, newPassword);
+
+    if (!success) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Contraseña reseteada exitosamente. Por favor, inicia sesión.',
+    });
+  } catch (error: any) {
+    console.error('Reset password error:', error.message);
+    res.status(500).json({ error: 'Error en servidor' });
+  }
+});
+
 
 export default router;

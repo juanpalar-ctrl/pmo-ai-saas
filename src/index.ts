@@ -49,6 +49,9 @@ app.get('/', requireAuth as any, (_req, res) => {
 app.get('/projects', requireAuth as any, (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/projects.html'));
 });
+app.get('/reset-password', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/reset-password.html'));
+});
 
 app.use((_req, res) => {
   res.redirect('/login');
