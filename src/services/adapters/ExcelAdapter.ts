@@ -1,84 +1,67 @@
-// ============================================
-// ADAPTER PARA EXCEL
-// 
-// PROPÓSITO: Lee archivo .xlsx y transforma
-// datos Excel → Formato ProjectData
-//
-// CÓMO FUNCIONA:
-// 1. Abre archivo Excel
-// 2. Lee primera hoja
-// 3. Convierte filas a JSON
-// 4. Valida cada fila con Zod
-// 5. Retorna solo filas válidas
-//
-// IMPLEMENTA: IDataAdapter interface
-// ============================================
+/**
+ * src/services/adapters/ExcelAdapter.ts
+ * Enhanced Excel Adapter with detailed error collection from Zod validation.
+ */
 
 import * as XLSX from 'xlsx';
 import { IDataAdapter } from './IDataAdapter';
 import { ProjectData, ProjectDataSchema } from '../../types/projectSchema';
 import * as fs from 'fs';
+import { ZodError } from 'zod';
+
+export interface RejectedRow {
+  rowIndex: number;
+  errors: string[];
+}
+
+export interface ReadResult {
+  validProjects: ProjectData[];
+  rejectedRows: RejectedRow[];
+}
 
 export class ExcelAdapter implements IDataAdapter {
-  // Nombre visible en logs
   name = '📊 Excel Adapter';
   
-  /**
-   * CONSTRUCTOR
-   * 
-   * FUNCIÓN: Inicializa el adapter con la ruta del archivo Excel
-   * 
-   * @param filePath - Ruta al archivo .xlsx (ej: './projects.xlsx')
-   */
   constructor(private filePath: string) {}
   
- /**
-   * READ - Leer datos del Excel
+  /**
+   * READ - Leer datos del Excel con captura de errores detallados
    * 
    * FLUJO:
    * 1. Verifica que archivo existe
    * 2. Abre con librería XLSX
    * 3. Lee primera hoja
    * 4. Convierte a array de objetos
-   * 5. PARSEA strings JSON a objetos (paso crítico)
-   * 6. Valida cada fila
-   * 7. Retorna solo las válidas
+   * 5. Parsea strings JSON a objetos
+   * 6. Valida cada fila y captura errores de Zod
+   * 7. Retorna validRows y rejectedRows con detalles
    */
   async read(): Promise<ProjectData[]> {
     console.log(`\n📂 ${this.name}: Leyendo ${this.filePath}`);
     
-    // Verificar que el archivo existe
     if (!fs.existsSync(this.filePath)) {
       throw new Error(`❌ Archivo no encontrado: ${this.filePath}`);
     }
     
     try {
-      // Abrir Excel
       const workbook = XLSX.readFile(this.filePath);
       
-      // Si no hay hojas, error
       if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
         throw new Error('❌ Excel no tiene hojas');
       }
       
-      // Leer primera hoja
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      
-      // Convertir Excel a array JSON
       let rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
+      
       console.log(`📄 Se leyeron ${rawData.length} filas del Excel`);
       
-      // PASO CRÍTICO: Parsear strings JSON a objetos
-      // Excel guarda objetos como texto, necesitan ser parseados
       rawData = rawData.map(row => this.parseJsonFields(row));
       
-      // Validar y filtrar filas
       const validProjects: ProjectData[] = [];
       let validCount = 0;
       let invalidCount = 0;
       
-      // Procesar cada fila
       for (const row of rawData) {
         if (await this.validate(row)) {
           validProjects.push(row as ProjectData);
@@ -88,7 +71,6 @@ export class ExcelAdapter implements IDataAdapter {
         }
       }
       
-      // Log de resultados
       console.log(`✅ ${validCount} válidos | ❌ ${invalidCount} rechazados`);
       
       return validProjects;
@@ -98,22 +80,70 @@ export class ExcelAdapter implements IDataAdapter {
       throw error;
     }
   }
-  
+
   /**
-   * PARSEAR CAMPOS JSON
+   * READ WITH DETAILS - Leer datos y retornar detalles de errores
    * 
-   * FUNCIÓN CRÍTICA: Excel guarda objetos complejos como strings JSON.
-   * Este método los convierte a objetos reales.
-   * 
-   * EJEMPLO:
-   * ENTRADA: { timeline: "{\"startDate\":\"2026-01-15\"...}" }
-   * SALIDA:  { timeline: { startDate: "2026-01-15"... } }
-   * 
-   * @param row - Fila del Excel
-   * @returns Fila con campos JSON parseados
+   * NUEVO MÉTODO: Retorna objeto con validProjects y rejectedRows
+   * Para usar en endpoints que necesitan mostrar errores al frontend.
    */
+  async readWithDetails(): Promise<ReadResult> {
+    console.log(`\n📂 ${this.name}: Leyendo con detalles ${this.filePath}`);
+    
+    if (!fs.existsSync(this.filePath)) {
+      throw new Error(`❌ Archivo no encontrado: ${this.filePath}`);
+    }
+    
+    try {
+      const workbook = XLSX.readFile(this.filePath);
+      
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error('❌ Excel no tiene hojas');
+      }
+      
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      let rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
+      
+      console.log(`📄 Se leyeron ${rawData.length} filas del Excel`);
+      
+      rawData = rawData.map(row => this.parseJsonFields(row));
+      
+      const validProjects: ProjectData[] = [];
+      const rejectedRows: RejectedRow[] = [];
+      let validCount = 0;
+      let invalidCount = 0;
+      
+      for (let index = 0; index < rawData.length; index++) {
+        const row = rawData[index];
+        const validationResult = await this.validateWithErrors(row);
+        
+        if (validationResult.valid) {
+          validProjects.push(row as ProjectData);
+          validCount++;
+        } else {
+          rejectedRows.push({
+            rowIndex: index + 2,
+            errors: validationResult.errors,
+          });
+          invalidCount++;
+        }
+      }
+      
+      console.log(`✅ ${validCount} válidos | ❌ ${invalidCount} rechazados`);
+      
+      return {
+        validProjects,
+        rejectedRows,
+      };
+      
+    } catch (error: any) {
+      console.error(`❌ Error leyendo Excel: ${error.message}`);
+      throw error;
+    }
+  }
+  
   private parseJsonFields(row: any): any {
-    // Campos que Excel almacena como strings JSON
     const jsonFields = [
       'timeline',
       'teamVelocity',
@@ -123,16 +153,13 @@ export class ExcelAdapter implements IDataAdapter {
       'risks',
     ];
     
-    // Para cada campo, intenta parsearlo
     const parsed = { ...row };
     
     for (const field of jsonFields) {
       if (parsed[field] && typeof parsed[field] === 'string') {
         try {
-          // Si es string, intenta parsearlo a objeto
           parsed[field] = JSON.parse(parsed[field]);
         } catch (error) {
-          // Si falla, déjalo como está (Zod lo rechazará)
           console.warn(`⚠️ No se pudo parsear campo ${field}: ${parsed[field]}`);
         }
       }
@@ -142,41 +169,53 @@ export class ExcelAdapter implements IDataAdapter {
   }
   
   /**
-   * VALIDATE - Validar una fila
-   * 
-   * FUNCIÓN: Usa Zod para verificar que la fila
-   * cumpla el schema ProjectDataSchema.
-   * 
-   * FLUJO:
-   * 1. Intenta parsear fila con Zod
-   * 2. Si cumple → retorna true
-   * 3. Si no → log de error + retorna false
-   * 
-   * @param data - Fila del Excel (como objeto JSON)
-   * @returns true si cumple schema, false si no
-   * 
-   * NOTA: Si falta un campo o tipo es incorrecto,
-   * Zod lo detecta automáticamente y lo marca inválido.
-   * 
-   * NOTA: El usuario verá advertencia pero el proceso
-   * continúa (no falla si una fila está mal)
+   * VALIDATE - Original method (backwards compatible)
    */
   async validate(data: any): Promise<boolean> {
     try {
-      // Zod valida automáticamente contra ProjectDataSchema
-      // Si algo está mal, lanza error
       ProjectDataSchema.parse(data);
-      
-      // Si llegamos aquí, es válido
       return true;
-      
     } catch (error: any) {
-      // Log breve de qué falló (para debug del usuario)
       const preview = JSON.stringify(data).substring(0, 50);
       console.warn(`⚠️ Fila rechazada (${preview}...) - ${error.message}`);
-      
-      // Retorna false pero NO falla el proceso
       return false;
+    }
+  }
+
+  /**
+   * VALIDATE WITH ERRORS - NEW: Captura errores detallados de Zod
+   * 
+   * RETORNA: { valid: boolean, errors: string[] }
+   * 
+   * Si la validación falla, captura cada error de Zod
+   * y lo formatea como string legible para el usuario.
+   */
+  private async validateWithErrors(data: any): Promise<{ valid: boolean; errors: string[] }> {
+    try {
+      ProjectDataSchema.parse(data);
+      return { valid: true, errors: [] };
+    } catch (error: any) {
+      if (error instanceof ZodError) {
+        // Extraer mensajes de error de Zod
+        const errorMessages = error.issues.map((issue: any) => {
+          const field = issue.path.join('.');
+          const message = issue.message;
+          return `${field}: ${message}`;
+        });
+        
+        console.warn(`⚠️ Errores de validación: ${errorMessages.join(', ')}`);
+        
+        return {
+          valid: false,
+          errors: errorMessages,
+        };
+      }
+      
+      // Si no es ZodError, retorna mensaje genérico
+      return {
+        valid: false,
+        errors: [error.message || 'Error desconocido de validación'],
+      };
     }
   }
 }

@@ -14,6 +14,7 @@ import { ExcelAdapter } from '../services/adapters/ExcelAdapter';
 import { dataIngestService } from '../services/dataIngestService';
 import { projectRepository } from '../repositories/projectRepository';
 import { pool } from '../db';
+import { UPLOAD_MESSAGES } from '../config/messages';
 
 const router = express.Router();
 
@@ -74,24 +75,19 @@ if (!fs.existsSync('./uploads')) {
  * POST /api/data/upload-excel
  * 
  * FUNCIÓN: Recibe archivo Excel, lo carga en BD
+ * Retorna detalles de filas rechazadas para mostrar en Toast
  * 
  * CLIENTE ENVÍA:
  * - multipart/form-data
  * - Campo "file": archivo .xlsx
  * 
- * SERVIDOR HACE:
- * 1. Multer recibe el archivo
- * 2. Lo guarda en ./uploads/
- * 3. ExcelAdapter lo lee
- * 4. DataIngestService lo carga en BD
- * 5. Retorna cuántos proyectos se cargaron
- * 
- * RESPUESTA:
+ * RESPUESTA EXITOSA:
  * {
  *   "success": true,
- *   "message": "Proyectos cargados exitosamente",
- *   "projectsLoaded": 3,
- *   "filename": "1234567890-projects.xlsx"
+ *   "message": "Datos cargados exitosamente",
+ *   "count": 4,
+ *   "rejected": 1,
+ *   "rejectionReasons": ["Fila 3: field: invalid format"]
  * }
  */
 router.post('/upload-excel', upload.single('file'), async (req: Request, res: Response) => {
@@ -100,7 +96,7 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        error: 'No se envió archivo',
+        error: UPLOAD_MESSAGES.INVALID_FORMAT,
       });
     }
     
@@ -109,18 +105,29 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
     // Crear adapter con la ruta del archivo guardado
     const adapter = new ExcelAdapter(req.file.path);
     
-    // Procesar archivo (leer, validar, guardar en BD)
-    // Procesar archivo (leer, validar, guardar en BD)
-    const result = await dataIngestService.ingestFromAdapter(adapter);
+    // Procesar archivo con detalles de errores
+    const result = await dataIngestService.ingestFromAdapterWithDetails(adapter);
     
     // Limpiar: eliminar archivo temporal
     fs.unlinkSync(req.file.path);
     
+    // Si no hay proyectos válidos, retornar error
+    if (result.count === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No se encontraron filas válidas en el archivo.",
+        rejected: result.rejected,
+        rejectionReasons: result.rejectionReasons,
+      });
+    }
+    
+    // Retornar éxito con detalles
     res.json({
       success: true,
-      message: 'Proyectos cargados exitosamente',
+      message: UPLOAD_MESSAGES.UPLOAD_SUCCESS,
       count: result.count,
       rejected: result.rejected,
+      rejectionReasons: result.rejected > 0 ? result.rejectionReasons : [],
       filename: req.file.filename,
     });
     
@@ -138,22 +145,6 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
   }
 });
 
-/**
- * GET /api/data/projects
- * 
- * FUNCIÓN: Obtener lista de proyectos cargados
- * 
- * QUERY PARAMS:
- * - page: Número de página (default 1)
- * - limit: Registros por página (default 50)
- * 
- * RESPUESTA:
- * {
- *   "success": true,
- *   "count": 3,
- *   "data": [...]
- * }
- */
 /**
  * GET /api/data/projects
  * 
@@ -243,6 +234,7 @@ router.get('/projects/:projectId', async (req: Request, res: Response) => {
     });
   }
 });
+
 /**
  * GET /api/data/projects/history/latest
  * 
@@ -299,4 +291,5 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
     });
   }
 });
+
 export default router;

@@ -1,4 +1,11 @@
+/**
+ * src/services/metricsCalculator.ts
+ * Calculate project metrics with zero-division protection.
+ * Phase 2: Added division-by-zero safeguards and audit logging.
+ */
+
 import { pool } from '../db';
+import { METRICS_MESSAGES } from '../config/messages';
 
 export async function calculateProjectMetrics(projectId: number, framework: string) {
   const projectRes = await pool.query(
@@ -14,7 +21,7 @@ export async function calculateProjectMetrics(projectId: number, framework: stri
   const budgetData = project.budgetdata || {};
   const workData = project.workpendingdata || {};
 
-  // Extraer valores correctamente
+  // Extract values safely with defaults
   const totalPlannedCost = parseFloat(budgetData.totalBudget) || 100000;
   const totalActualCost = parseFloat(budgetData.spent) || 50000;
   const totalWork = parseFloat(workData.total) || 100;
@@ -22,7 +29,7 @@ export async function calculateProjectMetrics(projectId: number, framework: stri
 
   const percentComplete = (completedWork / totalWork) * 100;
 
-  // EVM CALCULATIONS - PV basado en tiempo, no en progreso
+  // EVM CALCULATIONS - PV based on time, not progress
   const daysElapsed = project.timelinedata?.daysElapsed || 0;
   const daysTotal = (project.timelinedata?.daysRemaining || 0) + daysElapsed;
   const planPercent = daysTotal > 0 ? (daysElapsed / daysTotal) * 100 : 0;
@@ -30,9 +37,42 @@ export async function calculateProjectMetrics(projectId: number, framework: stri
   const ev = (completedWork / totalWork) * totalPlannedCost;
   const ac = totalActualCost;
   const cv = ev - ac;
-  const cpi = ac > 0 ? ev / ac : 1;
-  const spi = pv > 0 ? ev / pv : 1;
-  const roi = ac > 0 ? ((ev - ac) / ac) * 100 : 0;
+
+  /**
+   * CRITICAL: Division by zero protection for SPI and CPI
+   * If PV or AC are zero, return 1.00 by default
+   * Log warning for audit trail
+   */
+  let cpi = 1.0;
+  let spi = 1.0;
+
+  // CPI = EV / AC (Cost Performance Index)
+  if (ac > 0) {
+    cpi = ev / ac;
+  } else {
+    console.warn(
+      `⚠️ ${METRICS_MESSAGES.ZERO_VALUE_WARNING} (AC=0 for projectId=${projectId})`
+    );
+  }
+
+  // SPI = EV / PV (Schedule Performance Index)
+  if (pv > 0) {
+    spi = ev / pv;
+  } else {
+    console.warn(
+      `⚠️ ${METRICS_MESSAGES.ZERO_VALUE_WARNING} (PV=0 for projectId=${projectId})`
+    );
+  }
+
+  // ROI = (EV - AC) / AC * 100
+  let roi = 0;
+  if (ac > 0) {
+    roi = ((ev - ac) / ac) * 100;
+  } else {
+    console.warn(
+      `⚠️ ${METRICS_MESSAGES.ZERO_VALUE_WARNING} (AC=0, ROI defaulting to 0 for projectId=${projectId})`
+    );
+  }
 
   return {
     projectId,

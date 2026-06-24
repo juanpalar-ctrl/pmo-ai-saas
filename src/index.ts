@@ -8,6 +8,7 @@ import devRouter from './routes/dev';
 import authRouter from './routes/auth';
 import debugRouter from './routes/debug';
 import { requireAuth } from './middleware/requireAuth';
+import adminRouter from './routes/admin';
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('❌ ANTHROPIC_API_KEY no está definida');
@@ -39,6 +40,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/analysis', requireAuth as any, analysisRouter);
 app.use('/api/data', requireAuth as any, dataRouter);
 app.use('/api/dev', devRouter);
+app.use('/api/admin', requireAuth as any, adminRouter);
 
 app.get('/', requireAuth as any, (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
