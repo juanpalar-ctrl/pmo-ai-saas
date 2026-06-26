@@ -6,6 +6,7 @@ import analysisRouter from './routes/analysis';
 import dataRouter from './routes/data';
 import devRouter from './routes/dev';
 import authRouter from './routes/auth';
+import brandingRouter from './routes/branding';
 import debugRouter from './routes/debug';
 import { requireAuth } from './middleware/requireAuth';
 import adminRouter from './routes/admin';
@@ -29,6 +30,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.use('/api/auth', authRouter);
+app.use('/api/branding', brandingRouter);
 app.use('/api/debug', debugRouter);
 app.use('/api/data/mapping', dataMappingRoutes);
 
