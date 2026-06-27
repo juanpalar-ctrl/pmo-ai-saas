@@ -191,6 +191,9 @@
     
     if (data.success && data.data) {
       analysisData = data.data;
+      const framework = data.data?.metrics?.framework || 'scrum';
+      activeFramework = framework;
+      switchFramework(framework);
     }
   } catch (err) {
     console.error('Error loading analysis:', err);
