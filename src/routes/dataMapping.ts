@@ -51,31 +51,6 @@ const upload = multer({
   },
 });
 
-function getTokenFromRequest(req: Request): string {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-
-  if (!token) {
-    throw new Error('Missing authentication token');
-  }
-
-  try {
-    jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    return token;
-  } catch (err) {
-    throw new Error('Invalid or expired token');
-  }
-}
-
-function getUserIdFromToken(token: string): string {
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as {
-      userId: string;
-    };
-    return decoded.userId;
-  } catch (err) {
-    throw new Error('Invalid token');
-  }
-}
 
 router.post(
   '/detect-columns',
@@ -94,7 +69,6 @@ router.post(
 
       console.log(`[detect-columns] 📥 Processing file: ${tempFilename}`);
 
-      const token = getTokenFromRequest(req);
 
       const parseResult = await parseExcelSample(tempFilePath);
       console.log(`[detect-columns] ✅ Extracted ${parseResult.headers.length} headers`);
@@ -148,8 +122,11 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
     console.log(`[save-mapping] 💾 Processing mapping for: ${tempFilename}`);
 
-    const token = getTokenFromRequest(req);
-    const userId = getUserIdFromToken(token);
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      throw new Error('Not authenticated');
+    }
+
 
     if (!isValidTempMappingFilename(tempFilename)) {
       throw new Error('Invalid temporary filename format');

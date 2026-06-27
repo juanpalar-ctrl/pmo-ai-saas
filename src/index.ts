@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import analysisRouter from './routes/analysis';
@@ -25,6 +26,11 @@ console.log('✅ Configuración de Claude API cargada');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
@@ -32,7 +38,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/auth', authRouter);
 app.use('/api/branding', brandingRouter);
 app.use('/api/debug', debugRouter);
-app.use('/api/data/mapping', dataMappingRoutes);
+app.use('/api/data/mapping', requireAuth as any, dataMappingRoutes);
 
 app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
@@ -58,6 +64,7 @@ app.get('/projects', requireAuth as any, (_req, res) => {
 app.get('/reset-password', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/reset-password.html'));
 });
+
 app.get('/debug/check-data/:projectId', async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -78,6 +85,7 @@ app.get('/debug/check-data/:projectId', async (req, res) => {
     res.json({ error: err.message });
   }
 });
+
 app.use((_req, res) => {
   res.redirect('/login');
 });

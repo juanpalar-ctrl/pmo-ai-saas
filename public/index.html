@@ -304,11 +304,10 @@
       spinner.style.display = 'flex';
 
       try {
-        const token = localStorage.getItem('token');
         const response = await fetch('/api/data/mapping/detect-columns', {
           method: 'POST',
+          credentials: 'include',
           body: formData,
-          headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) {
@@ -414,13 +413,13 @@
   `;
 
   try {
-    const token = localStorage.getItem('token');
     
     closeMappingModal();
     document.body.appendChild(loadingModal);
 
     const response = await fetch('/api/data/mapping/save-mapping', {
       method: 'POST',
+          credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
