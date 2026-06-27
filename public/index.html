@@ -417,16 +417,17 @@
     closeMappingModal();
     document.body.appendChild(loadingModal);
 
+    const framework = document.getElementById('fw').value;
     const response = await fetch('/api/data/mapping/save-mapping', {
       method: 'POST',
           credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
         tempFilename: currentDetectionState.tempFilename,
         confirmedMapping: mapping,
+        framework: framework,
       }),
     });
 

@@ -21,6 +21,8 @@ export const ColumnSuggestionSchema = z.object({
     'end_date',
     'risks',
   ]).nullable(),
+  ),
+  framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum')
 });
 
 /**
@@ -40,6 +42,8 @@ export const DetectColumnsResponseSchema = z.object({
 export const ConfirmedMappingSchema = z.record(
   z.string(),
   z.enum(['task_name', 'estimated_cost', 'actual_cost', 'progress_percent', 'start_date', 'end_date']).nullable()
+  ),
+  framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum')
 
 );
 
@@ -77,6 +81,7 @@ export const SaveMappingRequestSchema = z.object({
       'risks',
     ]).nullable()
   ),
+  framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum')
 });
 
 /**

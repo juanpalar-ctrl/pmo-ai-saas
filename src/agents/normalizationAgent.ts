@@ -79,7 +79,9 @@ function formatDataForAnalysis(headers: string[], sampleRows: Record<string, any
  * @throws Error if all retries exhausted
  */
 export async function detectColumns(input: NormalizationInput): Promise<NormalizationOutput> {
-  const client = new Anthropic();
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  console.log('[detectColumns] API Key received (first 20 chars):', process.env.ANTHROPIC_API_KEY?.substring(0, 20) || 'UNDEFINED');
+  console.log('[detectColumns] API Key length:', process.env.ANTHROPIC_API_KEY?.length || 0);
 
   const systemPrompt = createSystemPrompt();
   const dataForAnalysis = formatDataForAnalysis(input.headers, input.sampleRows);

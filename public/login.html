@@ -1,312 +1,310 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>LARA - Intelligence Accelerated</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%);
-      min-height: 100vh; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 20px; 
-    }
-    .box { 
-      background: white; 
-      padding: 50px; 
-      border-radius: 16px; 
-      width: 100%; 
-      max-width: 500px; 
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
-    }
-    .header { 
-      display: flex; 
-      align-items: center; 
-      gap: 15px; 
-      margin-bottom: 30px; 
-      padding-bottom: 20px; 
-      border-bottom: 2px solid #E0F2F1;
-    }
-    .logo { 
-      width: 80px; 
-      height: 80px; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .logo img { 
-      width: 100%; 
-      height: 100%;
-      object-fit: contain;
-    }
-    .brand h1 { 
-      font-size: 1.8em; 
-      color: #00897B; 
-      margin: 0;
-    }
-    .brand p { 
-      font-size: 0.75em; 
-      color: #00BCD4; 
-      margin: 3px 0 0 0;
-    }
-    h2 { 
-      background: linear-gradient(135deg, #00BCD4 0%, #00897B 100%);
-      -webkit-background-clip: text; 
-      -webkit-text-fill-color: transparent; 
-      font-size: 2em; 
-      margin-bottom: 10px; 
-    }
-    .subtitle { color: #666; margin-bottom: 30px; font-size: 1em; }
-    .group { margin-bottom: 25px; }
-    label { display: block; font-weight: 600; margin-bottom: 8px; color: #333; }
-    input, select { width: 100%; padding: 12px 15px; border: 2px solid #B2DFDB; border-radius: 8px; font-size: 1em; }
-    input:focus, select:focus { outline: none; border-color: #00BCD4; box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1); }
-    button { 
-      width: 100%; 
-      padding: 15px; 
-      background: linear-gradient(135deg, #00BCD4 0%, #009688 100%);
-      color: white; 
-      border: none; 
-      border-radius: 8px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      margin-top: 20px; 
-      font-size: 1.1em;
-    }
-    button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0, 188, 212, 0.4); }
-    .toggle { text-align: center; margin-top: 20px; color: #666; }
-    .toggle a { color: #00BCD4; cursor: pointer; font-weight: 600; text-decoration: none; }
-    .form-section { display: none; }
-    .form-section.active { display: block; }
-  
-    #loginForm, #forgotPasswordSection {
-      display: none;
-    }
-    
-    #loginForm.active {
-      display: block;
-    }
-    
-    #forgotPasswordSection.active {
-      display: flex;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%);
-      min-height: 100vh;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 1000;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LARA - Inicia Sesión</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #17B8A0;
+            --color-secondary: #0B7B8C;
+            --color-accent: #9ED900;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            max-width: 450px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .logo-section img {
+            height: 40px;
+            width: auto;
+        }
+
+        .logo-text h1 {
+            color: var(--color-secondary);
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text p {
+            color: var(--color-primary);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: var(--color-primary);
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background-color: rgba(23, 184, 160, 0.05);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background-color: var(--color-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .signup-link a {
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .signup-link a:hover {
+            color: var(--color-secondary);
+        }
+
+        .error-message {
+            background-color: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-  <div class="box">
-    <div class="header">
-      <div class="logo"><img src="logo.jpeg" alt="LARA Logo"></div>
-      <div class="brand">
-        <h1>LARA</h1>
-        <p>Intelligence Accelerated</p>
-      </div>
+    <div class="login-container">
+        <!-- Logo -->
+        <div class="logo-section">
+            <img id="logo" data-logo src="/uploads/logos/lara-logo.png" alt="LARA Logo">
+            <div class="logo-text">
+                <h1>LARA</h1>
+                <p>Intelligence Accelerated</p>
+            </div>
+        </div>
+
+        <!-- Título -->
+        <h2>Inicia Sesión</h2>
+        <p class="subtitle">Análisis Multi-Agente IA para tus Proyectos</p>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message"></div>
+
+        <!-- Formulario -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" id="submitButton">
+                <span id="buttonText">Iniciar Sesión</span>
+                <span id="spinner" class="spinner" style="display: none;"></span>
+            </button>
+        </form>
+
+        <!-- Link de registro -->
+        <div class="signup-link">
+            ¿No tienes cuenta? <a href="/signup.html">Regístrate aquí</a>
+        </div>
     </div>
 
-    <h2 id="formTitle">Inicia Sesión</h2>
-    <p class="subtitle">Análisis Multi-Agente IA para tus Proyectos</p>
+    <!-- ===== SCRIPT DE BRANDING ===== -->
+    <script src="/js/branding.js"></script>
 
-    <form id="loginForm" class="form-section active">
-      <div class="group">
-        <label for="loginEmail">Email</label>
-        <input type="email" id="loginEmail" placeholder="tu@email.com" required>
-      </div>
-      <div class="group">
-        <label for="loginPassword">Contraseña</label>
-        <input type="password" id="loginPassword" placeholder="••••••••" required>
-      </div>
-      <button type="submit">🚀 Iniciar Sesión</button>
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="#" onclick="showForgotPassword(); return false;" style="color: #00BCD4; text-decoration: none; font-size: 0.9em; font-weight: 600;">
-          ¿Olvidaste tu contraseña?
-        </a>
-      </div>
-      <div class="toggle">¿No tienes cuenta? <a onclick="toggleForm()">Regístrate aquí</a></div>
-    </form>
+    <!-- ===== LÓGICA DE LOGIN ===== -->
+    <script>
+        const form = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = document.getElementById('buttonText');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('errorMessage');
 
-    <form id="signupForm" class="form-section">
-      <div class="group">
-        <label for="signupEmail">Email</label>
-        <input type="email" id="signupEmail" placeholder="tu@email.com" required>
-      </div>
-      <div class="group">
-        <label for="signupPassword">Contraseña</label>
-        <input type="password" id="signupPassword" placeholder="••••••••" required>
-      </div>
-      <div class="group">
-        <label for="signupPasswordConfirm">Confirmar Contraseña</label>
-        <input type="password" id="signupPasswordConfirm" placeholder="••••••••" required>
-      </div>
-      <button type="submit">✨ Crear Cuenta</button>
-      <div class="toggle">¿Ya tienes cuenta? <a onclick="toggleForm()">Inicia sesión</a></div>
-    </form>
-  </div>
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-  <script>
-    function toggleForm() {
-      document.getElementById('loginForm').classList.toggle('active');
-      document.getElementById('signupForm').classList.toggle('active');
-      document.getElementById('formTitle').textContent = 
-        document.getElementById('loginForm').classList.contains('active') ? 'Inicia Sesión' : 'Crea tu Cuenta';
-    }
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
 
-    document.getElementById('loginForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({email, password})
-  });
-  
-  const data = await res.json();
-  
-  if (res.ok) {
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-    }
-    window.location = '/';
-      } else if (data.code === 'ERR_PENDING_APPROVAL') {
-        const alertDiv = document.createElement('div');
-        alertDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #FFF3CD; border: 1px solid #FFD700; color: #856404; padding: 20px; border-radius: 8px; max-width: 500px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 16px; line-height: 1.6;';
-        alertDiv.innerHTML = `<strong>⏳ Cuenta en espera de aprobación</strong><br>${data.message}`;
-        document.body.appendChild(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
-      } else {
-        alert('Email o contraseña incorrectos');
-      }
-    };
+            if (!email || !password) {
+                showError('Por favor completa todos los campos');
+                return;
+            }
 
-   document.getElementById('signupForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('signupEmail').value;
-  const password = document.getElementById('signupPassword').value;
-  const confirm = document.getElementById('signupPasswordConfirm').value;
-  if (password !== confirm) { alert('Las contraseñas no coinciden'); return; }
-  const res = await fetch('/api/auth/signup', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({email, password})
-  });
-  if (res.ok) {
-    if (res.data?.token) {
-      localStorage.setItem('token', res.data.token);
-    }
-    window.location = '/';
-  }
-      else alert('Error al crear cuenta');
-    };
-  </script>
+            try {
+                submitButton.disabled = true;
+                buttonText.style.display = 'none';
+                spinner.style.display = 'inline-block';
+                clearError();
 
-  <!-- FORGOT PASSWORD FORM -->
-  <div id="forgotPasswordSection">
-    <div class="box">
-      <div class="header">
-        <div class="logo">
-          <img src="logo.jpeg" alt="LARA Logo">
-        </div>
-        <div class="brand">
-          <h1>LARA</h1>
-          <p>Intelligence Accelerated</p>
-        </div>
-      </div>
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-      <h2 style="color: #333; margin-bottom: 10px;">Recuperar Contraseña</h2>
-      <p style="color: #666; margin-bottom: 30px; font-size: 0.95em;">Ingresa tu email para recibir instrucciones de reset</p>
+                const data = await response.json();
 
-      <form id="forgotPasswordForm">
-        <div class="form-group">
-          <label for="forgotEmail">Email</label>
-          <input type="email" id="forgotEmail" placeholder="tu@email.com" required>
-        </div>
+                if (!response.ok) {
+                    if (data.error === 'ERR_PENDING_APPROVAL') {
+                        showError('Tu cuenta está pendiente de aprobación');
+                    } else if (data.error === 'ERR_INVALID_CREDENTIALS') {
+                        showError('Email o contraseña incorrectos');
+                    } else {
+                        showError(data.message || 'Error al iniciar sesión');
+                    }
+                    return;
+                }
 
-        <button type="submit" id="forgotBtn">📧 Enviar Instrucciones</button>
-        <div id="forgotAlert" style="display: none;"></div>
-      </form>
-
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="#" onclick="showLoginForm(); return false;" style="color: #00BCD4; text-decoration: none; font-size: 0.9em; font-weight: 600;">
-          ← Volver al Login
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Toggle entre formularios
-    function showForgotPassword() {
-      document.getElementById('loginForm').classList.remove('active');
-      document.getElementById('forgotPasswordSection').classList.add('active');
-    }
-
-    function showLoginForm() {
-      document.getElementById('loginForm').classList.add('active');
-      document.getElementById('forgotPasswordSection').classList.remove('active');
-    }
-    
-    // Mostrar login por defecto al cargar
-    window.onload = function() {
-      document.getElementById('loginForm').classList.add('active');
-    };
-
-    // Forgot password form submit
-    document.getElementById('forgotPasswordForm').onsubmit = async (e) => {
-      e.preventDefault();
-
-      const email = document.getElementById('forgotEmail').value;
-      const btn = document.getElementById('forgotBtn');
-      const alertDiv = document.getElementById('forgotAlert');
-
-      btn.disabled = true;
-      btn.textContent = '⏳ Enviando...';
-      alertDiv.style.display = 'none';
-
-      try {
-        const res = await fetch('/api/auth/forgot-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+                if (data.token) {
+                    localStorage.setItem('auth_token', data.token);
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Error de conexión');
+            } finally {
+                submitButton.disabled = false;
+                buttonText.style.display = 'inline';
+                spinner.style.display = 'none';
+            }
         });
 
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        alertDiv.className = 'alert alert-success';
-        alertDiv.textContent = `✅ ${data.message}`;
-        
-        // Si en desarrollo, mostrar el link
-        if (data.resetLink) {
-          alertDiv.innerHTML += `<br><br><strong>Link de reset (desarrollo):</strong><br><a href="${data.resetLink}" target="_blank" style="color: #00BCD4; word-break: break-all;">${data.resetLink}</a>`;
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.add('show');
         }
-        
-        alertDiv.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = '📧 Enviar Instrucciones';
 
-        // Limpiar formulario
-        document.getElementById('forgotEmail').value = '';
-      } catch (error) {
-        alertDiv.className = 'alert alert-error';
-        alertDiv.textContent = '❌ Error: ' + error.message;
-        alertDiv.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = '📧 Enviar Instrucciones';
-      }
-    };
-  </script>
+        function clearError() {
+            errorMessage.textContent = '';
+            errorMessage.classList.remove('show');
+        }
+    </script>
 </body>
 </html>
