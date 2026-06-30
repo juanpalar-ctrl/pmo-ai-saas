@@ -27,7 +27,7 @@ export const pool = new Pool({
   // SSL/TLS: en producción valida el certificado; en desarrollo acepta auto-firmados
   ssl: process.env.DATABASE_URL?.includes('localhost')
     ? false
-    : { rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false },
+    : { rejectUnauthorized: false },
   
   // Máximo de conexiones en el pool
   max: 20,

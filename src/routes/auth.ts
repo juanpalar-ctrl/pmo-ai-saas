@@ -123,7 +123,7 @@ router.post('/login', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Login error:', error.message);
+    console.error('Login error full:', JSON.stringify(error), error.message, error.code, error.stack);
     res.status(500).json({ error: 'Error en servidor' });
   }
 });
