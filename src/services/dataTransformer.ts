@@ -298,3 +298,58 @@ export function transformDataset(
 
   return transformed;
 }
+
+export interface DISResult {
+  score: number;        // 0–100
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  label: string;
+  fieldCoverage: Record<string, number>; // field → % rows with real data
+  totalRows: number;
+  mappedFields: number;
+}
+
+export function calculateDIS(
+  rows: TransformedProjectRow[],
+  mapping: Record<string, string | null>
+): DISResult {
+  const optionalFields: (keyof TransformedProjectRow)[] = [
+    'status', 'estimated_cost', 'actual_cost', 'progress_percent',
+    'start_date', 'end_date', 'risks',
+  ];
+
+  const mappedFieldNames = new Set(Object.values(mapping).filter(Boolean));
+  const mappedOptional = optionalFields.filter(f => mappedFieldNames.has(f));
+  const totalRows = rows.length;
+
+  const fieldCoverage: Record<string, number> = {};
+  let totalScore = 0;
+
+  for (const field of optionalFields) {
+    const filledCount = rows.filter(row => {
+      const val = row[field];
+      if (val === null || val === undefined) return false;
+      if (typeof val === 'number') return val > 0;
+      if (typeof val === 'string') return val.trim() !== '';
+      return false;
+    }).length;
+
+    const coverage = totalRows > 0 ? (filledCount / totalRows) * 100 : 0;
+    fieldCoverage[field] = Math.round(coverage);
+
+    // Mapped fields weigh double
+    const weight = mappedFieldNames.has(field) ? 2 : 1;
+    totalScore += coverage * weight;
+  }
+
+  const totalWeight = optionalFields.reduce((acc, f) => acc + (mappedFieldNames.has(f) ? 2 : 1), 0);
+  const score = Math.round(totalScore / totalWeight);
+
+  const grade = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 40 ? 'D' : 'F';
+  const label =
+    grade === 'A' ? 'Excelente' :
+    grade === 'B' ? 'Buena' :
+    grade === 'C' ? 'Aceptable' :
+    grade === 'D' ? 'Deficiente' : 'Crítica';
+
+  return { score, grade, label, fieldCoverage, totalRows, mappedFields: mappedOptional.length };
+}

@@ -25,16 +25,29 @@ export const orchestrator = {
     };
 
     riskAgent.setFramework(framework);
-    const riskAnalysis = await riskAgent.analyze(input);
-
     economicAgent.setFramework(framework);
-    const economicAnalysis = await economicAgent.analyze(input);
+
+    // Run risk and economic agents in parallel
+    const [riskAnalysis, economicAnalysis] = await Promise.all([
+      riskAgent.analyze(input),
+      economicAgent.analyze(input),
+    ]);
 
     reportingAgent.setAnalysisOutputs(riskAnalysis, economicAnalysis);
     const reportingAnalysis: any = await reportingAgent.analyze(input);
 
     const seniorReport = reportingAnalysis.analysis?.senior_report || reportingAnalysis.senior_report || 'Reporte disponible';
     const technicalReport = reportingAnalysis.analysis?.technical_report || reportingAnalysis.technical_report || 'Reporte disponible';
+
+    // Resolve DIS from normalization record
+    let dis: any = null;
+    const disResult = await pool.query(
+      `SELECT output->'dis' AS dis FROM ai_analyses WHERE projectid = $1 AND agenttype = 'normalization' LIMIT 1`,
+      [projectId]
+    );
+    if (disResult.rows[0]?.dis) {
+      dis = disResult.rows[0].dis;
+    }
 
     const output = {
       risk: riskAnalysis,
@@ -44,9 +57,12 @@ export const orchestrator = {
         technical_report: technicalReport
       },
       metrics: {
-        pv: metrics.pv, ev: metrics.ev, ac: metrics.ac, cv: metrics.cv, cpi: metrics.cpi, spi: metrics.spi, roi: metrics.roi,
+        bac: metrics.bac, pv: metrics.pv, ev: metrics.ev, ac: metrics.ac,
+        cv: metrics.cv, sv: metrics.sv, cpi: metrics.cpi, spi: metrics.spi,
+        eac: metrics.eac, vac: metrics.vac, tcpi: metrics.tcpi, roi: metrics.roi,
         framework, percentComplete: metrics.percentComplete
       },
+      dis,
       timestamp: new Date().toISOString(),
       org,
     };

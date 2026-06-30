@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import { detectColumns } from '../agents/normalizationAgent';
 import { parseExcelSample, parseExcelComplete } from '../services/excelParser';
-import { transformDataset } from '../services/dataTransformer';
+import { transformDataset, calculateDIS } from '../services/dataTransformer';
 import { validateUploadPath, isValidTempMappingFilename, getUploadsDir } from '../utils/pathValidator';
 import {
   DetectColumnsResponseSchema,
@@ -139,7 +139,8 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
     console.log(`[save-mapping] ✅ Read ${allRows.length} rows`);
 
     const transformedRows = transformDataset(allRows, confirmedMapping);
-    console.log(`[save-mapping] ✅ Transformed ${transformedRows.length} rows`);
+    const dis = calculateDIS(transformedRows, confirmedMapping);
+    console.log(`[save-mapping] ✅ Transformed ${transformedRows.length} rows | DIS: ${dis.score} (${dis.grade})`);
 
     const validatedRows = [];
     for (const row of transformedRows) {
@@ -184,6 +185,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
       sourceFilename: 'imported',
       normalizedAt: now,
       org,
+      dis,
     };
 
     await pool.query(

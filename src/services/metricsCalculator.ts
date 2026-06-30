@@ -74,16 +74,40 @@ export async function calculateProjectMetrics(projectId: number, framework: stri
     );
   }
 
+  // BAC = Budget at Completion (total planned cost baseline)
+  const bac = totalPlannedCost;
+
+  // EAC = Estimate at Completion = BAC / CPI
+  const eac = cpi > 0 ? bac / cpi : bac;
+
+  // VAC = Variance at Completion = BAC - EAC (negative = over budget forecast)
+  const vac = bac - eac;
+
+  // SV = Schedule Variance = EV - PV
+  const sv = ev - pv;
+
+  // TCPI = To-Complete Performance Index = (BAC - EV) / (BAC - AC)
+  let tcpi = 1.0;
+  const tcpiDenominator = bac - ac;
+  if (tcpiDenominator > 0) {
+    tcpi = (bac - ev) / tcpiDenominator;
+  }
+
   return {
     projectId,
     projectName: project.projectname || 'Project',
     framework,
+    bac: bac.toFixed(2),
     pv: pv.toFixed(2),
     ev: ev.toFixed(2),
     ac: ac.toFixed(2),
     cv: cv.toFixed(2),
+    sv: sv.toFixed(2),
     cpi: cpi.toFixed(2),
     spi: spi.toFixed(2),
+    eac: eac.toFixed(2),
+    vac: vac.toFixed(2),
+    tcpi: tcpi.toFixed(2),
     roi: roi.toFixed(2),
     percentComplete: percentComplete.toFixed(1),
     projectData: JSON.stringify({
