@@ -7,6 +7,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { ColumnSuggestion, ColumnSuggestionSchema } from '../config/validation';
+import { agentLogger } from '../core/logger';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff: 1s, 2s, 4s
@@ -91,9 +92,7 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
       // Implement backoff delay before retry
       if (attempt > 0) {
         const delayMs = RETRY_DELAYS[attempt - 1];
-        console.log(
-          `[normalizationAgent] Retry attempt ${attempt + 1}/${MAX_RETRIES}, waiting ${delayMs}ms...`
-        );
+        agentLogger.warn({ attempt: attempt + 1, maxRetries: MAX_RETRIES, delayMs }, 'normalizationAgent retry');
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
 
@@ -139,9 +138,7 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
           const validated = ColumnSuggestionSchema.parse(suggestion);
           validatedSuggestions.push(validated);
         } catch (validationErr) {
-          console.warn(
-            `[normalizationAgent] Skipping invalid suggestion: ${(validationErr as Error).message}`
-          );
+          agentLogger.warn({ err: (validationErr as Error).message }, 'normalizationAgent: skipping invalid suggestion');
         }
       }
 
@@ -149,9 +146,7 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
         throw new Error('No valid suggestions extracted from API response');
       }
 
-      console.log(
-        `[normalizationAgent] Successfully detected ${validatedSuggestions.length} column mappings`
-      );
+      agentLogger.info({ count: validatedSuggestions.length }, 'normalizationAgent: columns detected');
 
       return {
         suggestions: validatedSuggestions,
@@ -159,9 +154,7 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(
-        `[normalizationAgent] Attempt ${attempt + 1}/${MAX_RETRIES} failed: ${lastError.message}`
-      );
+      agentLogger.error({ attempt: attempt + 1, maxRetries: MAX_RETRIES, err: lastError.message }, 'normalizationAgent attempt failed');
 
       // If this was the last attempt, throw
       if (attempt === MAX_RETRIES - 1) {

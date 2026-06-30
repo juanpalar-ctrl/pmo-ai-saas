@@ -7,12 +7,12 @@ export class AnalysisService {
   
   async executeAnalysis(input: AnalysisInputDTO): Promise<AnalysisOutput> {
     try {
-      logger.info(`📊 Iniciando análisis`, { projectId: input.projectId });
+      logger.info({ projectId: input.projectId }, 'Iniciando análisis');
       
       if (!input.forceRefresh) {
         const cached = await this.getFromCache(input.projectId);
         if (cached) {
-          logger.info(`✅ Caché hit`, { projectId: input.projectId });
+          logger.info({ projectId: input.projectId }, 'Caché hit');
           return cached;
         }
       }
@@ -20,11 +20,11 @@ export class AnalysisService {
       const framework = input.framework || 'Agile';
       const result = await orchestrator.analyzeProject(input.projectId, framework);
       
-      logger.info(`✅ Análisis completado`, { projectId: input.projectId });
+      logger.info({ projectId: input.projectId }, 'Análisis completado');
       return result;
       
     } catch (error: any) {
-      logger.error(`❌ Error en análisis`, { projectId: input.projectId, error: error.message });
+      logger.error({ projectId: input.projectId, err: error.message }, 'Error en análisis');
       throw error;
     }
   }

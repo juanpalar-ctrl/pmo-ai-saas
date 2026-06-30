@@ -5,6 +5,8 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import pinoHttp from 'pino-http';
+import { logger } from './core/logger';
 import analysisRouter from './routes/analysis';
 import dataRouter from './routes/data';
 import devRouter from './routes/dev';
@@ -21,11 +23,11 @@ import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { mkdirSync } from 'fs';
 
 if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('❌ ANTHROPIC_API_KEY no está definida');
+  logger.error('ANTHROPIC_API_KEY no está definida');
   process.exit(1);
 }
 
-console.log('✅ Configuración de Claude API cargada');
+logger.info('Configuración de Claude API cargada');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -63,6 +65,17 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, error: 'Límite de mensajes alcanzado. Espera un momento.' },
 });
+
+// HTTP request logging (skips static assets to reduce noise)
+app.use(pinoHttp({
+  logger,
+  autoLogging: { ignore: (req) => req.url?.startsWith('/favicon') || req.url?.endsWith('.css') || req.url?.endsWith('.js') || req.url?.endsWith('.jpeg') || req.url?.endsWith('.png') || false },
+  customLogLevel: (_req, res) => res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
+  serializers: {
+    req: (req) => ({ method: req.method, url: req.url }),
+    res: (res) => ({ statusCode: res.statusCode }),
+  },
+}));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
@@ -111,9 +124,8 @@ app.use((_req, res) => {
 mkdirSync('./uploads', { recursive: true });
 
 scheduleCleanupJob(60 * 60 * 1000);
-console.log('[Index] Temp file cleanup job scheduled');
+logger.info('Temp file cleanup job scheduled');
 
 app.listen(PORT, () => {
-  console.log(`✅ Servidor ejecutándose en http://localhost:${PORT}`);
-  console.log(`🔧 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Servidor iniciado');
 });

@@ -5,6 +5,7 @@
 
 import { anthropicClient, aiConfig } from '../config/anthropic';
 import { AgentInput, AgentOutput, IAgent } from '../types/agents';
+import { agentLogger } from '../core/logger';
 
 export abstract class BaseAgent implements IAgent {
   
@@ -25,14 +26,10 @@ export abstract class BaseAgent implements IAgent {
         throw new Error(`Input inválido para ${this.name}`);
       }
       
-      console.log(`\n🤖 [${this.name}] Iniciando análisis...`);
+      agentLogger.info({ agent: this.name, projectId: input.projectId }, 'Iniciando análisis');
       const startTime = Date.now();
-      
-      // 2. Construir prompt
+
       const prompt = this.buildPrompt(input);
-      
-      // 3. Llamar a Claude
-      console.log(`📤 Enviando a Claude API...`);
       const response = await anthropicClient.messages.create({
         model: aiConfig.model,
         max_tokens: aiConfig.maxTokens,
@@ -50,10 +47,7 @@ export abstract class BaseAgent implements IAgent {
         ? response.content[0].text 
         : '';
       
-      // 5. Parsear JSON
-      // 5. Parsear JSON
-      console.log(`📋 Raw Response (primeros 500 chars):`);
-      console.log(responseText.substring(0, 500));
+      agentLogger.debug({ agent: this.name, preview: responseText.substring(0, 200) }, 'Raw API response');
       const analysis = this.parseResponse(responseText);
       
       const executionTimeMs = Date.now() - startTime;
@@ -69,12 +63,12 @@ export abstract class BaseAgent implements IAgent {
         executionTimeMs,
       };
       
-      console.log(`✅ [${this.name}] Análisis completado en ${executionTimeMs}ms`);
-      
+      agentLogger.info({ agent: this.name, ms: executionTimeMs, tokens: output.tokensUsed }, 'Análisis completado');
+
       return output;
-      
+
     } catch (error: any) {
-      console.error(`❌ [${this.name}] Error:`, error.message);
+      agentLogger.error({ agent: this.name, err: error.message }, 'Error en análisis');
       throw error;
     }
   }

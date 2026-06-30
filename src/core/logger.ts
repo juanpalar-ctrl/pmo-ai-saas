@@ -1,40 +1,30 @@
-// ============================================
-// LOGGER CENTRALIZADO
-// Para uso futuro en agentes y services
-// ============================================
+import pino from 'pino';
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+const isDev = process.env.NODE_ENV !== 'production';
 
-class Logger {
-  private level: LogLevel = (process.env.LOG_LEVEL as LogLevel) || 'info';
-  private levels = { debug: 0, info: 1, warn: 2, error: 3 };
+// Redact sensitive fields from all log output
+const REDACTED_PATHS = [
+  'req.headers.authorization',
+  'req.headers.cookie',
+  'body.password',
+  'body.token',
+  'token',
+  'password',
+  'apiKey',
+  'ANTHROPIC_API_KEY',
+];
 
-  private shouldLog(level: LogLevel): boolean {
-    return this.levels[level] >= this.levels[this.level];
-  }
+export const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  redact: { paths: REDACTED_PATHS, censor: '[REDACTED]' },
+  transport: isDev
+    ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname' } }
+    : undefined,
+});
 
-  private format(level: LogLevel, message: string, data?: any): string {
-    const timestamp = new Date().toISOString();
-    const icon = { debug: '🔍', info: 'ℹ️', warn: '⚠️', error: '❌' }[level];
-    const dataStr = data ? ` ${JSON.stringify(data)}` : '';
-    return `[${timestamp}] ${icon} [${level.toUpperCase()}] ${message}${dataStr}`;
-  }
-
-  debug(message: string, data?: any): void {
-    if (this.shouldLog('debug')) console.log(this.format('debug', message, data));
-  }
-
-  info(message: string, data?: any): void {
-    if (this.shouldLog('info')) console.log(this.format('info', message, data));
-  }
-
-  warn(message: string, data?: any): void {
-    if (this.shouldLog('warn')) console.warn(this.format('warn', message, data));
-  }
-
-  error(message: string, data?: any): void {
-    if (this.shouldLog('error')) console.error(this.format('error', message, data));
-  }
-}
-
-export const logger = new Logger();
+// Named child loggers for each subsystem — keep context without repetition
+export const agentLogger   = logger.child({ module: 'agent' });
+export const routeLogger   = logger.child({ module: 'route' });
+export const dbLogger      = logger.child({ module: 'db' });
+export const authLogger    = logger.child({ module: 'auth' });
+export const serviceLogger = logger.child({ module: 'service' });

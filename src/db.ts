@@ -7,6 +7,7 @@
 // ============================================
 
 import { Pool } from 'pg';
+import { dbLogger } from './core/logger';
 
 /**
  * CREAR POOL DE CONEXIONES
@@ -42,8 +43,7 @@ export const pool = new Pool({
  * (el pool intenta reconectar automáticamente)
  */
 pool.on('error', (err) => {
-  console.error('❌ Error inesperado en pool de BD:', err);
+  dbLogger.error({ err: err.message }, 'Error inesperado en pool de BD');
 });
 
-// Log de confirmación
-console.log('✅ Pool de PostgreSQL configurado con SSL');
+dbLogger.info('Pool de PostgreSQL configurado');
