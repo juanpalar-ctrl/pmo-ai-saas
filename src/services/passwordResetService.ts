@@ -50,9 +50,8 @@ export async function createPasswordResetToken(
 
     console.log(`\n📧 FORGOT PASSWORD - MOCK EMAIL`);
     console.log(`   Email: ${email}`);
-    console.log(`   Token: ${token}`);
-    console.log(`   Link: ${resetLink}`);
-    console.log(`   Expira en: ${expiresAt.toISOString()}\n`);
+    console.log(`   Expira en: ${expiresAt.toISOString()}`);
+    console.log(`   [Token omitido por seguridad — ver BD password_resets]\n`);
 
     return { token, resetLink };
   } catch (error) {

@@ -23,10 +23,10 @@ export const pool = new Pool({
   // URL completa de la BD (incluye credenciales)
   connectionString: process.env.DATABASE_URL,
   
-  // SSL/TLS requerido por Render
-  ssl: {
-    rejectUnauthorized: false, // Acepta certificados auto-firmados
-  },
+  // SSL/TLS: en producción valida el certificado; en desarrollo acepta auto-firmados
+  ssl: process.env.DATABASE_URL?.includes('localhost')
+    ? false
+    : { rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false },
   
   // Máximo de conexiones en el pool
   max: 20,

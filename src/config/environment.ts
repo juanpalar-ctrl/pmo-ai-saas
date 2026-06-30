@@ -17,7 +17,7 @@ export const config = {
     temperature: parseFloat(process.env.AI_TEMPERATURE || '0.7')
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'dev-secret-key'
+    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('JWT_SECRET must be set in production'); })() : 'dev-secret-key')
   }
 };
 

@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import analysisRouter from './routes/analysis';
 import dataRouter from './routes/data';
 import devRouter from './routes/dev';
@@ -28,16 +30,45 @@ console.log('✅ Configuración de Claude API cargada');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({
-  origin: 'http://localhost:3001',
-  credentials: true
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled: app uses inline scripts/styles and CDN resources
+  crossOriginEmbedderPolicy: false,
 }));
 
-app.use(express.json());
+// CORS — allow configured origins (localhost for dev, env var for prod)
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [`http://localhost:${PORT}`];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
+// Rate limiting — auth endpoints: 20 req/15min per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Demasiados intentos. Espera 15 minutos.' },
+});
+
+// Chat rate limit: 60 req/min per IP
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Límite de mensajes alcanzado. Espera un momento.' },
+});
+
+app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/branding', brandingRouter);
 app.use('/api/debug', adminAuthMiddleware, debugRouter);
 app.use('/api/data/mapping', requireAuth, dataMappingRoutes);
@@ -50,7 +81,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api/chat', requireAuth, chatRouter);
+app.use('/api/chat', requireAuth, chatLimiter, chatRouter);
 app.use('/api/portfolio', requireAuth, portfolioRouter);
 app.use('/api/analysis', requireAuth, analysisRouter);
 app.use('/api/data', requireAuth, dataRouter);

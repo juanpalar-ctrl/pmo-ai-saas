@@ -120,9 +120,9 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
 
     const riskItems = (risk.topRisks || []).map((r: any) => `
       <div class="item">
-        <strong>${r.title || r.description}</strong>
-        <p>${r.description || ''}</p>
-        <small>Probabilidad: ${((r.probability || 0) * 100).toFixed(0)}% | Impacto: ${r.impact || 'N/A'}</small>
+        <strong>${escapeHtml(String(r.title || r.description || ''))}</strong>
+        <p>${escapeHtml(String(r.description || ''))}</p>
+        <small>Probabilidad: ${((r.probability || 0) * 100).toFixed(0)}% | Impacto: ${escapeHtml(String(r.impact || 'N/A'))}</small>
       </div>
     `).join('');
 
@@ -205,10 +205,10 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
       <h2>📄 Reportes Ejecutivos</h2>
       
       <h3>👔 Senior Report</h3>
-      <div class="report-content">${(reports.senior_report || 'No disponible').replace(/\n/g, '<br>')}</div>
-      
+      <div class="report-content">${escapeHtml(reports.senior_report || 'No disponible').replace(/\n/g, '<br>')}</div>
+
       <h3>🔧 Technical Report</h3>
-      <div class="report-content">${(reports.technical_report || 'No disponible').replace(/\n/g, '<br>')}</div>
+      <div class="report-content">${escapeHtml(reports.technical_report || 'No disponible').replace(/\n/g, '<br>')}</div>
     </div>
   </div>
 </body>
@@ -218,7 +218,8 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
     res.send(html);
     
   } catch (error: any) {
-    res.status(500).send(`<h1>Error: ${error.message}</h1>`);
+    console.error('[analysis/view] Error:', error.message);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
 
