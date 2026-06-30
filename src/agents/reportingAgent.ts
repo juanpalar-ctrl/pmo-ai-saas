@@ -162,10 +162,25 @@ RESPONDE usando EXACTAMENTE este formato de texto plano (NO uses JSON, NO uses b
 
   parseResponse(response: string): any {
     try {
-      const seniorMatch = response.match(/===SENIOR_REPORT===([\s\S]*?)===TECHNICAL_REPORT===/);
-      const technicalMatch = response.match(/===TECHNICAL_REPORT===([\s\S]*?)===END===/);
-      const senior = seniorMatch?.[1]?.trim();
-      const technical = technicalMatch?.[1]?.trim() || response.match(/===TECHNICAL_REPORT===([\s\S]*)/)?.[1]?.trim();
+      const clean = response.replace(/```[a-z]*\n?/gi, '').trim();
+      // Tolerant markers: optional spaces/underscores/dashes, any number of "=", case-insensitive
+      const SENIOR = /=*\s*SENIOR[_\s-]?REPORT\s*=*/i;
+      const TECHNICAL = /=*\s*TECHNICAL[_\s-]?REPORT\s*=*/i;
+      const END = /=*\s*END\s*=*/i;
+
+      const seniorStart = clean.search(SENIOR);
+      const technicalStart = clean.search(TECHNICAL);
+
+      let senior: string | undefined;
+      let technical: string | undefined;
+
+      if (seniorStart !== -1 && technicalStart !== -1 && technicalStart > seniorStart) {
+        senior = clean.slice(seniorStart, technicalStart).replace(SENIOR, '').trim();
+        const rest = clean.slice(technicalStart).replace(TECHNICAL, '').trim();
+        const endStart = rest.search(END);
+        technical = (endStart !== -1 ? rest.slice(0, endStart) : rest).trim();
+      }
+
       if (senior && technical) {
         return { senior_report: senior, technical_report: technical };
       }
