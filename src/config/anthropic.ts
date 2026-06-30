@@ -25,10 +25,3 @@ export const aiConfig = {
   timeout: 60000,
 };
 
-// Validar que la API key existe
-if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('❌ ERROR: ANTHROPIC_API_KEY no definida en .env');
-  process.exit(1);
-}
-
-console.log('✅ Configuración de Claude API cargada');
