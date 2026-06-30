@@ -135,10 +135,11 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
     const query = `
       SELECT pd.*, aa.output
       FROM project_data pd
-      INNER JOIN ai_analyses aa ON pd.id = aa.projectid
-      WHERE aa.id IN (
-        SELECT MAX(id) FROM ai_analyses GROUP BY projectid
-      )
+      INNER JOIN ai_analyses aa ON pd.projectid = aa.projectid
+      WHERE aa.agenttype != 'normalization'
+        AND aa.id IN (
+          SELECT MAX(id) FROM ai_analyses WHERE agenttype != 'normalization' GROUP BY projectid
+        )
       ORDER BY aa.id DESC
       LIMIT 10
     `;
