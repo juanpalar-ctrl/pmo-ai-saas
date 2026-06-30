@@ -117,6 +117,12 @@ export const OrgQuerySchema = z.object({
   org: z.string().max(200).optional().default('Sin especificar'),
 });
 
+export const DraftMessageSchema = z.object({
+  audience:     z.enum(['team', 'clevel']),
+  alertContext: z.string().min(1).max(4000),
+  projectName:  z.string().max(200).optional().default('el proyecto'),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ColumnSuggestion = z.infer<typeof ColumnSuggestionSchema>;

@@ -105,6 +105,35 @@
       transform: translateX(2px);
     }
 
+    .draft-card {
+      margin-top: 10px; border-radius: 10px; overflow: hidden;
+      border: 1.5px solid #e5e7eb;
+    }
+    .draft-card-header {
+      padding: 8px 12px; font-size: 0.75em; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .draft-card-header.team { background: #dbeafe; color: #1d4ed8; }
+    .draft-card-header.clevel { background: #fef9c3; color: #92400e; }
+    .draft-card-body {
+      padding: 12px; font-size: 0.83em; line-height: 1.65;
+      background: #fafafa; color: #1f2937; white-space: pre-wrap;
+    }
+    .draft-card-footer {
+      padding: 8px 12px; background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex; gap: 8px;
+    }
+    .copy-btn {
+      padding: 5px 14px; border-radius: 8px; font-size: 0.78em;
+      border: 1.5px solid #17B8A0; color: #0B7B8C;
+      background: white; cursor: pointer; font-family: inherit;
+      font-weight: 600; transition: all 0.15s;
+    }
+    .copy-btn:hover { background: #17B8A0; color: white; }
+    .copy-btn.copied { background: #17B8A0; color: white; }
+
     .logo-img { width: 50px; height: 50px; object-fit: contain; }
     .report-section { margin-bottom: 20px; padding: 16px; background: #f0f9fa; border-left: 4px solid #17B8A0; border-radius: 8px; }
     .report-section h3 { color: #0B7B8C; font-weight: 700; margin-bottom: 10px; }
@@ -739,8 +768,12 @@
             btn.textContent = action.label;
             btn.onclick = () => {
               menu.remove();
-              document.getElementById('chat-input').value = action.intent;
-              sendMessage();
+              if (action.intent.startsWith('draft:')) {
+                sendDraft(action.intent, div);
+              } else {
+                document.getElementById('chat-input').value = action.intent;
+                sendMessage();
+              }
             };
             menu.appendChild(btn);
           });
@@ -823,6 +856,99 @@
         sendMessage();
       }
       window.sendSuggestion = sendSuggestion;
+
+      async function sendDraft(intent, parentMsgDiv) {
+        const audience = intent === 'draft:team' ? 'team' : 'clevel';
+        const label = audience === 'team' ? '✉️ Mensaje para el Equipo Técnico' : '📊 Reporte Ejecutivo C-Level';
+
+        // Collect alert context from chat history
+        const alertContext = chatHistory
+          .filter(t => t.role === 'assistant')
+          .map(t => t.content)
+          .slice(-3)
+          .join('\n\n');
+
+        const msgs = document.getElementById('chat-messages');
+
+        // User bubble
+        const userBubble = document.createElement('div');
+        userBubble.className = 'msg user';
+        userBubble.textContent = audience === 'team' ? '✉️ Redactar mensaje para el equipo' : '📊 Preparar reporte ejecutivo';
+        msgs.appendChild(userBubble);
+        msgs.scrollTop = msgs.scrollHeight;
+
+        // Typing indicator inside a bot bubble
+        const typingDiv = addBotMessage('', true);
+
+        try {
+          const res = await fetch('/api/chat/draft', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              audience,
+              alertContext: alertContext || 'El proyecto tiene alertas activas que requieren atención.',
+              projectName: projectContext?.projectName || 'el proyecto',
+            }),
+          });
+          const data = await res.json();
+          typingDiv.remove();
+
+          if (data.success && data.draft) {
+            chatHistory.push({ role: 'user', content: userBubble.textContent });
+            chatHistory.push({ role: 'assistant', content: data.draft });
+            addDraftCard(data.draft, audience, label);
+          } else {
+            addBotMessage('No pude generar el borrador. Intenta de nuevo.');
+          }
+        } catch (_) {
+          typingDiv.remove();
+          addBotMessage('Error de conexión al generar el borrador.');
+        }
+      }
+
+      function addDraftCard(text, audience, label) {
+        const msgs = document.getElementById('chat-messages');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg bot';
+        wrapper.style.maxWidth = '95%';
+
+        const card = document.createElement('div');
+        card.className = 'draft-card';
+
+        const header = document.createElement('div');
+        header.className = `draft-card-header ${audience}`;
+        header.innerHTML = `<span>${label}</span><span style="opacity:0.7;font-weight:400">listo para copiar</span>`;
+
+        const body = document.createElement('div');
+        body.className = 'draft-card-body';
+        body.textContent = text;
+
+        const footer = document.createElement('div');
+        footer.className = 'draft-card-footer';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.textContent = '📋 Copiar al portapapeles';
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(text).then(() => {
+            copyBtn.textContent = '✅ ¡Copiado!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+              copyBtn.textContent = '📋 Copiar al portapapeles';
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          });
+        };
+
+        footer.appendChild(copyBtn);
+        card.appendChild(header);
+        card.appendChild(body);
+        card.appendChild(footer);
+        wrapper.appendChild(card);
+        msgs.appendChild(wrapper);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
 
       // Auto-resize textarea
       document.getElementById('chat-input').addEventListener('input', function () {

@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { anthropicClient, aiConfig } from '../config/anthropic';
 import { pool } from '../db';
-import { ChatMessageSchema, ProjectIdParamSchema } from '../config/validation';
+import { ChatMessageSchema, ProjectIdParamSchema, DraftMessageSchema } from '../config/validation';
 import { routeLogger } from '../core/logger';
 
 const router = express.Router();
@@ -34,10 +34,14 @@ const SYSTEM_PROMPT = `Eres LARA Assistant, un experto en Project Management con
 Cuando tu respuesta explica un problema accionable (alerta, riesgo, desviación de presupuesto, tareas atrasadas), DEBES terminar con un bloque de acciones en este formato EXACTO:
 
 <actions>
-[{"id":"draft_team","label":"✉️ Redactar mensaje para el equipo","intent":"Redacta un mensaje para el equipo técnico explicando este problema y cómo desbloquearlo"},{"id":"draft_clevel","label":"📊 Preparar reporte ejecutivo","intent":"Redacta un reporte ejecutivo para la junta directiva explicando el impacto financiero de este problema"},{"id":"simulate","label":"🔮 Simular escenarios","intent":"¿Qué pasa si resolvemos este problema esta semana? ¿Y si se retrasa dos semanas más?"}]
+[{"id":"draft_team","label":"✉️ Redactar mensaje para el equipo","intent":"draft:team"},{"id":"draft_clevel","label":"📊 Preparar reporte ejecutivo","intent":"draft:clevel"},{"id":"simulate","label":"🔮 Simular escenarios","intent":"¿Qué pasa si resolvemos este problema esta semana? ¿Y si se retrasa dos semanas más?"}]
 </actions>
 
 Adapta las acciones al problema específico. Si el problema es de presupuesto, añade una acción de revisión presupuestaria. Si es de cronograma, añade una de negociación de fechas. Siempre incluye al menos "Redactar mensaje para el equipo" y "Preparar reporte ejecutivo" cuando haya un problema.
+
+IMPORTANTE: Cuando el usuario pida redactar un mensaje, usa los intents exactos:
+- Para mensaje al equipo técnico: intent debe ser "draft:team"
+- Para reporte ejecutivo/junta directiva: intent debe ser "draft:clevel"
 
 NO incluyas el bloque <actions> cuando el usuario solo hace preguntas conceptuales, cuando ya está respondiendo a una acción, o cuando la conversación es informativa sin problema accionable.
 
@@ -91,6 +95,55 @@ router.post('/', async (req: Request, res: Response) => {
   } catch (error: any) {
     routeLogger.error({ err: error.message }, 'chat POST error');
     res.status(500).json({ error: 'Error procesando tu mensaje' });
+  }
+});
+
+// POST /api/chat/draft — generate audience-specific message drafts (Escudo feature)
+const DRAFT_PROMPTS = {
+  team: `Eres un experto en comunicación de equipos de proyectos.
+Redacta un mensaje profesional para el equipo técnico (para pegar en Slack o Teams).
+
+Reglas:
+- Tono: empático, directo, orientado a desbloquear — nunca acusatorio
+- Estructura: 1) qué está pasando (1 oración), 2) por qué importa (1 oración), 3) qué necesitas del equipo (bullet points concretos), 4) próximos pasos (fecha/hora de standup si aplica)
+- Sin tecnicismos de EVM (no mencionar CPI, SPI, PV) — habla de tareas, fechas y bloqueos
+- Máximo 150 palabras
+- No uses emojis excesivos — máximo 1-2 para énfasis
+- Termina con una llamada a la acción clara`,
+
+  clevel: `Eres un experto en comunicación ejecutiva de proyectos.
+Redacta un reporte ejecutivo para la junta directiva o C-Level (para un correo formal).
+
+Reglas:
+- Tono: formal, directo, orientado al impacto financiero y de negocio
+- Estructura: 1) Resumen ejecutivo (1 párrafo, el problema y su impacto en $), 2) Estado actual (métricas clave: budget, timeline), 3) Riesgos (Revenue at Stake si aplica), 4) Plan de acción (3 bullets con responsable y fecha), 5) Decisión requerida (si la hay)
+- Traduce todo a lenguaje de negocio: nada de jerga técnica (no Scrum, CPI, etc.)
+- Usa cifras monetarias cuando estén disponibles
+- Máximo 200 palabras
+- Termina con: "¿Requieren alguna acción de su parte?" si se necesita aprobación`,
+};
+
+router.post('/draft', async (req: Request, res: Response) => {
+  try {
+    const body = DraftMessageSchema.safeParse(req.body);
+    if (!body.success) return res.status(400).json({ error: body.error.flatten() });
+    const { audience, alertContext, projectName } = body.data;
+
+    const systemPrompt = DRAFT_PROMPTS[audience];
+    const userMessage = `Proyecto: ${projectName}\n\nSituación a comunicar:\n${alertContext}`;
+
+    const response = await anthropicClient.messages.create({
+      model: aiConfig.model,
+      max_tokens: 600,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    });
+
+    const draft = response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+    res.json({ success: true, draft, audience });
+  } catch (error: any) {
+    routeLogger.error({ err: error.message }, 'draft POST error');
+    res.status(500).json({ error: 'Error generando el borrador' });
   }
 });
 
