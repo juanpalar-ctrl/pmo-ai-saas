@@ -30,6 +30,17 @@ const SYSTEM_PROMPT = `Eres LARA Assistant, un experto en Project Management con
 5. Usa formato markdown para mejor legibilidad (negritas, listas, etc.)
 6. Respuestas concisas — máximo 300 palabras salvo que el usuario pida más detalle
 
+## Menú de Acción Inmediata
+Cuando tu respuesta explica un problema accionable (alerta, riesgo, desviación de presupuesto, tareas atrasadas), DEBES terminar con un bloque de acciones en este formato EXACTO:
+
+<actions>
+[{"id":"draft_team","label":"✉️ Redactar mensaje para el equipo","intent":"Redacta un mensaje para el equipo técnico explicando este problema y cómo desbloquearlo"},{"id":"draft_clevel","label":"📊 Preparar reporte ejecutivo","intent":"Redacta un reporte ejecutivo para la junta directiva explicando el impacto financiero de este problema"},{"id":"simulate","label":"🔮 Simular escenarios","intent":"¿Qué pasa si resolvemos este problema esta semana? ¿Y si se retrasa dos semanas más?"}]
+</actions>
+
+Adapta las acciones al problema específico. Si el problema es de presupuesto, añade una acción de revisión presupuestaria. Si es de cronograma, añade una de negociación de fechas. Siempre incluye al menos "Redactar mensaje para el equipo" y "Preparar reporte ejecutivo" cuando haya un problema.
+
+NO incluyas el bloque <actions> cuando el usuario solo hace preguntas conceptuales, cuando ya está respondiendo a una acción, o cuando la conversación es informativa sin problema accionable.
+
 ## Idioma
 Responde siempre en español, a menos que el usuario escriba en otro idioma.`;
 
@@ -68,14 +79,15 @@ router.post('/', async (req: Request, res: Response) => {
 
     const response = await anthropicClient.messages.create({
       model: aiConfig.model,
-      max_tokens: 800,
+      max_tokens: 1200,
       system: SYSTEM_PROMPT,
       messages,
     });
 
-    const reply = response.content[0].type === 'text' ? response.content[0].text : '';
+    const raw = response.content[0].type === 'text' ? response.content[0].text : '';
+    const { reply, actions } = parseActionsFromReply(raw);
 
-    res.json({ success: true, reply });
+    res.json({ success: true, reply, actions });
   } catch (error: any) {
     routeLogger.error({ err: error.message }, 'chat POST error');
     res.status(500).json({ error: 'Error procesando tu mensaje' });
@@ -118,6 +130,25 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+interface ChatAction {
+  id: string;
+  label: string;
+  intent: string;
+}
+
+function parseActionsFromReply(raw: string): { reply: string; actions: ChatAction[] } {
+  const match = raw.match(/<actions>([\s\S]*?)<\/actions>/);
+  if (!match) return { reply: raw.trim(), actions: [] };
+
+  const reply = raw.replace(/<actions>[\s\S]*?<\/actions>/, '').trim();
+  try {
+    const actions: ChatAction[] = JSON.parse(match[1].trim());
+    return { reply, actions };
+  } catch {
+    return { reply, actions: [] };
+  }
+}
 
 function buildContextMessage(ctx: any): string {
   if (!ctx) return '';

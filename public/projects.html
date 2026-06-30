@@ -86,6 +86,25 @@
     }
     .suggestion-chip:hover { background: #17B8A0; color: white; }
 
+    .action-menu {
+      display: flex; flex-direction: column; gap: 6px;
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px dashed #e5e7eb;
+    }
+    .action-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 10px; font-size: 0.82em;
+      border: 1.5px solid #17B8A0; color: #0B7B8C;
+      background: linear-gradient(135deg, #f0fdfb, #e6f7f5);
+      cursor: pointer; text-align: left; font-family: inherit;
+      transition: all 0.15s; font-weight: 500;
+    }
+    .action-btn:hover {
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      color: white; border-color: transparent;
+      transform: translateX(2px);
+    }
+
     .logo-img { width: 50px; height: 50px; object-fit: contain; }
     .report-section { margin-bottom: 20px; padding: 16px; background: #f0f9fa; border-left: 4px solid #17B8A0; border-radius: 8px; }
     .report-section h3 { color: #0B7B8C; font-weight: 700; margin-bottom: 10px; }
@@ -705,11 +724,29 @@
       }
       window.toggleChat = toggleChat;
 
-      function addBotMessage(text, isTyping = false) {
+      function addBotMessage(text, isTyping = false, actions = []) {
         const msgs = document.getElementById('chat-messages');
         const div = document.createElement('div');
         div.className = 'msg bot' + (isTyping ? ' typing' : '');
         div.innerHTML = isTyping ? '✦ Escribiendo...' : formatMarkdown(text);
+
+        if (!isTyping && actions.length > 0) {
+          const menu = document.createElement('div');
+          menu.className = 'action-menu';
+          actions.forEach(action => {
+            const btn = document.createElement('button');
+            btn.className = 'action-btn';
+            btn.textContent = action.label;
+            btn.onclick = () => {
+              menu.remove();
+              document.getElementById('chat-input').value = action.intent;
+              sendMessage();
+            };
+            menu.appendChild(btn);
+          });
+          div.appendChild(menu);
+        }
+
         msgs.appendChild(div);
         msgs.scrollTop = msgs.scrollHeight;
         return div;
@@ -765,7 +802,7 @@
 
           if (data.success) {
             chatHistory.push({ role: 'assistant', content: data.reply });
-            addBotMessage(data.reply);
+            addBotMessage(data.reply, false, data.actions || []);
             // Hide suggestions after first real exchange
             document.getElementById('chat-suggestions').style.display = 'none';
           } else {
