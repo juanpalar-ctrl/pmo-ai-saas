@@ -174,7 +174,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
     const projectResult = await pool.query(
       `INSERT INTO project_data (projectid, projectname, status, uploadedat, updatedat) 
        VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [projectId, `imported-${projectId}`, 'Not Started', now, now]
+      [projectId, org || `imported-${projectId}`, 'Not Started', now, now]
     );
 
     const id = projectResult.rows[0].id;
