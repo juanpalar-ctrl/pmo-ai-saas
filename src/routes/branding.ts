@@ -32,44 +32,41 @@ router.get('/', async (req: Request, res: Response) => {
     // Obtener organizationId desde header o usar default
     const organizationId = req.headers['x-organization-id'] as string || 'org_lara_global';
 
-    // Buscar branding en BD
-    const result = await pool.query(
-      'SELECT primary_color, secondary_color, accent_color, logo_url FROM branding WHERE organization_id = $1',
-      [organizationId]
-    );
+    const defaults = {
+      primaryColor: '#17B8A0',
+      secondaryColor: '#0B7B8C',
+      accentColor: '#9ED900',
+      logoUrl: '/uploads/logos/lara-logo.png',
+    };
 
-    if (result.rows.length === 0) {
-      // Si no existe, devolver defaults
+    try {
+      const result = await pool.query(
+        'SELECT primary_color, secondary_color, accent_color, logo_url FROM branding WHERE organization_id = $1',
+        [organizationId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(200).json({ success: true, data: defaults });
+      }
+
+      const b = result.rows[0];
       return res.status(200).json({
         success: true,
         data: {
-          primaryColor: '#17B8A0',
-          secondaryColor: '#0B7B8C',
-          accentColor: '#9ED900',
-          logoUrl: '/uploads/logos/lara-logo.png',
+          primaryColor: b.primary_color,
+          secondaryColor: b.secondary_color,
+          accentColor: b.accent_color,
+          logoUrl: b.logo_url,
         },
-        message: 'Branding defaults returned (not found in DB)',
       });
+    } catch {
+      // Tabla no existe o DB error — devolver defaults sin crashear
+      return res.status(200).json({ success: true, data: defaults });
     }
-
-    // Mapear nombres de columnas a camelCase
-    const branding = result.rows[0];
+  } catch (error: any) {
     res.status(200).json({
       success: true,
-      data: {
-        primaryColor: branding.primary_color,
-        secondaryColor: branding.secondary_color,
-        accentColor: branding.accent_color,
-        logoUrl: branding.logo_url,
-      },
-      message: 'Branding loaded successfully',
-    });
-  } catch (error: any) {
-    console.error('GET /branding error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to load branding',
-      message: error.message,
+      data: { primaryColor: '#17B8A0', secondaryColor: '#0B7B8C', accentColor: '#9ED900', logoUrl: '/uploads/logos/lara-logo.png' },
     });
   }
 });

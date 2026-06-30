@@ -31,6 +31,9 @@ if (!process.env.ANTHROPIC_API_KEY) {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Render (and most cloud providers) sit behind a reverse proxy
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled: app uses inline scripts/styles and CDN resources
