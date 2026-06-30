@@ -1,3 +1,4 @@
+import { serviceLogger } from '../core/logger';
 /**
  * src/services/passwordResetService.ts
  * Forgot Password flow with token-based reset.
@@ -48,14 +49,11 @@ export async function createPasswordResetToken(
     // 4. Generar reset link (para mock, usamos localhost)
     const resetLink = `http://localhost:3001/reset-password?token=${token}`;
 
-    console.log(`\n📧 FORGOT PASSWORD - MOCK EMAIL`);
-    console.log(`   Email: ${email}`);
-    console.log(`   Expira en: ${expiresAt.toISOString()}`);
-    console.log(`   [Token omitido por seguridad — ver BD password_resets]\n`);
+    serviceLogger.info({ email, expiresAt: expiresAt.toISOString() }, 'FORGOT PASSWORD mock email sent');
 
     return { token, resetLink };
   } catch (error) {
-    console.error("Error creating password reset token:", error);
+    serviceLogger.error({ err: (error as Error).message }, "Error creating password reset token");
     throw error;
   }
 }
@@ -86,7 +84,7 @@ export async function validateResetToken(token: string): Promise<number | null> 
 
     return user_id;
   } catch (error) {
-    console.error("Error validating reset token:", error);
+    serviceLogger.error({ err: (error as Error).message }, "Error validating reset token");
     throw error;
   }
 }
@@ -118,10 +116,10 @@ export async function resetPasswordWithToken(
     // 4. Eliminar token usado
     await pool.query("DELETE FROM password_resets WHERE token = $1", [token]);
 
-    console.log(`✅ Password reset exitoso para user_id: ${userId}`);
+    serviceLogger.info(`✅ Password reset exitoso para user_id: ${userId}`);
     return true;
   } catch (error) {
-    console.error("Error resetting password:", error);
+    serviceLogger.error({ err: (error as Error).message }, "Error resetting password");
     throw error;
   }
 }

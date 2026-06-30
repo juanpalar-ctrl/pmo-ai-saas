@@ -69,6 +69,15 @@ const chatLimiter = rateLimit({
   message: { success: false, error: 'Límite de mensajes alcanzado. Espera un momento.' },
 });
 
+// Heavy endpoints: analysis, upload, portfolio — 30 req/15min per IP
+const heavyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Demasiadas solicitudes. Espera unos minutos.' },
+});
+
 // HTTP request logging (skips static assets to reduce noise)
 app.use(pinoHttp({
   logger,
@@ -98,9 +107,9 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/chat', requireAuth, chatLimiter, chatRouter);
-app.use('/api/portfolio', requireAuth, portfolioRouter);
-app.use('/api/analysis', requireAuth, analysisRouter);
-app.use('/api/data', requireAuth, dataRouter);
+app.use('/api/portfolio', requireAuth, heavyLimiter, portfolioRouter);
+app.use('/api/analysis', requireAuth, heavyLimiter, analysisRouter);
+app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
 app.use('/api/dev', adminAuthMiddleware, devRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 

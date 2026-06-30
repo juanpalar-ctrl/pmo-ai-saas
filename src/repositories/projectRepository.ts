@@ -12,6 +12,7 @@
 
 import { pool } from '../db';
 import { ProjectData } from '../types/projectSchema';
+import { dbLogger } from '../core/logger';
 
 export class ProjectRepository {
   
@@ -31,7 +32,7 @@ export class ProjectRepository {
    */
   async getProjectForAnalysis(projectId: number): Promise<ProjectData | null> {
     try {
-      console.log(`\n🔍 Buscando proyecto ${projectId} en BD...`);
+      dbLogger.info(`\n🔍 Buscando proyecto ${projectId} en BD...`);
       
       const result = await pool.query(
         `SELECT 
@@ -49,16 +50,16 @@ export class ProjectRepository {
         [projectId]
       );
       
-      console.log(`   ✅ Query ejecutada. Filas encontradas: ${result.rows.length}`);
+      dbLogger.info(`   ✅ Query ejecutada. Filas encontradas: ${result.rows.length}`);
       
       // Si no hay resultados, retorna NULL
       if (!result.rows[0]) {
-        console.log(`   ❌ No hay datos para proyecto ${projectId}`);
+        dbLogger.info(`   ❌ No hay datos para proyecto ${projectId}`);
         return null;
       }
       
       const row = result.rows[0];
-      console.log(`   📋 projectId: ${row.projectId}, projectName: ${row.projectName}`);
+      dbLogger.info(`   📋 projectId: ${row.projectId}, projectName: ${row.projectName}`);
       
       // PASO CRÍTICO: Parsear campos JSONB (vienen como strings desde BD)
       // BD guarda JSON como text, necesitan ser parseados a objetos
@@ -98,13 +99,13 @@ export class ProjectRepository {
           : row.risksData,
       };
       
-      console.log(`   ✅ Proyecto parseado exitosamente: ${parsed.projectName}`);
+      dbLogger.info(`   ✅ Proyecto parseado exitosamente: ${parsed.projectName}`);
       
       return parsed as ProjectData;
       
     } catch (error: any) {
-      console.error(`❌ Error obteniendo proyecto ${projectId}:`, error.message);
-      console.error(`   Stack:`, error.stack);
+      dbLogger.error(`❌ Error obteniendo proyecto ${projectId}:`, error.message);
+      dbLogger.error(`   Stack:`, error.stack);
       throw error;
     }
   }
@@ -148,7 +149,7 @@ export class ProjectRepository {
         ]
       );
     } catch (error: any) {
-      console.error('❌ Error guardando proyecto:', error.message);
+      dbLogger.error('❌ Error guardando proyecto:', error.message);
       throw error;
     }
   }
@@ -216,7 +217,7 @@ export class ProjectRepository {
       
       return parsed as ProjectData[];
     } catch (error: any) {
-      console.error('❌ Error obteniendo proyectos:', error.message);
+      dbLogger.error('❌ Error obteniendo proyectos:', error.message);
       throw error;
     }
   }
@@ -235,9 +236,9 @@ export class ProjectRepository {
         'DELETE FROM project_data WHERE projectId = $1',
         [projectId]
       );
-      console.log(`✅ Proyecto ${projectId} eliminado`);
+      dbLogger.info(`✅ Proyecto ${projectId} eliminado`);
     } catch (error: any) {
-      console.error(`❌ Error eliminando proyecto ${projectId}:`, error.message);
+      dbLogger.error(`❌ Error eliminando proyecto ${projectId}:`, error.message);
       throw error;
     }
   }

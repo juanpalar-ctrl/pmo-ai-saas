@@ -12,16 +12,12 @@ interface TokenPayload {
   role: string;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET no está definido en las variables de entorno');
+}
 const TOKEN_EXPIRY = process.env.JWT_EXPIRY || "8h";
 
-/**
- * Signs a JWT token with user identity and role.
- * @param userId User database ID
- * @param email User email
- * @param role User role (e.g., 'user', 'admin')
- * @returns Signed JWT token string
- */
 export function signToken(userId: string, email: string, role: string): string {
   const payload: TokenPayload = {
     id: userId,
@@ -36,11 +32,6 @@ export function signToken(userId: string, email: string, role: string): string {
   return token;
 }
 
-/**
- * Verifies a JWT token and returns the payload.
- * @param token JWT token string
- * @returns Decoded payload or null if invalid
- */
 export function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET as string) as TokenPayload;
@@ -51,12 +42,6 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
-/**
- * Decodes a JWT token without verification (for reading claims on the client side).
- * Use only for non-critical claims reading.
- * @param token JWT token string
- * @returns Decoded payload or null if invalid
- */
 export function decodeToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.decode(token) as TokenPayload | null;

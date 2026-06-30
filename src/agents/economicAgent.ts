@@ -1,5 +1,6 @@
 import { BaseAgent } from './baseAgent';
 import { AgentInput } from '../types/agents';
+import { agentLogger } from '../core/logger';
 
 export class EconomicAgent extends BaseAgent {
   name = '💰 Economic Performance Agent';
@@ -89,7 +90,8 @@ JSON REQUERIDO:
 
       return parsed;
     } catch (error: any) {
-      console.error('Error parsing economic:', error.message);
+      agentLogger.error({ err: error.message }, 'Error parsing economic');
+      // original:, error.message);
       return {
         analysis: {
           budget_status: 'AT_RISK',

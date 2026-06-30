@@ -1,3 +1,4 @@
+import { serviceLogger } from '../core/logger';
 /**
  * tempFileCleanup.ts
  * Scheduled cleanup job for temporary mapping files
@@ -39,7 +40,7 @@ export function cleanupOldTempFiles(): void {
 
   try {
     if (!fs.existsSync(uploadsDir)) {
-      console.log('[tempFileCleanup] Uploads directory does not exist, skipping cleanup');
+      serviceLogger.info('[tempFileCleanup] Uploads directory does not exist, skipping cleanup');
       return;
     }
 
@@ -61,22 +62,22 @@ export function cleanupOldTempFiles(): void {
         if (ageMs > MAX_AGE_MS) {
           fs.unlinkSync(filePath);
           cleanedCount++;
-          console.log(`[tempFileCleanup] Deleted: ${filename} (age: ${Math.round(ageMs / 1000)}s)`);
+          serviceLogger.info(`[tempFileCleanup] Deleted: ${filename} (age: ${Math.round(ageMs / 1000)}s)`);
         } else {
           skippedCount++;
         }
       } catch (err) {
-        console.warn(`[tempFileCleanup] Failed to process ${filename}: ${(err as Error).message}`);
+        serviceLogger.warn(`[tempFileCleanup] Failed to process ${filename}: ${(err as Error).message}`);
       }
     }
 
     if (cleanedCount > 0 || skippedCount > 0) {
-      console.log(
+      serviceLogger.info(
         `[tempFileCleanup] Cleanup complete: ${cleanedCount} deleted, ${skippedCount} retained`
       );
     }
   } catch (err) {
-    console.error(`[tempFileCleanup] Cleanup job failed: ${(err as Error).message}`);
+    serviceLogger.error(`[tempFileCleanup] Cleanup job failed: ${(err as Error).message}`);
   }
 }
 
@@ -86,7 +87,7 @@ export function cleanupOldTempFiles(): void {
  * @returns NodeJS.Timer ID (can be used to cancel with clearInterval)
  */
 export function scheduleCleanupJob(intervalMs: number = 60 * 60 * 1000): NodeJS.Timer {
-  console.log(`[tempFileCleanup] Scheduling cleanup job to run every ${Math.round(intervalMs / 60000)} minutes`);
+  serviceLogger.info(`[tempFileCleanup] Scheduling cleanup job to run every ${Math.round(intervalMs / 60000)} minutes`);
 
   // Run immediately on startup
   cleanupOldTempFiles();

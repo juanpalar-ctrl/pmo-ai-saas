@@ -230,7 +230,7 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
     res.send(html);
     
   } catch (error: any) {
-    console.error('[analysis/view] Error:', error.message);
+    routeLogger.error({ err: error.message }, '[analysis/view] Error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });

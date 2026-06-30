@@ -1,5 +1,6 @@
 import { BaseAgent } from './baseAgent';
 import { AgentInput } from '../types/agents';
+import { agentLogger } from '../core/logger';
 
 export class RiskAgent extends BaseAgent {
   name = '🎯 Risk Analysis Agent';
@@ -188,7 +189,8 @@ JSON REQUERIDO (EXACTAMENTE ESTE FORMATO):
 
       return parsed;
     } catch (error: any) {
-      console.error('Error parsing risk:', error.message);
+      agentLogger.error({ err: error.message }, 'Error parsing risk');
+      // original:, error.message);
       const fallback: any = {
         scrum: {
           overallRiskScore: 'MEDIUM',

@@ -5,6 +5,7 @@
  */
 
 import express, { Request, Response } from 'express';
+import { authLogger } from '../core/logger';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db';
 import { createPasswordResetToken, resetPasswordWithToken } from '../services/passwordResetService';
@@ -57,7 +58,7 @@ router.post('/signup', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Signup error:', error.message);
+    authLogger.error({ err: error.message }, 'Signup error');
     res.status(500).json({ error: 'Error en servidor' });
   }
 });
@@ -123,7 +124,7 @@ router.post('/login', async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Login error full:', JSON.stringify(error), error.message, error.code, error.stack);
+    authLogger.error({ err: error.message, code: error.code }, 'Login error');
     res.status(500).json({ error: 'Error en servidor' });
   }
 });
@@ -189,7 +190,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       resetLink: result?.resetLink || null, // Solo en development/mock
     });
   } catch (error: any) {
-    console.error('Forgot password error:', error.message);
+    authLogger.error({ err: error.message }, 'Forgot password error');
     res.status(500).json({ error: 'Error en servidor' });
   }
 });
@@ -222,7 +223,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       message: 'Contraseña reseteada exitosamente. Por favor, inicia sesión.',
     });
   } catch (error: any) {
-    console.error('Reset password error:', error.message);
+    authLogger.error({ err: error.message }, 'Reset password error');
     res.status(500).json({ error: 'Error en servidor' });
   }
 });

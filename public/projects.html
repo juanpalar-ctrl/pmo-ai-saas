@@ -49,6 +49,53 @@
     .health-score-num.yellow { color: #b45309; }
     .health-score-num.red    { color: #dc2626; }
 
+    /* ── PDF Export ── */
+    @media print {
+      body { background: white !important; }
+      #pdf-header { display: flex !important; }
+      .no-print, #chat-fab, #chat-panel, nav, header,
+      .gantt-whatif-btns, #chat-suggestions, #health-banner { display: none !important; }
+      .pdf-only { display: block !important; }
+      #report-senior, #report-technical {
+        max-height: none !important; overflow: visible !important;
+      }
+      .bg-white.rounded-xl.shadow-lg:not(.pdf-report-section) { display: none !important; }
+      .pdf-report-section { display: block !important; box-shadow: none !important; border: none !important; }
+      .markdown-report { font-size: 12px; line-height: 1.6; }
+    }
+    #pdf-header {
+      display: none;
+      align-items: center; justify-content: space-between;
+      padding: 16px 0 12px; margin-bottom: 20px;
+      border-bottom: 2px solid #17B8A0;
+    }
+    #pdf-header .pdf-logo { font-size: 22px; font-weight: 900; color: #0B7B8C; }
+    #pdf-header .pdf-meta { font-size: 11px; color: #64748b; text-align: right; }
+    .export-pdf-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      color: white; border: none; border-radius: 8px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .export-pdf-btn:hover { opacity: 0.88; }
+
+    /* ── Gantt What-If ── */
+    .gantt-row:hover .gantt-whatif-btns { opacity: 1; pointer-events: auto; }
+    .gantt-bar-cell { display: flex; align-items: center; gap: 8px; }
+    .gantt-whatif-btns {
+      display: flex; gap: 4px; opacity: 0; pointer-events: none;
+      transition: opacity 0.18s;
+    }
+    .gantt-whatif-btn {
+      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+      border: 1.5px solid #cbd5e1; background: white; color: #64748b;
+      cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    }
+    .gantt-whatif-btn:hover { border-color: #0B7B8C; color: #0B7B8C; background: #f0fdfa; }
+    .gantt-whatif-btn.accent { border-color: #17B8A0; color: #17B8A0; }
+    .gantt-whatif-btn.accent:hover { background: #17B8A0; color: white; }
+
     /* ── Chat Widget ── */
     #chat-fab {
       position: fixed; bottom: 28px; right: 28px; z-index: 1000;
@@ -244,20 +291,21 @@
     </div>
 
     <div class="flex-1 flex flex-col overflow-hidden">
-      <header class="border-b border-teal-600 bg-white/95 px-6 py-4 flex items-center justify-between shadow-lg">
-        <div class="flex items-center space-x-3">
+      <header class="border-b border-teal-600 bg-white/95 px-6 py-4 flex items-center justify-between shadow-lg no-print">
+        <div class="flex items-center gap-3">
           <img src="logo.jpeg" alt="LARA" class="logo-img">
           <div>
-            <h1 class="font-bold text-lg text-gray-800">LARA Portfolio</h1>
+            <h1 class="font-bold text-lg text-gray-800">LARA</h1>
             <p class="text-xs text-teal-600 font-semibold">Intelligence Accelerated</p>
           </div>
-        </div>
-        <div class="flex items-center space-x-4">
-          <a href="/portfolio" class="text-sm text-teal-600 hover:text-teal-800 font-semibold flex items-center gap-1">
-            <i class="fa-solid fa-briefcase"></i> Portfolio C-Level
+          <div class="w-px h-10 bg-teal-200 mx-2"></div>
+          <a href="/portfolio" class="flex items-center gap-1.5 text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition">
+            <i class="fa-solid fa-briefcase text-teal-600"></i> Portfolio C-Level
           </a>
-          <span id="userEmail" class="text-sm text-gray-600 font-semibold"></span>
-          <button onclick="logout()" class="bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md">
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-600">👋 Bienvenido, <strong class="text-gray-800" id="userEmail"></strong></span>
+          <button onclick="logout()" class="bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
             Cerrar sesión
           </button>
         </div>
@@ -386,8 +434,8 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-xl p-6 shadow-lg space-y-6">
-          <div class="flex items-center justify-between border-b border-teal-200 pb-4">
+        <div class="bg-white rounded-xl p-6 shadow-lg space-y-6 pdf-report-section">
+          <div class="flex items-center justify-between border-b border-teal-200 pb-4 no-print">
             <div class="flex items-center space-x-3">
               <i class="fa-solid fa-file-lines text-teal-600 text-2xl"></i>
               <div>
@@ -397,12 +445,26 @@
             </div>
           </div>
 
-          <div class="flex gap-2 border-b border-teal-200">
-            <button onclick="showReport('senior')" id="tab-senior" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
-              <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
-            </button>
-            <button onclick="showReport('technical')" id="tab-technical" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
-              <i class="fa-solid fa-wrench text-teal-600"></i> Técnico
+          <div id="pdf-header">
+            <div class="pdf-logo">⬡ LARA</div>
+            <div class="pdf-meta">
+              <div id="pdf-project-name" style="font-weight:700;color:#0B7B8C;font-size:13px;"></div>
+              <div id="pdf-date"></div>
+              <div id="pdf-report-type"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 border-b border-teal-200">
+            <div class="flex gap-2">
+              <button onclick="showReport('senior')" id="tab-senior" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
+                <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
+              </button>
+              <button onclick="showReport('technical')" id="tab-technical" class="px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
+                <i class="fa-solid fa-wrench text-teal-600"></i> Técnico
+              </button>
+            </div>
+            <button class="export-pdf-btn no-print" onclick="exportPDF()">
+              <i class="fa-solid fa-file-pdf"></i>&nbsp; Exportar PDF
             </button>
           </div>
 
@@ -853,13 +915,13 @@
         bar.style.background = barColor;
       }
 
-      // Gantt row color
-      body.innerHTML = tasks.map(t => {
+      // Gantt row color + what-if buttons
+      body.innerHTML = tasks.map((t, i) => {
         const rowRag = ragProgress(t.progress, planPct);
         const barCol = rowRag === 'green' ? '#16a34a' : rowRag === 'yellow' ? '#d97706' : '#dc2626';
         const rowBg  = rowRag === 'red' ? 'background:#fff1f2' : rowRag === 'yellow' ? 'background:#fffbeb' : '';
         return `
-          <tr class="hover:opacity-90 transition" style="${rowBg}">
+          <tr class="gantt-row transition" style="${rowBg}" data-task="${encodeURIComponent(t.name)}" data-progress="${Math.round(t.progress)}">
             <td class="p-4 font-semibold text-gray-800">${t.name}</td>
             <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString()}</td>
             <td class="p-4 font-mono" style="color:${totalSpent>totalBudget?'#dc2626':'#15803d'}">$${Math.round(t.actual).toLocaleString()}</td>
@@ -872,13 +934,50 @@
               </div>
             </td>
             <td class="p-4">
-              <div class="relative h-6 bg-gray-100 rounded-lg overflow-hidden">
-                <div style="left:0%;width:100%;height:100%;position:absolute;background:${barCol};opacity:0.2;border-radius:8px"></div>
-                <div style="width:${t.progress}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
+              <div class="gantt-bar-cell">
+                <div class="relative h-6 bg-gray-100 rounded-lg overflow-hidden flex-1">
+                  <div style="left:0%;width:100%;height:100%;position:absolute;background:${barCol};opacity:0.2;border-radius:8px"></div>
+                  <div style="width:${t.progress}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
+                </div>
+                <div class="gantt-whatif-btns">
+                  <button class="gantt-whatif-btn" onclick="ganttWhatIf(this, -10)" title="¿Qué pasa si baja 10%?">−10%</button>
+                  <button class="gantt-whatif-btn" onclick="ganttWhatIf(this, -5)"  title="¿Qué pasa si baja 5%?">−5%</button>
+                  <button class="gantt-whatif-btn accent" onclick="ganttWhatIf(this, +5)"  title="¿Qué pasa si sube 5%?">+5%</button>
+                  <button class="gantt-whatif-btn accent" onclick="ganttWhatIf(this, +10)" title="¿Qué pasa si sube 10%?">+10%</button>
+                </div>
               </div>
             </td>
           </tr>`;
       }).join('');
+    }
+
+    function exportPDF() {
+      const activeReport = document.querySelector('#report-senior:not(.hidden), #report-technical:not(.hidden)');
+      if (!activeReport || !activeReport.children.length) {
+        alert('Primero selecciona un reporte (Ejecutivo o Técnico) para exportar.');
+        return;
+      }
+      const isSenior = activeReport.id === 'report-senior';
+      document.getElementById('pdf-project-name').textContent = projectContext?.projectName || 'Proyecto';
+      document.getElementById('pdf-date').textContent = 'Generado: ' + new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
+      document.getElementById('pdf-report-type').textContent = isSenior ? 'Reporte Ejecutivo' : 'Reporte Técnico';
+      window.print();
+    }
+
+    function ganttWhatIf(btn, delta) {
+      const row = btn.closest('tr');
+      const taskName = decodeURIComponent(row.dataset.task);
+      const currentPct = parseInt(row.dataset.progress, 10);
+      const newPct = Math.max(0, Math.min(100, currentPct + delta));
+      const dir = delta > 0 ? 'sube' : 'baja';
+      const question = `¿Qué pasa si el progreso de "${taskName}" ${dir} de ${currentPct}% a ${newPct}%? ¿Cómo impacta el CPI, SPI y el EAC del proyecto?`;
+
+      // Open chat if not already open
+      const panel = document.getElementById('chat-panel');
+      if (!panel.classList.contains('open')) toggleChat();
+
+      // Let chat open animate, then simulate
+      setTimeout(() => sendSimulate(question), 150);
     }
 
     function logout() {

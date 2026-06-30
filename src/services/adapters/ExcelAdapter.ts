@@ -1,3 +1,4 @@
+import { serviceLogger } from '../../core/logger';
 /**
  * src/services/adapters/ExcelAdapter.ts
  * Enhanced Excel Adapter with detailed error collection from Zod validation.
@@ -37,7 +38,7 @@ export class ExcelAdapter implements IDataAdapter {
    * 7. Retorna validRows y rejectedRows con detalles
    */
   async read(): Promise<ProjectData[]> {
-    console.log(`\n📂 ${this.name}: Leyendo ${this.filePath}`);
+    serviceLogger.info(`\n📂 ${this.name}: Leyendo ${this.filePath}`);
     
     if (!fs.existsSync(this.filePath)) {
       throw new Error(`❌ Archivo no encontrado: ${this.filePath}`);
@@ -54,7 +55,7 @@ export class ExcelAdapter implements IDataAdapter {
       const worksheet = workbook.Sheets[sheetName];
       let rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
       
-      console.log(`📄 Se leyeron ${rawData.length} filas del Excel`);
+      serviceLogger.info(`📄 Se leyeron ${rawData.length} filas del Excel`);
       
       rawData = rawData.map(row => this.parseJsonFields(row));
       
@@ -71,12 +72,12 @@ export class ExcelAdapter implements IDataAdapter {
         }
       }
       
-      console.log(`✅ ${validCount} válidos | ❌ ${invalidCount} rechazados`);
+      serviceLogger.info(`✅ ${validCount} válidos | ❌ ${invalidCount} rechazados`);
       
       return validProjects;
       
     } catch (error: any) {
-      console.error(`❌ Error leyendo Excel: ${error.message}`);
+      serviceLogger.error(`❌ Error leyendo Excel: ${error.message}`);
       throw error;
     }
   }
@@ -88,7 +89,7 @@ export class ExcelAdapter implements IDataAdapter {
    * Para usar en endpoints que necesitan mostrar errores al frontend.
    */
   async readWithDetails(): Promise<ReadResult> {
-    console.log(`\n📂 ${this.name}: Leyendo con detalles ${this.filePath}`);
+    serviceLogger.info(`\n📂 ${this.name}: Leyendo con detalles ${this.filePath}`);
     
     if (!fs.existsSync(this.filePath)) {
       throw new Error(`❌ Archivo no encontrado: ${this.filePath}`);
@@ -105,7 +106,7 @@ export class ExcelAdapter implements IDataAdapter {
       const worksheet = workbook.Sheets[sheetName];
       let rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
       
-      console.log(`📄 Se leyeron ${rawData.length} filas del Excel`);
+      serviceLogger.info(`📄 Se leyeron ${rawData.length} filas del Excel`);
       
       rawData = rawData.map(row => this.parseJsonFields(row));
       
@@ -130,7 +131,7 @@ export class ExcelAdapter implements IDataAdapter {
         }
       }
       
-      console.log(`✅ ${validCount} válidos | ❌ ${invalidCount} rechazados`);
+      serviceLogger.info(`✅ ${validCount} válidos | ❌ ${invalidCount} rechazados`);
       
       return {
         validProjects,
@@ -138,7 +139,7 @@ export class ExcelAdapter implements IDataAdapter {
       };
       
     } catch (error: any) {
-      console.error(`❌ Error leyendo Excel: ${error.message}`);
+      serviceLogger.error(`❌ Error leyendo Excel: ${error.message}`);
       throw error;
     }
   }
@@ -160,7 +161,7 @@ export class ExcelAdapter implements IDataAdapter {
         try {
           parsed[field] = JSON.parse(parsed[field]);
         } catch (error) {
-          console.warn(`⚠️ No se pudo parsear campo ${field}: ${parsed[field]}`);
+          serviceLogger.warn(`⚠️ No se pudo parsear campo ${field}: ${parsed[field]}`);
         }
       }
     }
@@ -177,7 +178,7 @@ export class ExcelAdapter implements IDataAdapter {
       return true;
     } catch (error: any) {
       const preview = JSON.stringify(data).substring(0, 50);
-      console.warn(`⚠️ Fila rechazada (${preview}...) - ${error.message}`);
+      serviceLogger.warn(`⚠️ Fila rechazada (${preview}...) - ${error.message}`);
       return false;
     }
   }
@@ -203,7 +204,7 @@ export class ExcelAdapter implements IDataAdapter {
           return `${field}: ${message}`;
         });
         
-        console.warn(`⚠️ Errores de validación: ${errorMessages.join(', ')}`);
+        serviceLogger.warn(`⚠️ Errores de validación: ${errorMessages.join(', ')}`);
         
         return {
           valid: false,

@@ -6,6 +6,7 @@
  * POST /api/branding/:organizationId → Actualiza configuración (admin)
  */
 
+import { routeLogger } from '../core/logger';
 import express, { Request, Response } from 'express';
 import { pool } from '../db';
 
@@ -216,7 +217,7 @@ router.post('/:organizationId', async (req: Request, res: Response) => {
       message: `Branding updated for organization: ${organizationId}`,
     });
   } catch (error: any) {
-    console.error('POST /branding error:', error.message);
+    routeLogger.error({ err: error.message }, 'POST /branding error');
     res.status(500).json({
       success: false,
       error: 'Failed to update branding',

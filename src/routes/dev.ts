@@ -1,3 +1,4 @@
+import { routeLogger } from '../core/logger';
 import express from 'express';
 import { pool } from '../db';
 import path from 'path';
@@ -54,7 +55,7 @@ router.get('/init-database', async (_req: any, res: any) => {
       tables: ['users', 'project_data', 'ai_analyses']
     });
   } catch (error: any) {
-    console.error('Init DB error:', error.message);
+    routeLogger.error({ err: error.message }, 'Init DB error');
     res.status(500).json({ error: error.message });
   }
 });

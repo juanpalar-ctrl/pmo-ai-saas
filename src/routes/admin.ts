@@ -5,6 +5,7 @@
  */
 
 import { Router, Request, Response } from "express";
+import { routeLogger } from "../core/logger";
 import { pool } from "../db";
 import { adminAuthMiddleware } from "../middleware/adminAuthMiddleware";
 import { ADMIN_MESSAGES } from "../config/messages";
@@ -40,7 +41,7 @@ router.get("/pending-users", async (req: Request, res: Response): Promise<void> 
       count: result.rows.length,
     });
   } catch (error) {
-    console.error("Fetch pending users error:", error);
+    routeLogger.error({ err: error }, "Fetch pending users error");
     res.status(500).json({
       error: "Internal server error fetching pending users.",
     });
@@ -95,7 +96,7 @@ router.post("/update-status", async (req: Request, res: Response): Promise<void>
       user: result.rows[0],
     });
   } catch (error) {
-    console.error("Update user status error:", error);
+    routeLogger.error({ err: error }, "Update user status error");
     res.status(500).json({
       error: "Internal server error updating user status.",
     });
