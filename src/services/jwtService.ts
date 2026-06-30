@@ -6,13 +6,13 @@
 import jwt from "jsonwebtoken";
 
 interface TokenPayload {
-  id: number;
+  id: string;
   email: string;
   role: string;
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const TOKEN_EXPIRY = process.env.JWT_EXPIRY || "10m";
+const TOKEN_EXPIRY = process.env.JWT_EXPIRY || "8h";
 
 /**
  * Signs a JWT token with user identity and role.
@@ -21,7 +21,7 @@ const TOKEN_EXPIRY = process.env.JWT_EXPIRY || "10m";
  * @param role User role (e.g., 'user', 'admin')
  * @returns Signed JWT token string
  */
-export function signToken(userId: number, email: string, role: string): string {
+export function signToken(userId: string, email: string, role: string): string {
   const payload: TokenPayload = {
     id: userId,
     email,

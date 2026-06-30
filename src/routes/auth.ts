@@ -109,13 +109,12 @@ router.post('/login', async (req: Request, res: Response) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 10 * 60 * 1000, // 10 minutes
+      maxAge: 8 * 60 * 60 * 1000, // 8 hours
     });
 
     res.json({
       success: true,
       message: AUTH_MESSAGES.LOGIN_SUCCESS,
-      token: token,  // ← AGREGAR ESTA LÍNEA
       user: {
         id: user.id,
         email: user.email,

@@ -282,8 +282,7 @@
                     return;
                 }
 
-                if (data.token) {
-                    localStorage.setItem('auth_token', data.token);
+                if (data.success) {
                     window.location.href = '/';
                 }
             } catch (error) {

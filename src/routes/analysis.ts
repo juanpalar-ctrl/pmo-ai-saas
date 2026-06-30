@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { orchestrator } from '../services/multiAgentOrchestrator';
 import { pool } from '../db';
 import { generateMockAnalysis, isMockEnabled, getCacheDurationHours } from '../utils/mockAnalysis';
@@ -9,20 +9,20 @@ const router = express.Router();
 async function getCachedAnalysis(projectId: number) {
   const cacheHours = getCacheDurationHours();
   const result = await pool.query(
-    `SELECT output, generatedat FROM ai_analyses 
-     WHERE projectid = $1 
-     AND generatedat > NOW() - INTERVAL '${cacheHours} hours'
+    `SELECT output, generatedat FROM ai_analyses
+     WHERE projectid = $1
+     AND generatedat > NOW() - ($2 * INTERVAL '1 hour')
      ORDER BY generatedat DESC LIMIT 1`,
-    [projectId]
+    [projectId, cacheHours]
   );
   return result.rows[0] || null;
 }
 
-router.post('/:projectId', async (req: any, res: any) => {
+router.post('/:projectId', async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.params;
+    const projectId = parseInt(String(req.params.projectId));
     const { framework, forceRefresh } = req.body;
-    const fw = framework || 'scrum';
+    const fw = (framework as string) || 'scrum';
 
     // Si USE_MOCK_DATA está activado, devolver mock sin llamar API
     if (isMockEnabled() && !forceRefresh) {
@@ -72,12 +72,12 @@ router.post('/:projectId', async (req: any, res: any) => {
   }
 });
 
-router.get('/:projectId/latest', async (req: any, res: any) => {
+router.get('/:projectId/latest', async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.params;
+    const projectId = parseInt(String(req.params.projectId));
     const result = await pool.query(
       `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
-      [parseInt(projectId)]
+      [projectId]
     );
     
     if (!result.rows[0]) {
@@ -90,14 +90,23 @@ router.get('/:projectId/latest', async (req: any, res: any) => {
   }
 });
 
-router.get('/:projectId/view', async (req: any, res: any) => {
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+router.get('/:projectId/view', async (req: Request, res: Response) => {
   try {
-    const projectId = req.params.projectId;
-    const org = req.query.org || 'Sin especificar';
-    
+    const projectId = parseInt(String(req.params.projectId));
+    const org = escapeHtml(decodeURIComponent(String(req.query.org || 'Sin especificar')));
+
     const result = await pool.query(
       `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
-      [parseInt(projectId)]
+      [projectId]
     );
     
     if (!result.rows[0]) {
@@ -151,7 +160,7 @@ router.get('/:projectId/view', async (req: any, res: any) => {
     <div class="header">
       <h1>📊 Análisis Multi-Agente IA</h1>
       <div class="header-info">
-        <p><strong>Organización:</strong> ${decodeURIComponent(org)}</p>
+        <p><strong>Organización:</strong> ${org}</p>
         <p><strong>Proyecto ID:</strong> ${projectId}</p>
         <p><strong>Generado:</strong> ${new Date(result.rows[0].generatedat).toLocaleString('es-CO')}</p>
       </div>

@@ -1,15 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { verifyToken } from '../services/jwtService';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-prod';
-
 export interface AuthRequest extends Request {
-  user?: { id: number; email: string; role: string };
+  user?: { id: string; email: string; role: string };
 }
 
-export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.cookies?.auth_token;
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  const authReq = req as AuthRequest;
+  const token = authReq.cookies?.auth_token;
 
   if (!token) {
     return res.redirect('/login');
@@ -20,7 +18,7 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     if (!user) {
       throw new Error('Token inválido');
     }
-    req.user = { id: user.id, email: user.email, role: user.role };
+    authReq.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch (error) {
     console.error('Auth error:', error);

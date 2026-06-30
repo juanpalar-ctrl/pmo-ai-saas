@@ -7,7 +7,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 
       font-family: 'Segoe UI', Arial, sans-serif; 
-      background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%);
+      background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%);
       min-height: 100vh; 
       display: flex; 
       align-items: center; 
@@ -45,12 +45,12 @@
     }
     .brand h1 { 
       font-size: 1.8em; 
-      color: #00897B; 
+      color: #0B7B8C; 
       margin: 0;
     }
     .brand p { 
       font-size: 0.9em; 
-      color: #00BCD4; 
+      color: #17B8A0; 
       margin: 5px 0 0 0;
     }
     .form-group { 
@@ -72,13 +72,13 @@
     }
     input[type="file"]:focus, select:focus { 
       outline: none; 
-      border-color: #00BCD4; 
-      box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+      border-color: #17B8A0; 
+      box-shadow: 0 0 0 3px rgba(23, 184, 160, 0.1);
     }
     button { 
       width: 100%; 
       padding: 12px; 
-      background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%); 
+      background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); 
       color: white; 
       border: none; 
       border-radius: 8px; 
@@ -89,7 +89,7 @@
     }
     button:hover:not(:disabled) { 
       transform: translateY(-2px); 
-      box-shadow: 0 10px 20px rgba(0, 188, 212, 0.3);
+      box-shadow: 0 10px 20px rgba(23, 184, 160, 0.3);
     }
     button:disabled { 
       opacity: 0.6; 
@@ -123,7 +123,7 @@
     #userInfo { 
       display: none; 
       text-align: right; 
-      color: #00897B; 
+      color: #0B7B8C; 
       font-size: 0.9em; 
       margin-bottom: 20px;
     }
@@ -203,8 +203,8 @@
       </div>
       <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
       <div class="loading" id="loading">
-        <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto;"></div>
-        <p style="color: #00BCD4; font-weight: 600; margin-top: 10px;">Procesando...</p>
+        <div style="border: 4px solid #f3f3f3; border-top: 4px solid #17B8A0; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto;"></div>
+        <p style="color: #17B8A0; font-weight: 600; margin-top: 10px;">Procesando...</p>
       </div>
       <div id="alert"></div>
     </form>
@@ -213,7 +213,7 @@
   <!-- MODAL MAPEO -->
   <div id="mappingModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-      <div style="background: linear-gradient(to right, #00BCD4, #26C6DA); color: white; padding: 24px;">
+      <div style="background: linear-gradient(to right, #17B8A0, #0B7B8C); color: white; padding: 24px;">
         <h2 style="font-size: 1.5em; font-weight: bold; margin: 0;">Mapeo de Columnas</h2>
         <p style="font-size: 0.9em; margin: 8px 0 0 0; opacity: 0.9;">Confirma el mapeo de tus columnas</p>
       </div>
@@ -223,7 +223,7 @@
       </div>
       <div style="background: #f5f5f5; padding: 16px 24px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; gap: 12px;">
         <button onclick="closeMappingModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
-        <button onclick="confirmMapping()" id="confirmMappingBtn" style="background: linear-gradient(135deg, #00BCD4 0%, #26C6DA 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar</button>
+        <button onclick="confirmMapping()" id="confirmMappingBtn" style="background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar</button>
       </div>
     </div>
   </div>
@@ -231,7 +231,7 @@
   <!-- SPINNER -->
   <div id="detectingSpinner" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;">
-      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #17B8A0; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
       <p style="margin-top: 16px; color: #333; font-weight: 600;">Analizando columnas...</p>
     </div>
   </div>
@@ -405,7 +405,7 @@
   `;
   loadingModal.innerHTML = `
     <div style="background: white; border-radius: 12px; padding: 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px;">
-      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #00BCD4; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #17B8A0; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
       <p style="margin-top: 20px; color: #333; font-weight: 600; font-size: 1.1em;">Ejecutando agentes de IA...</p>
       <p style="margin-top: 10px; color: #666; font-size: 0.9em;">Analizando riesgos, presupuesto y reportes</p>
       <p style="margin-top: 15px; color: #999; font-size: 0.85em;">Esto puede tomar 1-2 minutos</p>
