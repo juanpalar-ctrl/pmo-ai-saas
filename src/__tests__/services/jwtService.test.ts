@@ -1,6 +1,6 @@
 process.env.JWT_SECRET = 'test-secret-for-unit-tests';
 
-import { signToken, verifyToken, decodeToken } from '../../services/jwtService';
+import { signToken, verifyToken } from '../../services/jwtService';
 
 describe('signToken', () => {
   it('returns a non-empty string', () => {
@@ -40,15 +40,3 @@ describe('verifyToken', () => {
   });
 });
 
-describe('decodeToken', () => {
-  it('decodes without verifying — returns payload even without secret check', () => {
-    const token = signToken('7', 'decode@test.com', 'user');
-    const payload = decodeToken(token);
-    expect(payload).not.toBeNull();
-    expect(payload!.email).toBe('decode@test.com');
-  });
-
-  it('returns null for garbage input', () => {
-    expect(decodeToken('garbage')).toBeNull();
-  });
-});

@@ -207,7 +207,8 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
       }
     });
   } catch (err: any) {
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    routeLogger.error({ err: err.message }, 'GET /analysis/:projectId/latest error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
 

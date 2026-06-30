@@ -42,12 +42,3 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
-export function decodeToken(token: string): TokenPayload | null {
-  try {
-    const decoded = jwt.decode(token) as TokenPayload | null;
-    return decoded;
-  } catch (error) {
-    authLogger.debug({ err: (error as Error).message }, "JWT decode failed");
-    return null;
-  }
-}
