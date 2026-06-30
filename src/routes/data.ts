@@ -153,6 +153,7 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
     const data = rows.map(row => ({
       projectId: row.id,
       projectName: row.projectname,
+      org: row.output?.org || 'Sin especificar',
       framework: row.output?.metrics?.framework || 'unknown',
       timestamp: row.output?.timestamp || new Date().toISOString(),
       totalBudget: row.budgetdata?.totalBudget || 0,

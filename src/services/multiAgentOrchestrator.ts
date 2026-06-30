@@ -5,8 +5,17 @@ import { pool } from '../db';
 import { calculateProjectMetrics } from './metricsCalculator';
 
 export const orchestrator = {
-  async analyzeProject(projectId: number, framework: string) {
+  async analyzeProject(projectId: number, framework: string, org?: string) {
     const metrics = await calculateProjectMetrics(projectId, framework);
+
+    // Resolve org from normalization record if not passed directly
+    if (!org) {
+      const orgResult = await pool.query(
+        `SELECT output->>'org' AS org FROM ai_analyses WHERE projectid = $1 AND agenttype = 'normalization' LIMIT 1`,
+        [projectId]
+      );
+      org = orgResult.rows[0]?.org || 'Sin especificar';
+    }
 
     const input = {
       projectId,
@@ -38,7 +47,8 @@ export const orchestrator = {
         pv: metrics.pv, ev: metrics.ev, ac: metrics.ac, cv: metrics.cv, cpi: metrics.cpi, spi: metrics.spi, roi: metrics.roi,
         framework, percentComplete: metrics.percentComplete
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      org,
     };
 
     await pool.query(

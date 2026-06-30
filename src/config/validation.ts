@@ -77,7 +77,8 @@ export const SaveMappingRequestSchema = z.object({
       'risks',
     ]).nullable()
   ),
-  framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum')
+  framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),
+  org: z.string().optional().default('Sin especificar')
 });
 
 /**

@@ -118,7 +118,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
   try {
     const validatedRequest = SaveMappingRequestSchema.parse(req.body);
-    const { tempFilename, confirmedMapping, framework } = validatedRequest;
+    const { tempFilename, confirmedMapping, framework, org } = validatedRequest;
     console.log('[save-mapping] 📊 Received framework:', framework);
 
     console.log(`[save-mapping] 💾 Processing mapping for: ${tempFilename}`);
@@ -183,6 +183,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
       projects: validatedRows,
       sourceFilename: 'imported',
       normalizedAt: now,
+      org,
     };
 
     await pool.query(

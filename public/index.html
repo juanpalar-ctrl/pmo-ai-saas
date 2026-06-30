@@ -62,7 +62,7 @@
       color: #333; 
       font-weight: 600;
     }
-    input[type="file"], select { 
+    input[type="text"], input[type="file"], select {
       width: 100%; 
       padding: 12px; 
       border: 2px solid #E0F2F1; 
@@ -70,7 +70,7 @@
       font-size: 1em;
       font-family: inherit;
     }
-    input[type="file"]:focus, select:focus { 
+    input[type="text"]:focus, input[type="file"]:focus, select:focus {
       outline: none; 
       border-color: #17B8A0; 
       box-shadow: 0 0 0 3px rgba(23, 184, 160, 0.1);
@@ -428,6 +428,7 @@
         tempFilename: currentDetectionState.tempFilename,
         confirmedMapping: mapping,
         framework: framework,
+        org: document.getElementById('org').value.trim() || 'Sin especificar',
       }),
     });
 
