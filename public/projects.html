@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); min-height: 100vh; }
 
@@ -215,6 +216,18 @@
     .history-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateX(4px); }
     .history-card-title { font-weight: 600; color: #333; font-size: 0.9em; margin-bottom: 4px; }
     .history-card-meta { font-size: 0.75em; color: #666; line-height: 1.4; }
+    .markdown-report h2 { color: #0B7B8C; font-weight: 800; font-size: 1.4em; margin: 20px 0 12px; }
+    .markdown-report h3 { color: #0B7B8C; font-weight: 700; font-size: 1.15em; margin: 18px 0 8px; }
+    .markdown-report p { color: #333; line-height: 1.6; margin-bottom: 10px; }
+    .markdown-report strong { color: #0B7B8C; }
+    .markdown-report ul, .markdown-report ol { margin: 8px 0 14px 22px; color: #333; line-height: 1.6; }
+    .markdown-report li { margin-bottom: 4px; }
+    .markdown-report table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; }
+    .markdown-report th, .markdown-report td { border: 1px solid #d6e9eb; padding: 8px 10px; text-align: left; }
+    .markdown-report th { background: #e6f4f5; color: #0B7B8C; font-weight: 700; }
+    .markdown-report tr:nth-child(even) td { background: #f7fcfc; }
+    .markdown-report blockquote { border-left: 4px solid #17B8A0; background: #f0f9fa; padding: 10px 14px; margin: 14px 0; color: #0B7B8C; font-style: italic; border-radius: 4px; }
+    .markdown-report hr { border: none; border-top: 1px solid #d6e9eb; margin: 16px 0; }
   </style>
 </head>
 <body class="text-gray-800 font-sans">
@@ -501,15 +514,11 @@
 
     function formatReport(type, text) {
       const container = document.getElementById(`report-${type}`);
-      if (!text) return;
-      const sections = text.split('\n\n').filter(s => s.trim());
-      let html = '';
-      sections.forEach(section => {
-        const title = section.split('\n')[0];
-        const content = section.split('\n').slice(1).join('\n');
-        html += `<div class="report-section"><h3>${title}</h3><p>${content || ''}</p></div>`;
-      });
-      container.innerHTML = html || `<p class="text-gray-500">Reporte no disponible</p>`;
+      if (!text) {
+        container.innerHTML = `<p class="text-gray-500">Reporte no disponible</p>`;
+        return;
+      }
+      container.innerHTML = `<div class="markdown-report">${marked.parse(text)}</div>`;
     }
 
     function showReport(type) {

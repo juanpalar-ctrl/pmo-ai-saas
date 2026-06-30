@@ -151,21 +151,23 @@ Para el technical_report, genera un reporte técnico para el líder de desarroll
 > 🔧 Nota técnica: [Una línea honesta sobre el estado real del stack/equipo. Sin abstracciones.]
 ---
 
-RESPONDE SOLO con este JSON (sin markdown externo):
-{
-  "senior_report": "texto del reporte ejecutivo completo con la estructura de arriba",
-  "technical_report": "texto del reporte técnico completo"
-}`;
+RESPONDE usando EXACTAMENTE este formato de texto plano (NO uses JSON, NO uses bloques de código):
+
+===SENIOR_REPORT===
+[aquí el reporte ejecutivo completo con la estructura de arriba]
+===TECHNICAL_REPORT===
+[aquí el reporte técnico completo con la estructura de arriba]
+===END===`;
   }
 
   parseResponse(response: string): any {
     try {
-      const clean = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const idx1 = clean.indexOf('{');
-      const idx2 = clean.lastIndexOf('}');
-      if (idx1 !== -1 && idx2 > idx1) {
-        const json = JSON.parse(clean.substring(idx1, idx2 + 1));
-        if (json.senior_report && json.technical_report) return json;
+      const seniorMatch = response.match(/===SENIOR_REPORT===([\s\S]*?)===TECHNICAL_REPORT===/);
+      const technicalMatch = response.match(/===TECHNICAL_REPORT===([\s\S]*?)===END===/);
+      const senior = seniorMatch?.[1]?.trim();
+      const technical = technicalMatch?.[1]?.trim() || response.match(/===TECHNICAL_REPORT===([\s\S]*)/)?.[1]?.trim();
+      if (senior && technical) {
+        return { senior_report: senior, technical_report: technical };
       }
     } catch (_) {}
 
