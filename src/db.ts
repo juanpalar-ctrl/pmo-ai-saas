@@ -46,4 +46,20 @@ pool.on('error', (err) => {
   dbLogger.error({ err: err.message }, 'Error inesperado en pool de BD');
 });
 
-dbLogger.info('Pool de PostgreSQL configurado');
+// Log DB host (no credentials) to diagnose connection issues
+const dbUrl = process.env.DATABASE_URL || '';
+const dbHost = dbUrl.replace(/\/\/[^@]+@/, '//<redacted>@').replace(/:[^:@/]+@/, ':***@');
+dbLogger.info({ dbHost }, 'Pool de PostgreSQL configurado');
+
+// Test connection on startup
+pool.connect().then(client => {
+  client.query('SELECT 1').then(() => {
+    dbLogger.info('DB connection test OK');
+    client.release();
+  }).catch(err => {
+    dbLogger.error({ err: err.message, code: err.code }, 'DB query test FAILED');
+    client.release();
+  });
+}).catch(err => {
+  dbLogger.error({ err: err.message, code: err.code }, 'DB connect test FAILED');
+});
