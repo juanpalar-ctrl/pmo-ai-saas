@@ -210,5 +210,51 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
- 
+
+// GET /api/data/analysis/:projectId/tasks
+// Returns individual task rows from the normalization pass for Gantt rendering
+router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => {
+  try {
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ success: false, error: 'projectId inválido' });
+    }
+    const { projectId } = params.data;
+
+    const projectResult = await pool.query(
+      `SELECT projectid FROM project_data WHERE id = $1`,
+      [projectId]
+    );
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+    const realProjectId = projectResult.rows[0].projectid;
+
+    const result = await pool.query(
+      `SELECT output FROM ai_analyses
+       WHERE projectid = $1 AND agenttype = 'normalization'
+       ORDER BY generatedat DESC LIMIT 1`,
+      [realProjectId]
+    );
+
+    const tasks: any[] = result.rows[0]?.output?.projects || [];
+
+    const mapped = tasks.map((t: any) => ({
+      name:     t.project_name  || 'Sin nombre',
+      plan:     parseFloat(t.estimated_cost)   || 0,
+      actual:   parseFloat(t.actual_cost)      || 0,
+      progress: parseFloat(t.progress_percent) || 0,
+      status:   t.status        || '',
+      start:    t.start_date    || null,
+      end:      t.end_date      || null,
+    }));
+
+    routeLogger.info({ projectId, taskCount: mapped.length }, 'Tasks fetched for Gantt');
+    res.json({ success: true, tasks: mapped });
+  } catch (err: any) {
+    routeLogger.error({ err: err.message }, 'GET /analysis/:projectId/tasks error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
 export default router;

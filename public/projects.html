@@ -860,27 +860,23 @@
       });
     }
 
-    function renderGantt() {
+    async function renderGantt() {
       const body = document.getElementById('gantt-body');
-      
+
       if (!analysisData || !analysisData.metrics) {
         body.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Sin datos disponibles</td></tr>';
         return;
       }
-      
-      const metrics = analysisData.metrics || {};
-      const totalBudget = parseFloat(metrics.bac || metrics.pv) || 0;
-      const totalSpent = parseFloat(metrics.ac) || 0;
-      const avgProgress = parseFloat(metrics.percentComplete) || 0;
-      const cv = parseFloat(metrics.cv) || (totalBudget - totalSpent);
-      const eac = parseFloat(metrics.eac) || totalBudget;
-      const vac = parseFloat(metrics.vac) || (totalBudget - eac);
-      
-      const tasks = [
-        { name: 'Proyecto Importado', plan: totalBudget, actual: totalSpent, progress: avgProgress, start: 0, duration: 1 }
-      ];
 
-      // KPI values
+      const metrics     = analysisData.metrics || {};
+      const totalBudget = parseFloat(metrics.bac || metrics.pv) || 0;
+      const totalSpent  = parseFloat(metrics.ac) || 0;
+      const avgProgress = parseFloat(metrics.percentComplete) || 0;
+      const cv          = parseFloat(metrics.cv) || (totalBudget - totalSpent);
+      const eac         = parseFloat(metrics.eac) || totalBudget;
+      const vac         = parseFloat(metrics.vac) || (totalBudget - eac);
+
+      // ── KPI cards (always from aggregate metrics) ──
       document.getElementById('kpi-budget').textContent   = `$${Math.round(totalBudget).toLocaleString()}`;
       document.getElementById('kpi-spent').textContent    = `$${Math.round(totalSpent).toLocaleString()}`;
       document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
@@ -888,43 +884,51 @@
       document.getElementById('kpi-eac').textContent      = `$${Math.round(eac).toLocaleString()}`;
       document.getElementById('kpi-saldo').textContent    = `$${Math.round(vac).toLocaleString()}`;
 
-      // RAG colors on KPI cards
-      const spi      = parseFloat(analysisData?.metrics?.spi || 1);
-      const planPct  = spi > 0 ? avgProgress / spi : avgProgress;
-      const ragCV    = ragVariance(cv, totalBudget);
-      const ragVAC   = ragVariance(vac, totalBudget);
-      const ragProg  = ragProgress(avgProgress, planPct);
-
-      // AC: neutral (always green if ≤ BAC)
-      const ragAC = totalSpent <= totalBudget ? 'green' : 'red';
-      // EAC: compare to BAC
-      const ragEAC = eac <= totalBudget ? 'green' : eac <= totalBudget * 1.1 ? 'yellow' : 'red';
+      const spi     = parseFloat(analysisData?.metrics?.spi || 1);
+      const planPct = spi > 0 ? avgProgress / spi : avgProgress;
 
       applyKPICard('kpi-card-bac',      'kpi-budget',   'green');
-      applyKPICard('kpi-card-ac',       'kpi-spent',    ragAC);
-      applyKPICard('kpi-card-progress', 'kpi-progress', ragProg);
-      applyKPICard('kpi-card-cv',       'kpi-cv',       ragCV);
-      applyKPICard('kpi-card-eac',      'kpi-eac',      ragEAC);
-      applyKPICard('kpi-card-vac',      'kpi-saldo',    ragVAC);
+      applyKPICard('kpi-card-ac',       'kpi-spent',    totalSpent <= totalBudget ? 'green' : 'red');
+      applyKPICard('kpi-card-progress', 'kpi-progress', ragProgress(avgProgress, planPct));
+      applyKPICard('kpi-card-cv',       'kpi-cv',       ragVariance(cv, totalBudget));
+      applyKPICard('kpi-card-eac',      'kpi-eac',      eac <= totalBudget ? 'green' : eac <= totalBudget * 1.1 ? 'yellow' : 'red');
+      applyKPICard('kpi-card-vac',      'kpi-saldo',    ragVariance(vac, totalBudget));
 
-      // Progress bar color
       const bar = document.getElementById('kpi-progress-bar');
       if (bar) {
-        const barColor = ragProg === 'green' ? '#16a34a' : ragProg === 'yellow' ? '#d97706' : '#dc2626';
-        bar.style.width = `${Math.min(100, avgProgress)}%`;
-        bar.style.background = barColor;
+        const ragProg = ragProgress(avgProgress, planPct);
+        bar.style.width      = `${Math.min(100, avgProgress)}%`;
+        bar.style.background = ragProg === 'green' ? '#16a34a' : ragProg === 'yellow' ? '#d97706' : '#dc2626';
       }
 
-      // Gantt row color + what-if buttons
-      body.innerHTML = tasks.map((t, i) => {
+      // ── Gantt rows: try individual tasks, fall back to aggregate ──
+      let tasks = [];
+      const projectId = new URLSearchParams(location.search).get('id');
+      if (projectId) {
+        try {
+          const r = await fetch(`/api/data/analysis/${projectId}/tasks`, { credentials: 'include' });
+          if (r.ok) {
+            const json = await r.json();
+            if (json.success && json.tasks.length > 0) tasks = json.tasks;
+          }
+        } catch (_) {}
+      }
+
+      // Fallback: single summary row
+      if (tasks.length === 0) {
+        tasks = [{ name: 'Resumen del proyecto', plan: totalBudget, actual: totalSpent, progress: avgProgress }];
+      }
+
+      body.innerHTML = tasks.map(t => {
         const rowRag = ragProgress(t.progress, planPct);
         const barCol = rowRag === 'green' ? '#16a34a' : rowRag === 'yellow' ? '#d97706' : '#dc2626';
         const rowBg  = rowRag === 'red' ? 'background:#fff1f2' : rowRag === 'yellow' ? 'background:#fffbeb' : '';
+        const actualColor = t.actual > t.plan && t.plan > 0 ? '#dc2626' : '#15803d';
         return `
           <tr class="gantt-row transition" style="${rowBg}" data-task="${encodeURIComponent(t.name)}" data-progress="${Math.round(t.progress)}">
             <td class="p-4 font-semibold text-gray-800">${t.name}</td>
             <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString()}</td>
-            <td class="p-4 font-mono" style="color:${totalSpent>totalBudget?'#dc2626':'#15803d'}">$${Math.round(t.actual).toLocaleString()}</td>
+            <td class="p-4 font-mono" style="color:${actualColor}">$${Math.round(t.actual).toLocaleString()}</td>
             <td class="p-4">
               <div class="flex items-center gap-2">
                 <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">

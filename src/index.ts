@@ -96,7 +96,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/branding', brandingRouter);
 app.use('/api/debug', adminAuthMiddleware, debugRouter);
-app.use('/api/data/mapping', requireAuth, dataMappingRoutes);
+app.use('/api/data/mapping', requireAuth, heavyLimiter, dataMappingRoutes);
 
 app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
