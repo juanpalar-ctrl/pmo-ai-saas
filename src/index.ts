@@ -20,6 +20,7 @@ import dataMappingRoutes from './routes/dataMapping';
 import chatRouter from './routes/chat';
 import portfolioRouter from './routes/portfolio';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
+import { runMigrations, seedAdminUser } from './db-migrate';
 import { mkdirSync } from 'fs';
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -128,6 +129,17 @@ mkdirSync('./uploads', { recursive: true });
 scheduleCleanupJob(60 * 60 * 1000);
 logger.info('Temp file cleanup job scheduled');
 
-app.listen(PORT, () => {
-  logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Servidor iniciado');
-});
+// Run migrations + seed, then start server
+runMigrations()
+  .then(() => seedAdminUser())
+  .then(() => {
+    app.listen(PORT, () => {
+      logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Servidor iniciado');
+    });
+  })
+  .catch((err) => {
+    logger.error({ err: err.message }, 'Startup DB step failed — starting server anyway');
+    app.listen(PORT, () => {
+      logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Servidor iniciado (sin migraciones)');
+    });
+  });
