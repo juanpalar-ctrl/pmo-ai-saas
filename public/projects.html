@@ -10,6 +10,44 @@
   <style>
     body { background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); min-height: 100vh; }
 
+    /* ── RAG Color System ── */
+    .rag-green  { color: #15803d !important; }
+    .rag-yellow { color: #b45309 !important; }
+    .rag-red    { color: #dc2626 !important; }
+
+    .rag-bg-green  { background: #f0fdf4 !important; border-color: #86efac !important; }
+    .rag-bg-yellow { background: #fffbeb !important; border-color: #fcd34d !important; }
+    .rag-bg-red    { background: #fff1f2 !important; border-color: #fca5a5 !important; }
+
+    .rag-border-green  { border-top-color: #16a34a !important; }
+    .rag-border-yellow { border-top-color: #d97706 !important; }
+    .rag-border-red    { border-top-color: #dc2626 !important; }
+
+    .rag-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 9999px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .rag-badge.green  { background: #dcfce7; color: #15803d; }
+    .rag-badge.yellow { background: #fef3c7; color: #92400e; }
+    .rag-badge.red    { background: #fee2e2; color: #991b1b; }
+
+    /* Health Score Banner */
+    #health-banner {
+      display: none; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-radius: 12px; margin-bottom: 4px;
+      border: 1.5px solid; font-size: 13px;
+    }
+    #health-banner.green  { background: #f0fdf4; border-color: #86efac; }
+    #health-banner.yellow { background: #fffbeb; border-color: #fcd34d; }
+    #health-banner.red    { background: #fff1f2; border-color: #fca5a5; }
+    .health-score-num {
+      font-size: 28px; font-weight: 800; line-height: 1;
+    }
+    .health-score-num.green  { color: #15803d; }
+    .health-score-num.yellow { color: #b45309; }
+    .health-score-num.red    { color: #dc2626; }
+
     /* ── Chat Widget ── */
     #chat-fab {
       position: fixed; bottom: 28px; right: 28px; z-index: 1000;
@@ -228,6 +266,21 @@
           </button>
         </div>
 
+        <!-- Health Score Banner -->
+        <div id="health-banner">
+          <div class="flex items-center gap-3">
+            <span id="health-icon" style="font-size:24px"></span>
+            <div>
+              <div id="health-label" style="font-weight:700;font-size:14px;"></div>
+              <div id="health-detail" style="font-size:11px;color:#64748b;margin-top:2px;"></div>
+            </div>
+          </div>
+          <div class="flex items-end gap-2">
+            <span class="health-score-num" id="health-score-num">—</span>
+            <span style="font-size:11px;color:#94a3b8;padding-bottom:4px;">/100</span>
+          </div>
+        </div>
+
         <!-- Early Warning System panel -->
         <div id="ews-panel" class="hidden"></div>
 
@@ -284,36 +337,38 @@
             </table>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            <div class="bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 p-4 rounded-lg">
-              <span class="text-xs text-gray-600 font-semibold block uppercase">BAC</span>
-              <span class="text-2xl font-bold text-teal-600 mt-2" id="kpi-budget">$0</span>
-              <span class="text-xs text-gray-500">Budget at Completion</span>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4" id="kpi-grid">
+            <div class="border p-4 rounded-lg" id="kpi-card-bac">
+              <span class="text-xs text-gray-500 font-semibold block uppercase">BAC</span>
+              <span class="text-2xl font-bold mt-2 block" id="kpi-budget">$0</span>
+              <span class="text-xs text-gray-400">Budget at Completion</span>
             </div>
-            <div class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 p-4 rounded-lg">
-              <span class="text-xs text-gray-600 font-semibold block uppercase">AC</span>
-              <span class="text-2xl font-bold text-red-600 mt-2" id="kpi-spent">$0</span>
-              <span class="text-xs text-gray-500">Costo Real</span>
+            <div class="border p-4 rounded-lg" id="kpi-card-ac">
+              <span class="text-xs text-gray-500 font-semibold block uppercase">AC</span>
+              <span class="text-2xl font-bold mt-2 block" id="kpi-spent">$0</span>
+              <span class="text-xs text-gray-400">Costo Real</span>
             </div>
-            <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 p-4 rounded-lg">
-              <span class="text-xs text-gray-600 font-semibold block uppercase">Progreso</span>
-              <span class="text-2xl font-bold text-green-600 mt-2" id="kpi-progress">0%</span>
-              <span class="text-xs text-gray-500">% Completado</span>
+            <div class="border p-4 rounded-lg" id="kpi-card-progress">
+              <span class="text-xs text-gray-500 font-semibold block uppercase">Progreso</span>
+              <span class="text-2xl font-bold mt-2 block" id="kpi-progress">0%</span>
+              <div class="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div id="kpi-progress-bar" class="h-full rounded-full transition-all" style="width:0%"></div>
+              </div>
             </div>
-            <div class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 p-4 rounded-lg">
-              <span class="text-xs text-gray-600 font-semibold block uppercase">CV</span>
-              <span class="text-2xl font-bold text-orange-600 mt-2" id="kpi-cv">$0</span>
-              <span class="text-xs text-gray-500">Variación Costo</span>
+            <div class="border p-4 rounded-lg" id="kpi-card-cv">
+              <span class="text-xs text-gray-500 font-semibold block uppercase">CV</span>
+              <span class="text-2xl font-bold mt-2 block" id="kpi-cv">$0</span>
+              <span class="text-xs text-gray-400">Variación Costo</span>
             </div>
-            <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 p-4 rounded-lg">
-              <span class="text-xs text-gray-600 font-semibold block uppercase">EAC</span>
-              <span class="text-2xl font-bold text-indigo-600 mt-2" id="kpi-eac">$0</span>
-              <span class="text-xs text-gray-500">Estimado Final</span>
+            <div class="border p-4 rounded-lg" id="kpi-card-eac">
+              <span class="text-xs text-gray-500 font-semibold block uppercase">EAC</span>
+              <span class="text-2xl font-bold mt-2 block" id="kpi-eac">$0</span>
+              <span class="text-xs text-gray-400">Estimado Final</span>
             </div>
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-4 rounded-lg">
-              <span class="text-xs text-gray-600 font-semibold block uppercase">VAC</span>
-              <span class="text-2xl font-bold text-purple-600 mt-2" id="kpi-saldo">$0</span>
-              <span class="text-xs text-gray-500">Varianza Final</span>
+            <div class="border p-4 rounded-lg" id="kpi-card-vac">
+              <span class="text-xs text-gray-500 font-semibold block uppercase">VAC</span>
+              <span class="text-2xl font-bold mt-2 block" id="kpi-saldo">$0</span>
+              <span class="text-xs text-gray-400">Varianza Final</span>
             </div>
           </div>
         </div>
@@ -573,59 +628,142 @@
         : '';
     }
 
+    // ── RAG helpers ──────────────────────────────────────────────
+    function ragIndex(v) { // for CPI / SPI
+      if (v >= 1.0)  return 'green';
+      if (v >= 0.80) return 'yellow';
+      return 'red';
+    }
+    function ragVariance(v, bac) { // for CV / VAC
+      if (v >= 0) return 'green';
+      if (v >= -0.10 * bac) return 'yellow';
+      return 'red';
+    }
+    function ragTCPI(v) {
+      if (v <= 1.0)  return 'green';
+      if (v <= 1.10) return 'yellow';
+      return 'red';
+    }
+    function ragProgress(pct, planPct) {
+      const diff = planPct - pct;
+      if (diff <= 5)  return 'green';
+      if (diff <= 15) return 'yellow';
+      return 'red';
+    }
+    function ragRisk(score) {
+      if (!score || score === 'LOW')    return 'green';
+      if (score === 'MEDIUM')           return 'yellow';
+      return 'red';
+    }
+    function ragBudget(status) {
+      if (status === 'ON_TRACK') return 'green';
+      if (status === 'AT_RISK')  return 'yellow';
+      return 'red';
+    }
+    function ragDIS(score) {
+      if (score >= 85) return 'green';
+      if (score >= 60) return 'yellow';
+      return 'red';
+    }
+    function healthScore(cpi, spi, pct, planPct, riskScore) {
+      const cpiN  = Math.min(1, Math.max(0, cpi))  * 100;
+      const spiN  = Math.min(1, Math.max(0, spi))  * 100;
+      const pctN  = Math.min(100, pct);
+      const riskN = riskScore === 'LOW' ? 100 : riskScore === 'MEDIUM' ? 60 : riskScore === 'HIGH' ? 30 : 10;
+      return Math.round(cpiN * 0.35 + spiN * 0.30 + pctN * 0.20 + riskN * 0.15);
+    }
+    const RAG_COLORS = {
+      green:  { border: 'rag-border-green',  text: 'rag-green',  bg: 'rag-bg-green',  badge: 'green',  emoji: '🟢' },
+      yellow: { border: 'rag-border-yellow', text: 'rag-yellow', bg: 'rag-bg-yellow', badge: 'yellow', emoji: '🟡' },
+      red:    { border: 'rag-border-red',    text: 'rag-red',    bg: 'rag-bg-red',    badge: 'red',    emoji: '🔴' },
+    };
+    function ragBadge(level, label) {
+      return `<span class="rag-badge ${level}">${RAG_COLORS[level].emoji} ${label}</span>`;
+    }
+    function applyKPICard(cardId, valueEl, rag, extraClass = '') {
+      const card = document.getElementById(cardId);
+      const val  = document.getElementById(valueEl);
+      if (!card || !val) return;
+      card.className = `border p-4 rounded-lg ${RAG_COLORS[rag].bg} ${extraClass}`;
+      val.className  = `text-2xl font-bold mt-2 block ${RAG_COLORS[rag].text}`;
+    }
+    // ─────────────────────────────────────────────────────────────
+
+    function renderHealthBanner(score, rag, riskLabel, budgetLabel) {
+      const banner = document.getElementById('health-banner');
+      const num    = document.getElementById('health-score-num');
+      const icon   = document.getElementById('health-icon');
+      const label  = document.getElementById('health-label');
+      const detail = document.getElementById('health-detail');
+      const info = { green: { icon:'✅', label:'Proyecto Saludable', msg:'Todas las métricas dentro de parámetros normales.' },
+                     yellow:{ icon:'⚠️', label:'Proyecto en Riesgo', msg:`Riesgo: ${riskLabel} · Presupuesto: ${budgetLabel}` },
+                     red:   { icon:'🚨', label:'Proyecto Crítico',   msg:`Riesgo: ${riskLabel} · Presupuesto: ${budgetLabel} — Acción inmediata requerida.` } };
+      banner.style.display = 'flex';
+      banner.className = rag;
+      num.textContent = score;
+      num.className = `health-score-num ${rag}`;
+      icon.textContent  = info[rag].icon;
+      label.textContent = info[rag].label;
+      detail.textContent= info[rag].msg;
+    }
+
     function renderMetrics() {
       const panel = document.getElementById('metrics-panel');
       if (!analysisData) return;
 
-      const risk = analysisData.risk?.analysis?.analysis || {};
+      const risk     = analysisData.risk?.analysis?.analysis || {};
       const economic = analysisData.economic?.analysis?.analysis || {};
-      const metrics = analysisData.metrics || {};
+      const metrics  = analysisData.metrics || {};
 
-      const cpiValue = parseFloat(metrics.cpi) || 1;
-      let cpiColor = 'green';
-      if (cpiValue < 0.8) cpiColor = 'red';
-      else if (cpiValue < 1.0) cpiColor = 'amber';
+      const cpi  = parseFloat(metrics.cpi  || 1);
+      const spi  = parseFloat(metrics.spi  || 1);
+      const tcpi = parseFloat(metrics.tcpi || 1);
+      const sv   = parseFloat(metrics.sv   || 0);
+      const bac  = parseFloat(metrics.bac  || 1);
+      const pct  = parseFloat(metrics.percentComplete || 0);
+      const riskScore   = risk.overallRiskScore || 'MEDIUM';
+      const budgetStatus= economic.budget_status || 'AT_RISK';
 
-      const colorMap = {
-        red: { border: 'border-red-400', text: 'text-red-700' },
-        amber: { border: 'border-amber-400', text: 'text-amber-700' },
-        green: { border: 'border-green-400', text: 'text-green-700' },
-        blue: { border: 'border-blue-400', text: 'text-blue-700' },
-        purple: { border: 'border-purple-400', text: 'text-purple-700' },
-        cyan: { border: 'border-teal-400', text: 'text-teal-700' }
-      };
+      // Estimate plan% from SPI proxy (SPI * pct gives rough planned %)
+      const planPct = spi > 0 ? pct / spi : pct;
 
-      const dis = analysisData.dis;
-      const disColor = !dis ? 'blue' : dis.score >= 85 ? 'green' : dis.score >= 60 ? 'amber' : 'red';
-      const disValue = dis ? `${dis.score}% (${dis.grade})` : 'N/A';
-      const disDetail = dis ? `${dis.label} · ${dis.mappedFields} campos` : 'Sin datos de calidad';
+      const ragCPI  = ragIndex(cpi);
+      const ragSPI  = ragIndex(spi);
+      const ragT    = ragTCPI(tcpi);
+      const ragSV   = sv >= 0 ? 'green' : sv >= -0.1 * bac ? 'yellow' : 'red';
+      const ragR    = ragRisk(riskScore);
+      const ragB    = ragBudget(budgetStatus);
 
-      const vacValue = parseFloat(metrics.vac || 0);
-      const eacValue = parseFloat(metrics.eac || 0);
-      const svValue = parseFloat(metrics.sv || 0);
+      const dis      = analysisData.dis;
+      const disScore = dis?.score ?? 0;
+      const ragD     = dis ? ragDIS(disScore) : 'yellow';
+      const disValue = dis ? `${dis.score} (${dis.grade})` : 'N/A';
+      const disDetail= dis ? `${dis.label} · ${dis.mappedFields} campos` : 'Sin datos';
+
+      const score = healthScore(cpi, spi, pct, planPct, riskScore);
+      const overallRag = score >= 75 ? 'green' : score >= 50 ? 'yellow' : 'red';
+      renderHealthBanner(score, overallRag, riskScore, budgetStatus);
 
       const cards = [
-        { icon: '🎯', label: 'Risk Score', value: risk.overallRiskScore || 'N/A', detail: `Delay: ${(risk.delayProbability * 100 || 0).toFixed(0)}%`, color: 'red' },
-        { icon: '💰', label: 'Budget Status', value: economic.budget_status || 'N/A', detail: `Health: ${(economic.budget_health * 100 || 0).toFixed(0)}%`, color: 'amber' },
-        { icon: '📊', label: 'CPI', value: metrics.cpi || 'N/A', detail: 'Cost Performance Index', color: cpiColor },
-        { icon: '⏱️', label: 'SPI', value: metrics.spi || 'N/A', detail: `SV: $${Math.round(svValue).toLocaleString()}`, color: svValue >= 0 ? 'green' : 'red' },
-        { icon: '🏁', label: 'TCPI', value: metrics.tcpi || 'N/A', detail: 'To-Complete Performance', color: parseFloat(metrics.tcpi || 1) <= 1 ? 'green' : 'amber' },
-        { icon: '🔍', label: 'DIS Score', value: disValue, detail: disDetail, color: disColor }
+        { icon:'🎯', label:'Risk Score',    value: riskScore,       detail:`Delay: ${((risk.delayProbability||0)*100).toFixed(0)}%`, rag: ragR },
+        { icon:'💰', label:'Budget Status', value: budgetStatus,    detail:`Burn: $${Math.round(economic.daily_burn_rate||0).toLocaleString()}/día`, rag: ragB },
+        { icon:'📊', label:'CPI',           value: cpi.toFixed(2),  detail:'Cost Performance Index', rag: ragCPI },
+        { icon:'⏱️', label:'SPI',           value: spi.toFixed(2),  detail:`SV: $${Math.round(sv).toLocaleString()}`, rag: ragSPI },
+        { icon:'🏁', label:'TCPI',          value: tcpi.toFixed(2), detail:'To-Complete Performance', rag: ragT },
+        { icon:'🔍', label:'DIS Score',     value: disValue,        detail: disDetail, rag: ragD },
       ];
 
       panel.innerHTML = cards.map(c => {
-        const colors = colorMap[c.color] || colorMap.cyan;
+        const col = RAG_COLORS[c.rag];
         return `
-          <div class="bg-white rounded-xl p-5 shadow-md border-t-4 ${colors.border} hover:shadow-lg transition">
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
-                <p class="text-2xl font-bold ${colors.text} mt-3">${c.value}</p>
-                <p class="text-xs text-gray-600 mt-2">${c.detail}</p>
-              </div>
+          <div class="bg-white rounded-xl p-5 shadow-md border-t-4 ${col.border} hover:shadow-lg transition">
+            <p class="text-xs text-gray-500 font-semibold uppercase">${c.icon} ${c.label}</p>
+            <p class="text-2xl font-bold ${col.text} mt-3">${c.value}</p>
+            <div class="flex items-center justify-between mt-2">
+              <p class="text-xs text-gray-500">${c.detail}</p>
+              ${ragBadge(c.rag, c.rag === 'green' ? 'OK' : c.rag === 'yellow' ? 'Riesgo' : 'Crítico')}
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
@@ -671,37 +809,67 @@
         { name: 'Proyecto Importado', plan: totalBudget, actual: totalSpent, progress: avgProgress, start: 0, duration: 1 }
       ];
 
+      // KPI values
+      document.getElementById('kpi-budget').textContent   = `$${Math.round(totalBudget).toLocaleString()}`;
+      document.getElementById('kpi-spent').textContent    = `$${Math.round(totalSpent).toLocaleString()}`;
+      document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
+      document.getElementById('kpi-cv').textContent       = `$${Math.round(cv).toLocaleString()}`;
+      document.getElementById('kpi-eac').textContent      = `$${Math.round(eac).toLocaleString()}`;
+      document.getElementById('kpi-saldo').textContent    = `$${Math.round(vac).toLocaleString()}`;
+
+      // RAG colors on KPI cards
+      const spi      = parseFloat(analysisData?.metrics?.spi || 1);
+      const planPct  = spi > 0 ? avgProgress / spi : avgProgress;
+      const ragCV    = ragVariance(cv, totalBudget);
+      const ragVAC   = ragVariance(vac, totalBudget);
+      const ragProg  = ragProgress(avgProgress, planPct);
+
+      // AC: neutral (always green if ≤ BAC)
+      const ragAC = totalSpent <= totalBudget ? 'green' : 'red';
+      // EAC: compare to BAC
+      const ragEAC = eac <= totalBudget ? 'green' : eac <= totalBudget * 1.1 ? 'yellow' : 'red';
+
+      applyKPICard('kpi-card-bac',      'kpi-budget',   'green');
+      applyKPICard('kpi-card-ac',       'kpi-spent',    ragAC);
+      applyKPICard('kpi-card-progress', 'kpi-progress', ragProg);
+      applyKPICard('kpi-card-cv',       'kpi-cv',       ragCV);
+      applyKPICard('kpi-card-eac',      'kpi-eac',      ragEAC);
+      applyKPICard('kpi-card-vac',      'kpi-saldo',    ragVAC);
+
+      // Progress bar color
+      const bar = document.getElementById('kpi-progress-bar');
+      if (bar) {
+        const barColor = ragProg === 'green' ? '#16a34a' : ragProg === 'yellow' ? '#d97706' : '#dc2626';
+        bar.style.width = `${Math.min(100, avgProgress)}%`;
+        bar.style.background = barColor;
+      }
+
+      // Gantt row color
       body.innerHTML = tasks.map(t => {
-        const leftPos = (t.start / 4) * 100;
-        const width = (t.duration / 4) * 100;
+        const rowRag = ragProgress(t.progress, planPct);
+        const barCol = rowRag === 'green' ? '#16a34a' : rowRag === 'yellow' ? '#d97706' : '#dc2626';
+        const rowBg  = rowRag === 'red' ? 'background:#fff1f2' : rowRag === 'yellow' ? 'background:#fffbeb' : '';
         return `
-          <tr class="hover:bg-teal-50 transition">
+          <tr class="hover:opacity-90 transition" style="${rowBg}">
             <td class="p-4 font-semibold text-gray-800">${t.name}</td>
             <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString()}</td>
-            <td class="p-4 font-mono text-gray-700">$${Math.round(t.actual).toLocaleString()}</td>
-            <td class="p-4"><input type="range" min="0" max="100" value="${t.progress}" class="w-16" style="accent-color: #17B8A0;" /></td>
+            <td class="p-4 font-mono" style="color:${totalSpent>totalBudget?'#dc2626':'#15803d'}">$${Math.round(t.actual).toLocaleString()}</td>
             <td class="p-4">
-              <div class="relative h-8 bg-teal-100 rounded-lg overflow-hidden border border-teal-200">
-                <div style="left: ${leftPos}%; width: ${width}%; height: 100%" class="absolute bg-gradient-to-r from-teal-400 to-teal-700 rounded-lg">
-                  <div style="width: ${t.progress}%" class="absolute inset-0 bg-green-500/70 rounded-lg"></div>
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                  <div style="width:${t.progress}%;background:${barCol}" class="h-full rounded-full"></div>
                 </div>
+                <span style="font-size:11px;font-weight:700;color:${barCol}">${Math.round(t.progress)}%</span>
               </div>
             </td>
-          </tr>
-        `;
+            <td class="p-4">
+              <div class="relative h-6 bg-gray-100 rounded-lg overflow-hidden">
+                <div style="left:0%;width:100%;height:100%;position:absolute;background:${barCol};opacity:0.2;border-radius:8px"></div>
+                <div style="width:${t.progress}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
+              </div>
+            </td>
+          </tr>`;
       }).join('');
-
-      document.getElementById('kpi-budget').textContent = `$${Math.round(totalBudget).toLocaleString()}`;
-      document.getElementById('kpi-spent').textContent = `$${Math.round(totalSpent).toLocaleString()}`;
-      document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
-      
-      document.getElementById('kpi-cv').textContent = `$${Math.round(cv).toLocaleString()}`;
-      document.getElementById('kpi-cv').className = cv >= 0 ? 'text-2xl font-bold text-green-600 mt-2' : 'text-2xl font-bold text-red-600 mt-2';
-
-      document.getElementById('kpi-eac').textContent = `$${Math.round(eac).toLocaleString()}`;
-
-      document.getElementById('kpi-saldo').textContent = `$${Math.round(vac).toLocaleString()}`;
-      document.getElementById('kpi-saldo').className = vac >= 0 ? 'text-2xl font-bold text-purple-600 mt-2' : 'text-2xl font-bold text-red-600 mt-2';
     }
 
     function logout() {
