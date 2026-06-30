@@ -121,7 +121,9 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
       let parsed: { suggestions: ColumnSuggestion[] };
       try {
         // Remove markdown code blocks if present
-        const cleanedText = rawResponse.replace(/```json\n?|\n?```/g, '').trim();
+        let cleanedText = rawResponse.replace(/```json\s*|```/g, '').trim();
+        // Some models prefix the JSON with a stray "json" tag without a code fence
+        cleanedText = cleanedText.replace(/^json\s*/i, '').trim();
         parsed = JSON.parse(cleanedText);
       } catch (parseErr) {
         throw new Error(
