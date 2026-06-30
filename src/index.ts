@@ -14,6 +14,7 @@ import { adminAuthMiddleware } from './middleware/adminAuthMiddleware';
 import adminRouter from './routes/admin';
 import dataMappingRoutes from './routes/dataMapping';
 import chatRouter from './routes/chat';
+import portfolioRouter from './routes/portfolio';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { mkdirSync } from 'fs';
 
@@ -50,6 +51,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/chat', requireAuth, chatRouter);
+app.use('/api/portfolio', requireAuth, portfolioRouter);
 app.use('/api/analysis', requireAuth, analysisRouter);
 app.use('/api/data', requireAuth, dataRouter);
 app.use('/api/dev', adminAuthMiddleware, devRouter);
@@ -61,6 +63,10 @@ app.get('/', requireAuth, (_req, res) => {
 
 app.get('/projects', requireAuth, (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/projects.html'));
+});
+
+app.get('/portfolio', requireAuth, (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/portfolio.html'));
 });
 
 app.get('/reset-password', (_req, res) => {
