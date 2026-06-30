@@ -4,6 +4,7 @@
  */
 
 import jwt from "jsonwebtoken";
+import { authLogger } from "../core/logger";
 
 interface TokenPayload {
   id: string;
@@ -45,7 +46,7 @@ export function verifyToken(token: string): TokenPayload | null {
     const decoded = jwt.verify(token, JWT_SECRET as string) as TokenPayload;
     return decoded;
   } catch (error) {
-    console.error("JWT verification failed:", error);
+    authLogger.debug({ err: (error as Error).message }, "JWT verification failed");
     return null;
   }
 }
@@ -61,7 +62,7 @@ export function decodeToken(token: string): TokenPayload | null {
     const decoded = jwt.decode(token) as TokenPayload | null;
     return decoded;
   } catch (error) {
-    console.error("JWT decode failed:", error);
+    authLogger.debug({ err: (error as Error).message }, "JWT decode failed");
     return null;
   }
 }

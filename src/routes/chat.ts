@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import { anthropicClient, aiConfig } from '../config/anthropic';
 import { pool } from '../db';
+import { ChatMessageSchema, ProjectIdParamSchema } from '../config/validation';
+import { routeLogger } from '../core/logger';
 
 const router = express.Router();
 
@@ -33,11 +35,9 @@ Responde siempre en español, a menos que el usuario escriba en otro idioma.`;
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { message, history = [], projectContext } = req.body;
-
-    if (!message?.trim()) {
-      return res.status(400).json({ error: 'Mensaje requerido' });
-    }
+    const body = ChatMessageSchema.safeParse(req.body);
+    if (!body.success) return res.status(400).json({ error: body.error.flatten() });
+    const { message, history = [], projectContext } = body.data;
 
     const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 
@@ -77,7 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     res.json({ success: true, reply });
   } catch (error: any) {
-    console.error('Chat error:', error.message);
+    routeLogger.error({ err: error.message }, 'chat POST error');
     res.status(500).json({ error: 'Error procesando tu mensaje' });
   }
 });
@@ -85,7 +85,9 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /api/chat/context/:projectId — fetch project metrics to seed the chat
 router.get('/context/:projectId', async (req: Request, res: Response) => {
   try {
-    const projectId = parseInt(String(req.params.projectId));
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ error: 'projectId inválido' });
+    const { projectId } = params.data;
     const result = await pool.query(
       `SELECT pd.projectname, aa.output
        FROM project_data pd

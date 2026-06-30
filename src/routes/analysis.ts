@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import { orchestrator } from '../services/multiAgentOrchestrator';
 import { pool } from '../db';
 import { generateMockAnalysis, isMockEnabled, getCacheDurationHours } from '../utils/mockAnalysis';
+import { ProjectIdParamSchema, AnalysisBodySchema, OrgQuerySchema } from '../config/validation';
+import { routeLogger } from '../core/logger';
 
 const router = express.Router();
 
@@ -20,9 +22,13 @@ async function getCachedAnalysis(projectId: number) {
 
 router.post('/:projectId', async (req: Request, res: Response) => {
   try {
-    const projectId = parseInt(String(req.params.projectId));
-    const { framework, forceRefresh } = req.body;
-    const fw = (framework as string) || 'scrum';
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
+    const projectId = params.data.projectId;
+
+    const body = AnalysisBodySchema.safeParse(req.body);
+    if (!body.success) return res.status(400).json({ success: false, error: body.error.flatten() });
+    const { framework: fw, forceRefresh } = body.data;
 
     // Si USE_MOCK_DATA está activado, devolver mock sin llamar API
     if (isMockEnabled() && !forceRefresh) {
@@ -68,13 +74,15 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     });
     
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    routeLogger.error({ err: error.message }, "route error"); res.status(500).json({ success: false, error: "Error interno del servidor" });
   }
 });
 
 router.get('/:projectId/latest', async (req: Request, res: Response) => {
   try {
-    const projectId = parseInt(String(req.params.projectId));
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
+    const projectId = params.data.projectId;
     const result = await pool.query(
       `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
       [projectId]
@@ -86,7 +94,7 @@ router.get('/:projectId/latest', async (req: Request, res: Response) => {
     
     res.json({ success: true, generatedAt: result.rows[0].generatedat, data: result.rows[0].output });
   } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
+    routeLogger.error({ err: error.message }, "route error"); res.status(500).json({ success: false, error: "Error interno del servidor" });
   }
 });
 
@@ -101,8 +109,12 @@ function escapeHtml(str: string): string {
 
 router.get('/:projectId/view', async (req: Request, res: Response) => {
   try {
-    const projectId = parseInt(String(req.params.projectId));
-    const org = escapeHtml(decodeURIComponent(String(req.query.org || 'Sin especificar')));
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
+    const projectId = params.data.projectId;
+
+    const query = OrgQuerySchema.safeParse(req.query);
+    const org = escapeHtml(query.success ? query.data.org : 'Sin especificar');
 
     const result = await pool.query(
       `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,

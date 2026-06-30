@@ -6,6 +6,8 @@ import { dataIngestService } from '../services/dataIngestService';
 import { projectRepository } from '../repositories/projectRepository';
 import { pool } from '../db';
 import { UPLOAD_MESSAGES } from '../config/messages';
+import { ProjectIdParamSchema, PaginationQuerySchema } from '../config/validation';
+import { routeLogger } from '../core/logger';
  
 const router = express.Router();
  
@@ -88,11 +90,12 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
  
 router.get('/projects', async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
-    
+    const pq = PaginationQuerySchema.safeParse(req.query);
+    if (!pq.success) return res.status(400).json({ success: false, error: pq.error.flatten() });
+    const { page, limit } = pq.data;
+
     const projects = await projectRepository.getAllProjects(page, limit);
-    
+
     res.json({
       success: true,
       count: projects.length,
@@ -100,38 +103,30 @@ router.get('/projects', async (req: Request, res: Response) => {
       limit,
       data: projects,
     });
-    
+
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Error desconocido',
-    });
+    routeLogger.error({ err: error.message }, 'GET /projects error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
- 
+
 router.get('/projects/:projectId', async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.params;
-    
-    const project = await projectRepository.getProjectForAnalysis(parseInt(projectId as string));
-    
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
+    const { projectId } = params.data;
+
+    const project = await projectRepository.getProjectForAnalysis(projectId);
+
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        error: `Proyecto ${projectId} no encontrado`,
-      });
+      return res.status(404).json({ success: false, error: `Proyecto ${projectId} no encontrado` });
     }
-    
-    res.json({
-      success: true,
-      data: project,
-    });
-    
+
+    res.json({ success: true, data: project });
+
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    routeLogger.error({ err: error.message }, 'GET /projects/:id error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
  

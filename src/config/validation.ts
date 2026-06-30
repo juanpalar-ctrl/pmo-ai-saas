@@ -91,6 +91,34 @@ export const NormalizedProjectBatchSchema = z.object({
   normalizedAt: z.string().datetime(),
 });
 
+// ─── Route param / query schemas ──────────────────────────────────────────────
+
+export const ProjectIdParamSchema = z.object({
+  projectId: z.string().regex(/^\d+$/, 'projectId must be a positive integer').transform(Number),
+});
+
+export const PaginationQuerySchema = z.object({
+  page:  z.string().optional().transform(v => Math.max(1, parseInt(v || '1') || 1)),
+  limit: z.string().optional().transform(v => Math.min(100, Math.max(1, parseInt(v || '50') || 50))),
+});
+
+export const AnalysisBodySchema = z.object({
+  framework:    z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),
+  forceRefresh: z.boolean().optional().default(false),
+});
+
+export const ChatMessageSchema = z.object({
+  message:        z.string().min(1).max(2000),
+  history:        z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string() })).max(20).optional().default([]),
+  projectContext: z.any().optional(),
+});
+
+export const OrgQuerySchema = z.object({
+  org: z.string().max(200).optional().default('Sin especificar'),
+});
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 export type ColumnSuggestion = z.infer<typeof ColumnSuggestionSchema>;
 export type DetectColumnsResponse = z.infer<typeof DetectColumnsResponseSchema>;
 export type ConfirmedMapping = z.infer<typeof ConfirmedMappingSchema>;
