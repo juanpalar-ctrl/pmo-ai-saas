@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
 import { anthropicClient, aiConfig } from '../config/anthropic';
 import { pool } from '../db';
-import { ChatMessageSchema, ProjectIdParamSchema, DraftMessageSchema } from '../config/validation';
+import { ChatMessageSchema, ProjectIdParamSchema, DraftMessageSchema, SimulateSchema } from '../config/validation';
+import { simulateScenario, SimulationDelta } from '../services/scenarioSimulator';
 import { routeLogger } from '../core/logger';
 
 const router = express.Router();
@@ -34,7 +35,7 @@ const SYSTEM_PROMPT = `Eres LARA Assistant, un experto en Project Management con
 Cuando tu respuesta explica un problema accionable (alerta, riesgo, desviación de presupuesto, tareas atrasadas), DEBES terminar con un bloque de acciones en este formato EXACTO:
 
 <actions>
-[{"id":"draft_team","label":"✉️ Redactar mensaje para el equipo","intent":"draft:team"},{"id":"draft_clevel","label":"📊 Preparar reporte ejecutivo","intent":"draft:clevel"},{"id":"simulate","label":"🔮 Simular escenarios","intent":"¿Qué pasa si resolvemos este problema esta semana? ¿Y si se retrasa dos semanas más?"}]
+[{"id":"draft_team","label":"✉️ Redactar mensaje para el equipo","intent":"draft:team"},{"id":"draft_clevel","label":"📊 Preparar reporte ejecutivo","intent":"draft:clevel"},{"id":"simulate","label":"🔮 Simular escenarios","intent":"simulate:¿Qué pasa si nos retrasamos dos semanas más en este problema?"}]
 </actions>
 
 Adapta las acciones al problema específico. Si el problema es de presupuesto, añade una acción de revisión presupuestaria. Si es de cronograma, añade una de negociación de fechas. Siempre incluye al menos "Redactar mensaje para el equipo" y "Preparar reporte ejecutivo" cuando haya un problema.
@@ -144,6 +145,88 @@ router.post('/draft', async (req: Request, res: Response) => {
   } catch (error: any) {
     routeLogger.error({ err: error.message }, 'draft POST error');
     res.status(500).json({ error: 'Error generando el borrador' });
+  }
+});
+
+// POST /api/chat/simulate — what-if scenario simulation with deterministic EVM math
+const PARSE_DELTA_PROMPT = `You are an EVM scenario parser. The user describes a project scenario in natural language.
+Extract a structured SimulationDelta and respond ONLY with valid JSON — no markdown, no explanation.
+
+Scenario types:
+- "schedule_delay": project slips or is delayed (needs "weeks")
+- "schedule_acceleration": team speeds up or catches up (needs "weeks")
+- "budget_increase": more budget approved (needs "percent")
+- "scope_reduction": scope is cut or reduced (needs "percent")
+- "team_boost": adding people or resources (needs "percent" improvement, typically 10–25)
+
+Response format (pick ONE type):
+{"type":"schedule_delay","weeks":2,"label":"Retraso de 2 semanas en el proyecto"}
+
+If the question is ambiguous, default to schedule_delay with weeks=2.`;
+
+const NARRATE_SIMULATION_PROMPT = `Eres LARA, experta en Project Management. Te presento los resultados matemáticos de una simulación de escenario para un proyecto.
+Tu tarea es narrar el impacto en lenguaje claro para un PM. Sé directo, usa los números reales del resultado.
+- Explica qué cambia y por qué importa (máximo 150 palabras)
+- Menciona el Revenue at Stake si aumenta
+- Da 1 recomendación concreta al final
+- Usa formato markdown con negritas para los números clave
+- Responde en español`;
+
+router.post('/simulate', async (req: Request, res: Response) => {
+  try {
+    const body = SimulateSchema.safeParse(req.body);
+    if (!body.success) return res.status(400).json({ error: body.error.flatten() });
+    const { question, metrics, projectName } = body.data;
+
+    // Step 1: Claude parses the natural-language question into a structured delta
+    const parseResponse = await anthropicClient.messages.create({
+      model: aiConfig.model,
+      max_tokens: 120,
+      system: PARSE_DELTA_PROMPT,
+      messages: [{ role: 'user', content: question }],
+    });
+
+    let delta: SimulationDelta;
+    try {
+      const raw = parseResponse.content[0].type === 'text' ? parseResponse.content[0].text.trim() : '{}';
+      delta = JSON.parse(raw) as SimulationDelta;
+    } catch {
+      delta = { type: 'schedule_delay', weeks: 2, label: 'Retraso de 2 semanas' };
+    }
+
+    // Step 2: deterministic EVM recalculation — no LLM involved
+    const result = simulateScenario(metrics || {}, delta);
+
+    // Step 3: Claude narrates the result in plain language
+    const narratePrompt = `Proyecto: ${projectName}
+Escenario: ${delta.label}
+
+ANTES:
+- CPI: ${result.before.cpi} | SPI: ${result.before.spi}
+- EAC: $${result.before.eac.toLocaleString()} | VAC: $${result.before.vac.toLocaleString()}
+- Revenue at Stake: $${result.before.revenueAtStake.toLocaleString()}
+
+DESPUÉS del escenario:
+- CPI: ${result.after.cpi} | SPI: ${result.after.spi}
+- EAC: $${result.after.eac.toLocaleString()} | VAC: $${result.after.vac.toLocaleString()}
+- Revenue at Stake: $${result.after.revenueAtStake.toLocaleString()}
+
+Cambio en EAC: ${result.deltaSummary.eacChange >= 0 ? '+' : ''}$${Math.round(result.deltaSummary.eacChange).toLocaleString()}
+Cambio en Revenue at Stake: ${result.deltaSummary.revenueAtStakeChange >= 0 ? '+' : ''}$${Math.round(result.deltaSummary.revenueAtStakeChange).toLocaleString()}`;
+
+    const narrateResponse = await anthropicClient.messages.create({
+      model: aiConfig.model,
+      max_tokens: 400,
+      system: NARRATE_SIMULATION_PROMPT,
+      messages: [{ role: 'user', content: narratePrompt }],
+    });
+
+    const narrative = narrateResponse.content[0].type === 'text' ? narrateResponse.content[0].text.trim() : '';
+
+    res.json({ success: true, result, narrative, scenario: delta.label });
+  } catch (error: any) {
+    routeLogger.error({ err: error.message }, 'simulate POST error');
+    res.status(500).json({ error: 'Error ejecutando la simulación' });
   }
 });
 

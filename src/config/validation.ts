@@ -123,6 +123,22 @@ export const DraftMessageSchema = z.object({
   projectName:  z.string().max(200).optional().default('el proyecto'),
 });
 
+export const SimulateSchema = z.object({
+  question:    z.string().min(1).max(500),
+  metrics:     z.object({
+    cpi:             z.number().optional(),
+    spi:             z.number().optional(),
+    bac:             z.number().optional(),
+    eac:             z.number().optional(),
+    vac:             z.number().optional(),
+    ac:              z.number().optional(),
+    ev:              z.number().optional(),
+    pv:              z.number().optional(),
+    percentComplete: z.number().optional(),
+  }).optional(),
+  projectName: z.string().max(200).optional().default('el proyecto'),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ColumnSuggestion = z.infer<typeof ColumnSuggestionSchema>;

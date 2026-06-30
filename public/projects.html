@@ -134,6 +134,41 @@
     .copy-btn:hover { background: #17B8A0; color: white; }
     .copy-btn.copied { background: #17B8A0; color: white; }
 
+    .sim-card {
+      margin-top: 10px; border-radius: 10px; overflow: hidden;
+      border: 1.5px solid #e5e7eb;
+    }
+    .sim-card-header {
+      padding: 8px 12px; font-size: 0.75em; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      background: linear-gradient(135deg, #f3e8ff, #ede9fe); color: #6d28d9;
+    }
+    .sim-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+      background: #fafafa;
+    }
+    .sim-col { padding: 12px; }
+    .sim-col:first-child { border-right: 1px solid #e5e7eb; }
+    .sim-col-label {
+      font-size: 0.7em; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 8px;
+    }
+    .sim-col-label.before { color: #6b7280; }
+    .sim-col-label.after  { color: #059669; }
+    .sim-metric {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.8em;
+    }
+    .sim-metric:last-child { border-bottom: none; }
+    .sim-metric-name  { color: #6b7280; }
+    .sim-metric-value { font-weight: 700; color: #1f2937; font-variant-numeric: tabular-nums; }
+    .sim-metric-value.worse  { color: #dc2626; }
+    .sim-metric-value.better { color: #059669; }
+    .sim-narrative {
+      padding: 12px; font-size: 0.83em; line-height: 1.65;
+      color: #1f2937; border-top: 1px solid #e5e7eb; background: white;
+    }
+
     .logo-img { width: 50px; height: 50px; object-fit: contain; }
     .report-section { margin-bottom: 20px; padding: 16px; background: #f0f9fa; border-left: 4px solid #17B8A0; border-radius: 8px; }
     .report-section h3 { color: #0B7B8C; font-weight: 700; margin-bottom: 10px; }
@@ -770,6 +805,9 @@
               menu.remove();
               if (action.intent.startsWith('draft:')) {
                 sendDraft(action.intent, div);
+              } else if (action.intent.startsWith('simulate:')) {
+                const question = action.intent.slice('simulate:'.length);
+                sendSimulate(question);
               } else {
                 document.getElementById('chat-input').value = action.intent;
                 sendMessage();
@@ -905,6 +943,122 @@
           typingDiv.remove();
           addBotMessage('Error de conexión al generar el borrador.');
         }
+      }
+
+      async function sendSimulate(question) {
+        const msgs = document.getElementById('chat-messages');
+
+        const userBubble = document.createElement('div');
+        userBubble.className = 'msg user';
+        userBubble.textContent = question || '🔮 Simular escenarios';
+        msgs.appendChild(userBubble);
+        msgs.scrollTop = msgs.scrollHeight;
+        chatHistory.push({ role: 'user', content: userBubble.textContent });
+
+        const typingDiv = addBotMessage('', true);
+
+        try {
+          const res = await fetch('/api/chat/simulate', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: question || '¿Qué pasa si nos retrasamos dos semanas?',
+              metrics: projectContext?.metrics ? {
+                cpi:             parseFloat(projectContext.metrics.cpi) || undefined,
+                spi:             parseFloat(projectContext.metrics.spi) || undefined,
+                bac:             parseFloat(projectContext.metrics.bac) || undefined,
+                eac:             parseFloat(projectContext.metrics.eac) || undefined,
+                vac:             parseFloat(projectContext.metrics.vac) || undefined,
+                ac:              parseFloat(projectContext.metrics.ac)  || undefined,
+                ev:              parseFloat(projectContext.metrics.ev)  || undefined,
+                pv:              parseFloat(projectContext.metrics.pv)  || undefined,
+                percentComplete: parseFloat(projectContext.metrics.percentComplete) || undefined,
+              } : undefined,
+              projectName: projectContext?.projectName || 'el proyecto',
+            }),
+          });
+          const data = await res.json();
+          typingDiv.remove();
+
+          if (data.success) {
+            chatHistory.push({ role: 'assistant', content: data.narrative });
+            addSimulationCard(data.result, data.narrative, data.scenario);
+          } else {
+            addBotMessage('No pude ejecutar la simulación. Intenta de nuevo.');
+          }
+        } catch (_) {
+          typingDiv.remove();
+          addBotMessage('Error de conexión al simular el escenario.');
+        }
+      }
+
+      function addSimulationCard(result, narrative, scenario) {
+        const msgs = document.getElementById('chat-messages');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg bot';
+        wrapper.style.maxWidth = '95%';
+        wrapper.style.padding = '0';
+        wrapper.style.background = 'none';
+        wrapper.style.border = 'none';
+
+        const card = document.createElement('div');
+        card.className = 'sim-card';
+
+        const header = document.createElement('div');
+        header.className = 'sim-card-header';
+        header.textContent = `🔮 Simulación: ${scenario}`;
+
+        const grid = document.createElement('div');
+        grid.className = 'sim-grid';
+
+        const before = result.before;
+        const after  = result.after;
+        const fmt = n => `$${Math.round(n).toLocaleString('es-MX')}`;
+        const fmtN = n => (Math.round(n * 100) / 100).toString();
+
+        const metrics = [
+          { name: 'CPI',              b: fmtN(before.cpi), a: fmtN(after.cpi), betterWhen: 'higher' },
+          { name: 'SPI',              b: fmtN(before.spi), a: fmtN(after.spi), betterWhen: 'higher' },
+          { name: 'EAC',              b: fmt(before.eac),  a: fmt(after.eac),  betterWhen: 'lower'  },
+          { name: 'VAC',              b: fmt(before.vac),  a: fmt(after.vac),  betterWhen: 'higher' },
+          { name: 'Rev. at Stake',    b: fmt(before.revenueAtStake), a: fmt(after.revenueAtStake), betterWhen: 'lower' },
+        ];
+
+        function metricClass(bVal, aVal, betterWhen) {
+          const bNum = parseFloat(bVal.replace(/[$,]/g, ''));
+          const aNum = parseFloat(aVal.replace(/[$,]/g, ''));
+          if (aNum === bNum) return '';
+          const improved = betterWhen === 'higher' ? aNum > bNum : aNum < bNum;
+          return improved ? 'better' : 'worse';
+        }
+
+        const colBefore = document.createElement('div');
+        colBefore.className = 'sim-col';
+        colBefore.innerHTML = `<div class="sim-col-label before">◼ Situación Actual</div>` +
+          metrics.map(m => `<div class="sim-metric"><span class="sim-metric-name">${m.name}</span><span class="sim-metric-value">${m.b}</span></div>`).join('');
+
+        const colAfter = document.createElement('div');
+        colAfter.className = 'sim-col';
+        colAfter.innerHTML = `<div class="sim-col-label after">◼ Tras el Escenario</div>` +
+          metrics.map(m => {
+            const cls = metricClass(m.b, m.a, m.betterWhen);
+            return `<div class="sim-metric"><span class="sim-metric-name">${m.name}</span><span class="sim-metric-value ${cls}">${m.a}</span></div>`;
+          }).join('');
+
+        grid.appendChild(colBefore);
+        grid.appendChild(colAfter);
+
+        const narDiv = document.createElement('div');
+        narDiv.className = 'sim-narrative';
+        narDiv.innerHTML = formatMarkdown(narrative);
+
+        card.appendChild(header);
+        card.appendChild(grid);
+        card.appendChild(narDiv);
+        wrapper.appendChild(card);
+        msgs.appendChild(wrapper);
+        msgs.scrollTop = msgs.scrollHeight;
       }
 
       function addDraftCard(text, audience, label) {
