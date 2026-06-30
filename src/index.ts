@@ -23,11 +23,10 @@ import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { mkdirSync } from 'fs';
 
 if (!process.env.ANTHROPIC_API_KEY) {
-  logger.error('ANTHROPIC_API_KEY no está definida');
-  process.exit(1);
+  logger.warn('ANTHROPIC_API_KEY no está definida — las funciones de IA no funcionarán');
+} else {
+  logger.info('Configuración de Claude API cargada');
 }
-
-logger.info('Configuración de Claude API cargada');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
