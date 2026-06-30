@@ -142,6 +142,9 @@
           </button>
         </div>
 
+        <!-- Early Warning System panel -->
+        <div id="ews-panel" class="hidden"></div>
+
         <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
         <!-- Framework-specific real metrics from Excel data -->
@@ -391,10 +394,65 @@
       document.getElementById(`tab-${fw}`).classList.remove('text-gray-700');
       document.getElementById(`tab-${fw}`).classList.add('bg-gradient-to-r', 'from-teal-500', 'to-teal-700', 'text-white');
       
+      renderEarlyWarnings();
       renderMetrics();
       renderFrameworkMetrics();
       renderChart();
       renderGantt();
+    }
+
+    function renderEarlyWarnings() {
+      const panel = document.getElementById('ews-panel');
+      const ew = analysisData?.earlyWarnings;
+      if (!ew || !ew.hasAlerts) { panel.classList.add('hidden'); return; }
+      panel.classList.remove('hidden');
+
+      const severityConfig = {
+        CRITICAL: { bg: 'bg-red-50', border: 'border-red-400', badge: 'bg-red-600', icon: '🚨' },
+        HIGH:     { bg: 'bg-orange-50', border: 'border-orange-400', badge: 'bg-orange-500', icon: '⚠️' },
+        MEDIUM:   { bg: 'bg-amber-50', border: 'border-amber-300', badge: 'bg-amber-500', icon: '💡' },
+        LOW:      { bg: 'bg-blue-50', border: 'border-blue-300', badge: 'bg-blue-400', icon: 'ℹ️' },
+      };
+
+      panel.innerHTML = `
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div class="px-6 py-4 border-b border-red-200 flex items-center justify-between ${ew.criticalCount > 0 ? 'bg-red-600' : 'bg-orange-500'}">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">${ew.criticalCount > 0 ? '🚨' : '⚠️'}</span>
+              <div>
+                <h3 class="font-bold text-white text-lg">Sistema de Alertas Tempranas</h3>
+                <p class="text-white/80 text-xs mt-0.5">${ew.summary}</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              ${ew.criticalCount > 0 ? `<span class="bg-white text-red-700 font-bold text-xs px-3 py-1 rounded-full">${ew.criticalCount} CRÍTICA(S)</span>` : ''}
+              ${ew.highCount > 0 ? `<span class="bg-white/20 text-white font-bold text-xs px-3 py-1 rounded-full">${ew.highCount} ALTA(S)</span>` : ''}
+            </div>
+          </div>
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${ew.warnings.map(w => {
+              const cfg = severityConfig[w.severity] || severityConfig.LOW;
+              const tasks = w.affectedTasks?.length > 0
+                ? `<div class="mt-2 flex flex-wrap gap-1">${w.affectedTasks.map(t => `<span class="text-xs bg-white/60 border rounded px-2 py-0.5 text-gray-600 truncate max-w-[160px]" title="${t}">${t}</span>`).join('')}</div>`
+                : '';
+              return `
+                <div class="${cfg.bg} border-l-4 ${cfg.border} rounded-lg p-4">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span>${cfg.icon}</span>
+                        <span class="font-bold text-gray-800 text-sm">${w.title}</span>
+                        <span class="text-xs font-bold text-white px-2 py-0.5 rounded-full ${cfg.badge}">${w.severity}</span>
+                      </div>
+                      <p class="text-sm text-gray-600">${w.description}</p>
+                      <p class="text-xs text-gray-500 mt-2 flex items-start gap-1"><span class="font-semibold shrink-0">→ Acción:</span> ${w.action}</p>
+                      ${tasks}
+                    </div>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
     }
 
     function renderFrameworkMetrics() {
@@ -626,10 +684,20 @@
         const isOpen = panel.classList.toggle('open');
         if (isOpen && !chatInitialized) {
           chatInitialized = true;
-          addBotMessage('¡Hola! 👋 Soy **LARA Assistant**, tu guía experta en Project Management.\n\n' +
-            (projectContext
-              ? `Tengo acceso a las métricas de **${projectContext.projectName}**. Puedo ayudarte a interpretar los datos y tomar mejores decisiones. ¿Qué quieres saber?`
-              : 'Puedo ayudarte a entender métricas, riesgos y metodologías. ¿Qué quieres aprender hoy?'));
+          const ew = projectContext?.earlyWarnings;
+          let welcomeMsg = '¡Hola! 👋 Soy **LARA Assistant**, tu guía experta en Project Management.\n\n';
+          if (projectContext) {
+            if (ew?.criticalCount > 0) {
+              welcomeMsg += `🚨 **Alerta:** Detecto **${ew.criticalCount} problema(s) CRÍTICO(S)** en **${projectContext.projectName}** que requieren atención inmediata.\n\n${ew.summary}\n\n¿Quieres que te explique qué hacer?`;
+            } else if (ew?.hasAlerts) {
+              welcomeMsg += `⚠️ Tengo acceso a las métricas de **${projectContext.projectName}**. Hay **${ew.warnings?.length} alerta(s)** que vale la pena revisar. ¿Empezamos por ahí?`;
+            } else {
+              welcomeMsg += `Tengo acceso a las métricas de **${projectContext.projectName}**. Todo parece estable. ¿En qué te puedo ayudar?`;
+            }
+          } else {
+            welcomeMsg += 'Puedo ayudarte a entender métricas, riesgos y metodologías. ¿Qué quieres aprender hoy?';
+          }
+          addBotMessage(welcomeMsg);
         }
       }
       window.toggleChat = toggleChat;

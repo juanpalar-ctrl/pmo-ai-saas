@@ -46,10 +46,13 @@ router.post('/', async (req: Request, res: Response) => {
       const ctx = buildContextMessage(projectContext);
       if (ctx) {
         messages.push({ role: 'user', content: ctx });
-        messages.push({
-          role: 'assistant',
-          content: '¡Perfecto! Ya tengo el contexto completo de tu proyecto. Puedo ver las métricas, riesgos y análisis económico. ¿En qué te puedo ayudar?',
-        });
+        const ew = projectContext.earlyWarnings;
+        const alertIntro = ew?.criticalCount > 0
+          ? `⚠️ **Atención:** Detecto ${ew.criticalCount} alerta(s) CRÍTICA(S) en tu proyecto. Te las explico en detalle cuando quieras. ¿Por dónde empezamos?`
+          : ew?.hasAlerts
+          ? `Hay ${ew.warnings?.length || 0} alerta(s) de atención en tu proyecto. Puedo explicarte cada una. ¿Qué necesitas?`
+          : '¡Perfecto! Ya tengo el contexto completo de tu proyecto. Puedo ver las métricas, riesgos y análisis económico. ¿En qué te puedo ayudar?';
+        messages.push({ role: 'assistant', content: alertIntro });
       }
     }
 
@@ -105,6 +108,8 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
         metrics: output?.metrics || null,
         risk: output?.risk?.analysis?.analysis || null,
         economic: output?.economic?.analysis?.analysis || null,
+        earlyWarnings: output?.earlyWarnings || null,
+        frameworkMetrics: output?.frameworkMetrics || null,
       },
     });
   } catch (error: any) {
@@ -146,7 +151,22 @@ function buildContextMessage(ctx: any): string {
 - Burn Rate Diario: $${Number(e.daily_burn_rate || 0).toLocaleString()}`);
   }
 
-  parts.push('\nPor favor, úsalo como contexto para responder mis preguntas sobre este proyecto.');
+  if (ctx.earlyWarnings?.hasAlerts) {
+    const ew = ctx.earlyWarnings;
+    const criticals = ew.warnings.filter((w: any) => w.severity === 'CRITICAL');
+    const highs = ew.warnings.filter((w: any) => w.severity === 'HIGH');
+    parts.push(`\n### ⚠️ Alertas Tempranas Activas (${ew.warnings.length} total)
+${ew.summary}
+${criticals.length > 0 ? `**CRÍTICAS:**\n${criticals.map((w: any) => `- ${w.title}: ${w.description} → Acción: ${w.action}`).join('\n')}` : ''}
+${highs.length > 0 ? `**ALTAS:**\n${highs.map((w: any) => `- ${w.title}: ${w.description}`).join('\n')}` : ''}`);
+  }
+
+  if (ctx.frameworkMetrics?.insights?.length > 0) {
+    parts.push(`\n### Insights del Framework ${ctx.frameworkMetrics.framework?.toUpperCase()}
+${ctx.frameworkMetrics.insights.map((i: string) => `- ${i}`).join('\n')}`);
+  }
+
+  parts.push('\nPor favor, úsalo como contexto para responder mis preguntas sobre este proyecto. Si hay alertas críticas, mencionarlas proactivamente al inicio de tu respuesta.');
   return parts.join('\n');
 }
 

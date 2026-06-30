@@ -4,6 +4,7 @@ import { reportingAgent } from '../agents/reportingAgent';
 import { pool } from '../db';
 import { calculateProjectMetrics } from './metricsCalculator';
 import { calculateFrameworkMetrics } from './frameworkMetrics';
+import { detectWarnings } from './earlyWarning';
 
 export const orchestrator = {
   async analyzeProject(projectId: number, framework: string, org?: string) {
@@ -43,6 +44,7 @@ export const orchestrator = {
     // Resolve DIS + task rows from normalization record
     let dis: any = null;
     let frameworkMetrics: any = null;
+    let earlyWarningResult: any = null;
     const normResult = await pool.query(
       `SELECT output FROM ai_analyses WHERE projectid = $1 AND agenttype = 'normalization' LIMIT 1`,
       [projectId]
@@ -53,6 +55,7 @@ export const orchestrator = {
       const taskRows = normOutput.projects || [];
       if (taskRows.length > 0) {
         frameworkMetrics = calculateFrameworkMetrics(taskRows, framework);
+        earlyWarningResult = detectWarnings(taskRows, { cpi: metrics.cpi, spi: metrics.spi });
       }
     }
 
@@ -71,6 +74,7 @@ export const orchestrator = {
       },
       dis,
       frameworkMetrics,
+      earlyWarnings: earlyWarningResult,
       timestamp: new Date().toISOString(),
       org,
     };
