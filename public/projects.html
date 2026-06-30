@@ -919,14 +919,42 @@
         tasks = [{ name: 'Resumen del proyecto', plan: totalBudget, actual: totalSpent, progress: avgProgress }];
       }
 
+      // Compute project date span for timeline positioning (only when dates exist)
+      const timestamps = tasks
+        .flatMap(t => [t.start ? new Date(t.start).getTime() : null, t.end ? new Date(t.end).getTime() : null])
+        .filter(ts => ts !== null && !isNaN(ts));
+      const spanStart = timestamps.length ? Math.min(...timestamps) : null;
+      const spanEnd   = timestamps.length ? Math.max(...timestamps) : null;
+      const spanMs    = spanStart !== null && spanEnd !== null && spanEnd > spanStart ? spanEnd - spanStart : null;
+
       body.innerHTML = tasks.map(t => {
         const rowRag = ragProgress(t.progress, planPct);
         const barCol = rowRag === 'green' ? '#16a34a' : rowRag === 'yellow' ? '#d97706' : '#dc2626';
         const rowBg  = rowRag === 'red' ? 'background:#fff1f2' : rowRag === 'yellow' ? 'background:#fffbeb' : '';
         const actualColor = t.actual > t.plan && t.plan > 0 ? '#dc2626' : '#15803d';
+
+        // Timeline bar: date-positioned when dates available, else progress-width fallback
+        let barLeft = 0, barWidth = t.progress;
+        if (spanMs && t.start && t.end) {
+          const ts = new Date(t.start).getTime();
+          const te = new Date(t.end).getTime();
+          if (!isNaN(ts) && !isNaN(te) && te > ts) {
+            barLeft  = Math.max(0, ((ts - spanStart) / spanMs) * 100);
+            barWidth = Math.min(100 - barLeft, ((te - ts) / spanMs) * 100);
+          }
+        }
+
+        // Date label shown on hover via title (no extra DOM)
+        const dateLabel = t.start && t.end
+          ? `${new Date(t.start).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })} – ${new Date(t.end).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' })}`
+          : '';
+
         return `
           <tr class="gantt-row transition" style="${rowBg}" data-task="${encodeURIComponent(t.name)}" data-progress="${Math.round(t.progress)}">
-            <td class="p-4 font-semibold text-gray-800">${t.name}</td>
+            <td class="p-4 font-semibold text-gray-800">
+              ${t.name}
+              ${dateLabel ? `<div style="font-size:10px;color:#9ca3af;font-weight:400;margin-top:2px">${dateLabel}</div>` : ''}
+            </td>
             <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString()}</td>
             <td class="p-4 font-mono" style="color:${actualColor}">$${Math.round(t.actual).toLocaleString()}</td>
             <td class="p-4">
@@ -939,9 +967,8 @@
             </td>
             <td class="p-4">
               <div class="gantt-bar-cell">
-                <div class="relative h-6 bg-gray-100 rounded-lg overflow-hidden flex-1">
-                  <div style="left:0%;width:100%;height:100%;position:absolute;background:${barCol};opacity:0.2;border-radius:8px"></div>
-                  <div style="width:${t.progress}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
+                <div class="relative h-6 bg-gray-100 rounded-lg overflow-hidden flex-1" title="${dateLabel}">
+                  <div style="left:${barLeft}%;width:${barWidth}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
                 </div>
                 <div class="gantt-whatif-btns">
                   <button class="gantt-whatif-btn" onclick="ganttWhatIf(this, -10)" title="¿Qué pasa si baja 10%?">−10%</button>
