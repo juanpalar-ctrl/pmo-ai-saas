@@ -25,7 +25,7 @@ router.use(adminAuthMiddleware);
 router.get("/pending-users", async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      "SELECT id, email, created_at, status FROM users WHERE status = 'pending_approval' ORDER BY created_at ASC"
+      "SELECT id, email, createdat AS created_at, status FROM users WHERE status = 'pending_approval' ORDER BY createdat ASC"
     );
 
     if (result.rows.length === 0) {

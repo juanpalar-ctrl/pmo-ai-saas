@@ -311,11 +311,42 @@
         </div>
         <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600">👋 Bienvenido, <strong class="text-gray-800" id="userEmail"></strong></span>
+          <button id="admin-nav-btn" onclick="toggleAdminPanel()" style="display: none;" class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
+            🔐 Admin
+          </button>
           <button onclick="logout()" class="bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
             Cerrar sesión
           </button>
         </div>
       </header>
+
+      <!-- ADMIN PANEL (oculto por defecto) -->
+      <div id="admin-panel-container" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto;">
+        <div class="bg-white rounded-xl m-8 p-6 shadow-2xl max-w-2xl mx-auto mt-20">
+          <div class="flex items-center justify-between mb-6 border-b border-teal-200 pb-4">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-shield text-purple-600 text-2xl"></i>
+              <h2 class="font-bold text-xl text-gray-800">Consola de Administración</h2>
+            </div>
+            <button onclick="toggleAdminPanel()" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
+          </div>
+
+          <div class="mb-6">
+            <h3 class="font-semibold text-lg text-gray-800 mb-4">Usuarios Pendientes de Aprobación</h3>
+            <div id="pending-users-list" class="space-y-3">
+              <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin"></i> Cargando...
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 border-t border-teal-200 pt-4">
+            <button onclick="toggleAdminPanel()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
 
       <main class="flex-1 overflow-y-auto p-6 space-y-6">
         <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
@@ -491,18 +522,109 @@
     let activeFramework = 'scrum';
     let myChart = null;
     let analysisData = null;
+    let currentUserRole = 'user';
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
       if (!res.ok) { window.location = '/login'; return; }
       const data = await res.json();
       document.getElementById('userEmail').textContent = data.user.email;
-      
+
+      currentUserRole = data.user.role || 'user';
+      if (currentUserRole === 'admin') {
+        document.getElementById('admin-nav-btn').style.display = 'inline-block';
+        loadPendingUsers();
+      }
+
       await loadAnalysis();
       await loadHistory();
       switchFramework(activeFramework);
       loadReports();
     };
+
+    function toggleAdminPanel() {
+      const panel = document.getElementById('admin-panel-container');
+      if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        loadPendingUsers();
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+
+    async function loadPendingUsers() {
+      try {
+        const res = await fetch('/api/admin/pending-users');
+        const data = await res.json();
+
+        if (!data.users || data.users.length === 0) {
+          document.getElementById('pending-users-list').innerHTML =
+            '<p class="text-gray-500 text-center py-8">No hay usuarios pendientes de aprobación</p>';
+          return;
+        }
+
+        const html = data.users.map(user => `
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-gray-800">${user.email}</p>
+              <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString()}</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="approveUser('${user.id}')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                ✓ Aprobar
+              </button>
+              <button onclick="rejectUser('${user.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                ✕ Rechazar
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('pending-users-list').innerHTML = html;
+      } catch (error) {
+        console.error('Error loading pending users:', error);
+        document.getElementById('pending-users-list').innerHTML =
+          '<p class="text-red-500 text-center py-4">Error cargando usuarios</p>';
+      }
+    }
+
+    async function approveUser(userId) {
+      try {
+        const res = await fetch('/api/admin/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, newStatus: 'approved' })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          loadPendingUsers();
+        } else {
+          console.error('❌ Error:', data.error);
+        }
+      } catch (error) {
+        console.error('Error approving user:', error);
+      }
+    }
+
+    async function rejectUser(userId) {
+      try {
+        const res = await fetch('/api/admin/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, newStatus: 'rejected' })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          loadPendingUsers();
+        } else {
+          console.error('❌ Error:', data.error);
+        }
+      } catch (error) {
+        console.error('Error rejecting user:', error);
+      }
+    }
 
    async function loadAnalysis() {
   try {
