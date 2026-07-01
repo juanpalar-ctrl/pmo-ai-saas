@@ -12,7 +12,11 @@ export abstract class BaseAgent implements IAgent {
   // Cada agente implementa estos
   abstract name: string;
   abstract version: string;
-  
+
+  // Override en subclases que necesiten más espacio que aiConfig.maxTokens
+  // (ej. reportingAgent genera dos reportes markdown completos en una respuesta).
+  protected maxTokens: number = aiConfig.maxTokens;
+
   // Métodos que cada agente DEBE implementar
   abstract buildPrompt(input: AgentInput): string;
   abstract parseResponse(response: string): any;
@@ -32,7 +36,7 @@ export abstract class BaseAgent implements IAgent {
       const prompt = this.buildPrompt(input);
       const response = await anthropicClient.messages.create({
         model: aiConfig.model,
-        max_tokens: aiConfig.maxTokens,
+        max_tokens: this.maxTokens,
         temperature: aiConfig.temperature,
         messages: [
           {

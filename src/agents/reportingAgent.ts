@@ -1,9 +1,16 @@
 import { BaseAgent } from './baseAgent';
 import { AgentInput } from '../types/agents';
+import { agentLogger } from '../core/logger';
 
 export class ReportingAgent extends BaseAgent {
   name = '📄 Reporting Agent';
   version = '2.0.0';
+  // Generates two full markdown reports (senior + technical) in one response —
+  // the shared aiConfig.maxTokens (2000) was cutting the technical_report off
+  // mid-sentence since senior_report consumed most of the budget first. A
+  // complete two-report response measured ~3700 output tokens; 4096 still left
+  // too little margin and truncated on a verbose run, so this needs headroom.
+  protected maxTokens = 6144;
   private riskOutput: any;
   private economicOutput: any;
 
@@ -163,10 +170,16 @@ RESPONDE usando EXACTAMENTE este formato de texto plano (NO uses JSON, NO uses b
   parseResponse(response: string): any {
     try {
       const clean = response.replace(/```[a-z]*\n?/gi, '').trim();
-      // Tolerant markers: optional spaces/underscores/dashes, any number of "=", case-insensitive
-      const SENIOR = /=*\s*SENIOR[_\s-]?REPORT\s*=*/i;
-      const TECHNICAL = /=*\s*TECHNICAL[_\s-]?REPORT\s*=*/i;
-      const END = /=*\s*END\s*=*/i;
+      // Markers MUST be fenced with "=" (the prompt emits ===SENIOR_REPORT===,
+      // ===TECHNICAL_REPORT===, ===END===). The leading `={2,}` is critical:
+      // an earlier `=*` (zero-or-more) collapsed END to the bare substring
+      // "end", so the first Spanish word containing it ("dependen", "recomienda",
+      // "entender"…) was treated as the closing fence and truncated the
+      // technical_report mid-sentence. Still tolerant of spaces/underscores/
+      // dashes inside the keyword and a variable number of "=", case-insensitive.
+      const SENIOR = /={2,}\s*SENIOR[_\s-]?REPORT\s*=*/i;
+      const TECHNICAL = /={2,}\s*TECHNICAL[_\s-]?REPORT\s*=*/i;
+      const END = /={2,}\s*END\s*=*/i;
 
       const seniorStart = clean.search(SENIOR);
       const technicalStart = clean.search(TECHNICAL);
@@ -178,6 +191,9 @@ RESPONDE usando EXACTAMENTE este formato de texto plano (NO uses JSON, NO uses b
         senior = clean.slice(seniorStart, technicalStart).replace(SENIOR, '').trim();
         const rest = clean.slice(technicalStart).replace(TECHNICAL, '').trim();
         const endStart = rest.search(END);
+        if (endStart === -1) {
+          agentLogger.warn({ agent: this.name }, 'technical_report sin marcador ===END=== — la respuesta pudo truncarse por max_tokens');
+        }
         technical = (endStart !== -1 ? rest.slice(0, endStart) : rest).trim();
       }
 
