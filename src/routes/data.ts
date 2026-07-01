@@ -153,7 +153,7 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
       org: row.output?.org || 'Sin especificar',
       framework: row.output?.metrics?.framework || 'unknown',
       timestamp: row.output?.timestamp || new Date().toISOString(),
-      totalBudget: row.budgetdata?.totalBudget || 0,
+      totalBudget: row.budgetdata?.totalBudget || parseFloat(row.output?.metrics?.bac || row.output?.metrics?.pv || 0) || 0,
       filename: row.filename || 'unknown'
     }));
     
