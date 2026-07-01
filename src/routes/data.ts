@@ -203,7 +203,8 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
         risk: output.risk || {},
         economic: output.economic || {},
         reports: output.reports || {},
-        metrics: output.metrics || {}
+        metrics: output.metrics || {},
+        earlyWarnings: output.earlyWarnings || {}
       }
     });
   } catch (err: any) {

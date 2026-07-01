@@ -742,12 +742,13 @@
       if (score >= 60) return 'yellow';
       return 'red';
     }
-    function healthScore(cpi, spi, pct, planPct, riskScore) {
-      const cpiN  = Math.min(1, Math.max(0, cpi))  * 100;
-      const spiN  = Math.min(1, Math.max(0, spi))  * 100;
-      const pctN  = Math.min(100, pct);
-      const riskN = riskScore === 'LOW' ? 100 : riskScore === 'MEDIUM' ? 60 : riskScore === 'HIGH' ? 30 : 10;
-      return Math.round(cpiN * 0.35 + spiN * 0.30 + pctN * 0.20 + riskN * 0.15);
+    // Same formula as computeHealthScore() in src/services/portfolioService.ts —
+    // must stay in sync so a project's score matches between /portfolio and here.
+    function healthScore(cpi, spi, criticalCount, highCount) {
+      const cpiScore = Math.min(cpi, 1.5) / 1.5 * 40;
+      const spiScore = Math.min(spi, 1.5) / 1.5 * 30;
+      const alertPenalty = criticalCount * 10 + highCount * 5;
+      return Math.max(0, Math.min(100, Math.round(cpiScore + spiScore + 30 - alertPenalty)));
     }
     const RAG_COLORS = {
       green:  { border: 'rag-border-green',  text: 'rag-green',  bg: 'rag-bg-green',  badge: 'green',  emoji: '🟢' },
@@ -797,12 +798,9 @@
       const tcpi = parseFloat(metrics.tcpi || 1);
       const sv   = parseFloat(metrics.sv   || 0);
       const bac  = parseFloat(metrics.bac  || 1);
-      const pct  = parseFloat(metrics.percentComplete || 0);
       const riskScore   = risk.overallRiskScore || 'MEDIUM';
       const budgetStatus= economic.budget_status || 'AT_RISK';
-
-      // Estimate plan% from SPI proxy (SPI * pct gives rough planned %)
-      const planPct = spi > 0 ? pct / spi : pct;
+      const ew = analysisData.earlyWarnings || {};
 
       const ragCPI  = ragIndex(cpi);
       const ragSPI  = ragIndex(spi);
@@ -817,7 +815,7 @@
       const disValue = dis ? `${dis.score} (${dis.grade})` : 'N/A';
       const disDetail= dis ? `${dis.label} · ${dis.mappedFields} campos` : 'Sin datos';
 
-      const score = healthScore(cpi, spi, pct, planPct, riskScore);
+      const score = healthScore(cpi, spi, ew.criticalCount || 0, ew.highCount || 0);
       const overallRag = score >= 75 ? 'green' : score >= 50 ? 'yellow' : 'red';
       renderHealthBanner(score, overallRag, riskScore, budgetStatus);
 
