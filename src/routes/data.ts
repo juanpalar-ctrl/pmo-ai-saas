@@ -8,6 +8,7 @@ import { pool } from '../db';
 import { UPLOAD_MESSAGES } from '../config/messages';
 import { ProjectIdParamSchema, PaginationQuerySchema } from '../config/validation';
 import { routeLogger } from '../core/logger';
+import { computeHealthScore } from '../services/portfolioService';
  
 const router = express.Router();
  
@@ -196,16 +197,23 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
     }
  
     const output = result.rows[0].output || {};
- 
+
+    // Compute healthScore/healthLabel here (same formula portfolioService.ts uses
+    // for /portfolio) so the frontend displays this value instead of recomputing
+    // it independently — that's what let the two pages disagree before.
+    const { score: healthScore, label: healthLabel } = computeHealthScore(
+      parseFloat(output.metrics?.cpi || 1),
+      parseFloat(output.metrics?.spi || 1),
+      output.earlyWarnings?.criticalCount || 0,
+      output.earlyWarnings?.highCount || 0
+    );
+
+    // Pass the full stored output through rather than hand-picking fields —
+    // a hand-picked whitelist here previously dropped earlyWarnings, dis and
+    // frameworkMetrics silently (frontend read them as undefined, no error).
     res.json({
       success: true,
-      data: {
-        risk: output.risk || {},
-        economic: output.economic || {},
-        reports: output.reports || {},
-        metrics: output.metrics || {},
-        earlyWarnings: output.earlyWarnings || {}
-      }
+      data: { ...output, healthScore, healthLabel }
     });
   } catch (err: any) {
     routeLogger.error({ err: err.message }, 'GET /analysis/:projectId/latest error');

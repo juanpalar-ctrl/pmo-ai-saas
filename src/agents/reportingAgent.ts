@@ -39,7 +39,9 @@ export class ReportingAgent extends BaseAgent {
     const budgetSpent = input.budget?.spent ?? 0;
     const budgetTotal = input.budget?.total ?? 0;
 
-    // Map risk score → RAG
+    // Map risk score → RAG. Kept in sync with ragRisk()/ragBudget() in
+    // public/projects.html so the AI-generated report and the dashboard never
+    // disagree on the same underlying riskScore/budgetStatus value.
     const ragOverall = riskScore === 'HIGH' || riskScore === 'CRITICAL' ? '🔴 Rojo'
       : riskScore === 'MEDIUM' ? '🟡 Amarillo'
       : '🟢 Verde';
@@ -48,13 +50,11 @@ export class ReportingAgent extends BaseAgent {
       : pctComplete < 85 ? '🟡 Amarillo'
       : '🟢 Verde';
 
-    const ragBudget = budgetStatus === 'OVER_BUDGET' ? '🔴 Rojo'
+    const ragBudget = budgetStatus === 'ON_TRACK' ? '🟢 Verde'
       : budgetStatus === 'AT_RISK' ? '🟡 Amarillo'
-      : '🟢 Verde';
+      : '🔴 Rojo';
 
-    const ragRisk = riskScore === 'CRITICAL' ? '🔴 Rojo'
-      : riskScore === 'HIGH' ? '🟡 Amarillo'
-      : '🟢 Verde';
+    const ragRisk = ragOverall;
 
     return `Eres un PMO senior experto en comunicación ejecutiva. Genera un Executive Status Report para el stakeholder de este proyecto.
 

@@ -259,6 +259,7 @@
           : p.highAlerts > 0
           ? `<span class="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">⚠️ ${p.highAlerts} alta(s)</span>`
           : `<span class="text-xs text-green-600 font-semibold">✅ Sin alertas</span>`;
+        // Cutoffs (>=1.0 green, >=0.80 amber) must match ragIndex() in public/projects.html.
         const cpiColor = p.cpi >= 1 ? 'text-green-700' : p.cpi >= 0.8 ? 'text-amber-700' : 'text-red-700';
         const spiColor = p.spi >= 1 ? 'text-green-700' : p.spi >= 0.8 ? 'text-amber-700' : 'text-red-700';
         const fmt = n => `$${Math.round(n).toLocaleString('es')}`;

@@ -706,6 +706,7 @@
     }
 
     // ── RAG helpers ──────────────────────────────────────────────
+    // Cutoffs must match cpiColor/spiColor in public/portfolio.html.
     function ragIndex(v) { // for CPI / SPI
       if (v >= 1.0)  return 'green';
       if (v >= 0.80) return 'yellow';
@@ -737,18 +738,12 @@
       if (status === 'AT_RISK')  return 'yellow';
       return 'red';
     }
+    // Cutoffs match the letter-grade thresholds in calculateDIS()
+    // (src/services/dataTransformer.ts) — grade A/B => green, C => yellow, D/F => red.
     function ragDIS(score) {
-      if (score >= 85) return 'green';
+      if (score >= 75) return 'green';
       if (score >= 60) return 'yellow';
       return 'red';
-    }
-    // Same formula as computeHealthScore() in src/services/portfolioService.ts —
-    // must stay in sync so a project's score matches between /portfolio and here.
-    function healthScore(cpi, spi, criticalCount, highCount) {
-      const cpiScore = Math.min(cpi, 1.5) / 1.5 * 40;
-      const spiScore = Math.min(spi, 1.5) / 1.5 * 30;
-      const alertPenalty = criticalCount * 10 + highCount * 5;
-      return Math.max(0, Math.min(100, Math.round(cpiScore + spiScore + 30 - alertPenalty)));
     }
     const RAG_COLORS = {
       green:  { border: 'rag-border-green',  text: 'rag-green',  bg: 'rag-bg-green',  badge: 'green',  emoji: '🟢' },
@@ -800,7 +795,6 @@
       const bac  = parseFloat(metrics.bac  || 1);
       const riskScore   = risk.overallRiskScore || 'MEDIUM';
       const budgetStatus= economic.budget_status || 'AT_RISK';
-      const ew = analysisData.earlyWarnings || {};
 
       const ragCPI  = ragIndex(cpi);
       const ragSPI  = ragIndex(spi);
@@ -815,8 +809,12 @@
       const disValue = dis ? `${dis.score} (${dis.grade})` : 'N/A';
       const disDetail= dis ? `${dis.label} · ${dis.mappedFields} campos` : 'Sin datos';
 
-      const score = healthScore(cpi, spi, ew.criticalCount || 0, ew.highCount || 0);
-      const overallRag = score >= 75 ? 'green' : score >= 50 ? 'yellow' : 'red';
+      // healthScore/healthLabel come from the server (src/routes/data.ts), computed
+      // with the exact same formula the /portfolio page uses — do not recompute
+      // client-side, that's what let the two pages disagree before.
+      const score = analysisData.healthScore ?? 0;
+      const overallRag = analysisData.healthLabel === 'HEALTHY' ? 'green'
+        : analysisData.healthLabel === 'AT_RISK' ? 'yellow' : 'red';
       renderHealthBanner(score, overallRag, riskScore, budgetStatus);
 
       const cards = [
@@ -888,8 +886,11 @@
       document.getElementById('kpi-eac').textContent      = `$${Math.round(eac).toLocaleString()}`;
       document.getElementById('kpi-saldo').textContent    = `$${Math.round(vac).toLocaleString()}`;
 
-      const spi     = parseFloat(analysisData?.metrics?.spi || 1);
-      const planPct = spi > 0 ? avgProgress / spi : avgProgress;
+      // Real plan% from elapsed-time (metrics.pv = planPercent/100 * bac, computed
+      // server-side in metricsCalculator.ts) — deriving this from SPI instead used
+      // to silently collapse to "always on schedule" whenever pv was 0.
+      const pv      = parseFloat(metrics.pv) || 0;
+      const planPct = totalBudget > 0 ? (pv / totalBudget) * 100 : avgProgress;
 
       applyKPICard('kpi-card-bac',      'kpi-budget',   'green');
       applyKPICard('kpi-card-ac',       'kpi-spent',    totalSpent <= totalBudget ? 'green' : 'red');
@@ -1303,6 +1304,7 @@
           addBotMessage('Error de conexión al simular el escenario.');
         }
       }
+      window.sendSimulate = sendSimulate;
 
       function addSimulationCard(result, narrative, scenario) {
         const msgs = document.getElementById('chat-messages');

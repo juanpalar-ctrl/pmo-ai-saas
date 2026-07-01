@@ -15,7 +15,7 @@ export interface RiskAnalysisOutput {
 }
 
 export interface EconomicAnalysisOutput {
-  budget_status: 'CRITICAL' | 'WARNING' | 'HEALTHY' | 'EXCELLENT';
+  budget_status: 'ON_TRACK' | 'AT_RISK' | 'CRITICAL';
   budget_health: number;
   cpi: number;
   spi: number;
