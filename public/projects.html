@@ -989,7 +989,7 @@
         return;
       }
       const isSenior = activeReport.id === 'report-senior';
-      document.getElementById('pdf-project-name').textContent = projectContext?.projectName || 'Proyecto';
+      document.getElementById('pdf-project-name').textContent = window.projectContext?.projectName || 'Proyecto';
       document.getElementById('pdf-date').textContent = 'Generado: ' + new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
       document.getElementById('pdf-report-type').textContent = isSenior ? 'Reporte Ejecutivo' : 'Reporte Técnico';
       window.print();
@@ -1068,7 +1068,7 @@
         try {
           const res = await fetch(`/api/chat/context/${projectId}`, { credentials: 'include' });
           const data = await res.json();
-          if (data.success && data.context) projectContext = data.context;
+          if (data.success && data.context) projectContext = window.projectContext = data.context;
         } catch (_) {}
       }
 
