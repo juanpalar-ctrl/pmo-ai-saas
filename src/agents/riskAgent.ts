@@ -5,6 +5,11 @@ import { agentLogger } from '../core/logger';
 export class RiskAgent extends BaseAgent {
   name = '🎯 Risk Analysis Agent';
   version = '1.0.0';
+  // El JSON de riesgos (≥3 riesgos detallados + recomendaciones) rondó ~1800
+  // tokens de salida en pruebas; el default de aiConfig (2000) deja poco margen
+  // y una respuesta verbosa se truncaría → JSON.parse falla y cae al fallback
+  // genérico. 4096 da holgura sin desperdiciar tokens.
+  protected maxTokens = 4096;
   private framework: string = 'scrum';
 
   setFramework(fw: string) { this.framework = fw; }

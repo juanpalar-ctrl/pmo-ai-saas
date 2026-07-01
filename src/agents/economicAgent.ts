@@ -5,6 +5,10 @@ import { agentLogger } from '../core/logger';
 export class EconomicAgent extends BaseAgent {
   name = '💰 Economic Performance Agent';
   version = '1.0.0';
+  // El JSON económico rondó ~1800-2200 tokens de salida en pruebas; el default
+  // de aiConfig (2000) deja poco margen y una respuesta verbosa se truncaría →
+  // JSON.parse falla y cae al fallback genérico. 4096 da holgura sin desperdicio.
+  protected maxTokens = 4096;
   private framework: string = 'scrum';
 
   setFramework(fw: string) { this.framework = fw; }
