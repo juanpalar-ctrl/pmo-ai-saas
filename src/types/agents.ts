@@ -14,6 +14,7 @@ export interface AgentInput {
   budget?: any;
   resources?: any;
   risks?: any;
+  lang?: 'es' | 'en';
   [key: string]: any;
 }
 

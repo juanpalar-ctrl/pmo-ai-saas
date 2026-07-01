@@ -1,6 +1,7 @@
 import { BaseAgent } from './baseAgent';
 import { AgentInput } from '../types/agents';
 import { agentLogger } from '../core/logger';
+import { normalizeLang, languageDirective } from '../config/language';
 
 export class EconomicAgent extends BaseAgent {
   name = '💰 Economic Performance Agent';
@@ -40,7 +41,10 @@ export class EconomicAgent extends BaseAgent {
   }
 
   buildPrompt(input: AgentInput): string {
-    return `Eres experto en ANÁLISIS ECONÓMICO para proyectos ${this.framework.toUpperCase()}.
+    const lang = normalizeLang(input.lang);
+    return `${languageDirective(lang)}
+
+Eres experto en ANÁLISIS ECONÓMICO para proyectos ${this.framework.toUpperCase()}.
 
 ${this.getFrameworkMetrics()}
 

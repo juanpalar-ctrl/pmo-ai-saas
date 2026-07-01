@@ -1,6 +1,7 @@
 import { BaseAgent } from './baseAgent';
 import { AgentInput } from '../types/agents';
 import { agentLogger } from '../core/logger';
+import { normalizeLang, languageDirective, ragLabel, RagColor } from '../config/language';
 
 export class ReportingAgent extends BaseAgent {
   name = '📄 Reporting Agent';
@@ -46,24 +47,30 @@ export class ReportingAgent extends BaseAgent {
     const budgetSpent = input.budget?.spent ?? 0;
     const budgetTotal = input.budget?.total ?? 0;
 
-    // Map risk score → RAG. Kept in sync with ragRisk()/ragBudget() in
-    // public/projects.html so the AI-generated report and the dashboard never
-    // disagree on the same underlying riskScore/budgetStatus value.
-    const ragOverall = riskScore === 'HIGH' || riskScore === 'CRITICAL' ? '🔴 Rojo'
-      : riskScore === 'MEDIUM' ? '🟡 Amarillo'
-      : '🟢 Verde';
+    const lang = normalizeLang(input.lang);
 
-    const ragSchedule = pctComplete < 60 ? '🔴 Rojo'
-      : pctComplete < 85 ? '🟡 Amarillo'
-      : '🟢 Verde';
+    // Map risk score → RAG color. Colors are kept in sync with ragRisk()/
+    // ragBudget() in public/projects.html so the AI-generated report and the
+    // dashboard never disagree on the same underlying value; the visible label
+    // is localized via ragLabel() (Fase 1 i18n).
+    const overallColor: RagColor = riskScore === 'HIGH' || riskScore === 'CRITICAL' ? 'red'
+      : riskScore === 'MEDIUM' ? 'yellow'
+      : 'green';
+    const scheduleColor: RagColor = pctComplete < 60 ? 'red'
+      : pctComplete < 85 ? 'yellow'
+      : 'green';
+    const budgetColor: RagColor = budgetStatus === 'ON_TRACK' ? 'green'
+      : budgetStatus === 'AT_RISK' ? 'yellow'
+      : 'red';
 
-    const ragBudget = budgetStatus === 'ON_TRACK' ? '🟢 Verde'
-      : budgetStatus === 'AT_RISK' ? '🟡 Amarillo'
-      : '🔴 Rojo';
-
+    const ragOverall = ragLabel(overallColor, lang);
+    const ragSchedule = ragLabel(scheduleColor, lang);
+    const ragBudget = ragLabel(budgetColor, lang);
     const ragRisk = ragOverall;
 
-    return `Eres un PMO senior experto en comunicación ejecutiva. Genera un Executive Status Report para el stakeholder de este proyecto.
+    return `${languageDirective(lang)}
+
+Eres un PMO senior experto en comunicación ejecutiva. Genera un Executive Status Report para el stakeholder de este proyecto.
 
 DATOS DEL PROYECTO:
 - Nombre: ${input.projectName}

@@ -119,8 +119,8 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
   try {
     const validatedRequest = SaveMappingRequestSchema.parse(req.body);
-    const { tempFilename, confirmedMapping, framework, org } = validatedRequest;
-    routeLogger.info({ framework }, '[save-mapping] Received framework');
+    const { tempFilename, confirmedMapping, framework, org, lang } = validatedRequest;
+    routeLogger.info({ framework, lang }, '[save-mapping] Received framework');
 
     routeLogger.info(`[save-mapping] 💾 Processing mapping for: ${tempFilename}`);
 
@@ -208,7 +208,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
       const { orchestrator } = await import('../services/multiAgentOrchestrator');
 
       routeLogger.info(`[save-mapping] 🔄 Executing analysis orchestration...`);
-      const analysisResult = await orchestrator.analyzeProject(projectId, framework);
+      const analysisResult = await orchestrator.analyzeProject(projectId, framework, org, lang);
 
       routeLogger.info(`[save-mapping] ✅ Analysis complete and stored`);
     } catch (err) {

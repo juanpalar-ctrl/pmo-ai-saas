@@ -3,6 +3,7 @@ import { anthropicClient, aiConfig } from '../config/anthropic';
 import { pool } from '../db';
 import { ChatMessageSchema, ProjectIdParamSchema, DraftMessageSchema, SimulateSchema } from '../config/validation';
 import { simulateScenario, SimulationDelta } from '../services/scenarioSimulator';
+import { normalizeLang, languageDirective } from '../config/language';
 import { routeLogger } from '../core/logger';
 
 const router = express.Router();
@@ -54,6 +55,7 @@ router.post('/', async (req: Request, res: Response) => {
     const body = ChatMessageSchema.safeParse(req.body);
     if (!body.success) return res.status(400).json({ error: body.error.flatten() });
     const { message, history = [], projectContext } = body.data;
+    const lang = body.data.lang ?? normalizeLang(req.headers['accept-language']);
 
     const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 
@@ -85,7 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
     const response = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 1200,
-      system: SYSTEM_PROMPT,
+      system: `${SYSTEM_PROMPT}\n\n${languageDirective(lang)}`,
       messages,
     });
 
@@ -129,8 +131,9 @@ router.post('/draft', async (req: Request, res: Response) => {
     const body = DraftMessageSchema.safeParse(req.body);
     if (!body.success) return res.status(400).json({ error: body.error.flatten() });
     const { audience, alertContext, projectName } = body.data;
+    const lang = body.data.lang ?? normalizeLang(req.headers['accept-language']);
 
-    const systemPrompt = DRAFT_PROMPTS[audience];
+    const systemPrompt = `${DRAFT_PROMPTS[audience]}\n\n${languageDirective(lang)}`;
     const userMessage = `Proyecto: ${projectName}\n\nSituación a comunicar:\n${alertContext}`;
 
     const response = await anthropicClient.messages.create({
@@ -177,12 +180,13 @@ router.post('/simulate', async (req: Request, res: Response) => {
     const body = SimulateSchema.safeParse(req.body);
     if (!body.success) return res.status(400).json({ error: body.error.flatten() });
     const { question, metrics, projectName } = body.data;
+    const lang = body.data.lang ?? normalizeLang(req.headers['accept-language']);
 
     // Step 1: Claude parses the natural-language question into a structured delta
     const parseResponse = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 120,
-      system: PARSE_DELTA_PROMPT,
+      system: `${PARSE_DELTA_PROMPT}\n\n${languageDirective(lang)}`,
       messages: [{ role: 'user', content: question }],
     });
 
@@ -217,7 +221,7 @@ Cambio en Revenue at Stake: ${result.deltaSummary.revenueAtStakeChange >= 0 ? '+
     const narrateResponse = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 400,
-      system: NARRATE_SIMULATION_PROMPT,
+      system: `${NARRATE_SIMULATION_PROMPT}\n\n${languageDirective(lang)}`,
       messages: [{ role: 'user', content: narratePrompt }],
     });
 

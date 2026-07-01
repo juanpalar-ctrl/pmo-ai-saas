@@ -78,7 +78,8 @@ export const SaveMappingRequestSchema = z.object({
     ]).nullable()
   ),
   framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),
-  org: z.string().optional().default('Sin especificar')
+  org: z.string().optional().default('Sin especificar'),
+  lang: z.enum(['es', 'en']).optional().default('es')
 });
 
 /**
@@ -105,12 +106,14 @@ export const PaginationQuerySchema = z.object({
 export const AnalysisBodySchema = z.object({
   framework:    z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),
   forceRefresh: z.boolean().optional().default(false),
+  lang:         z.enum(['es', 'en']).optional(),
 });
 
 export const ChatMessageSchema = z.object({
   message:        z.string().min(1).max(2000),
   history:        z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string() })).max(20).optional().default([]),
   projectContext: z.any().optional(),
+  lang:           z.enum(['es', 'en']).optional(),
 });
 
 export const OrgQuerySchema = z.object({
@@ -121,6 +124,7 @@ export const DraftMessageSchema = z.object({
   audience:     z.enum(['team', 'clevel']),
   alertContext: z.string().min(1).max(4000),
   projectName:  z.string().max(200).optional().default('el proyecto'),
+  lang:         z.enum(['es', 'en']).optional(),
 });
 
 export const SimulateSchema = z.object({
@@ -137,6 +141,7 @@ export const SimulateSchema = z.object({
     percentComplete: z.number().optional(),
   }).optional(),
   projectName: z.string().max(200).optional().default('el proyecto'),
+  lang:        z.enum(['es', 'en']).optional(),
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────

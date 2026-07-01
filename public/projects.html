@@ -1178,6 +1178,7 @@
               message: text,
               history: chatHistory.slice(-10),
               projectContext: chatHistory.length <= 2 ? projectContext : null,
+              lang: (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es',
             }),
           });
           const data = await res.json();
@@ -1239,6 +1240,7 @@
               audience,
               alertContext: alertContext || 'El proyecto tiene alertas activas que requieren atención.',
               projectName: projectContext?.projectName || 'el proyecto',
+              lang: (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es',
             }),
           });
           const data = await res.json();
@@ -1288,6 +1290,7 @@
                 percentComplete: parseFloat(projectContext.metrics.percentComplete) || undefined,
               } : undefined,
               projectName: projectContext?.projectName || 'el proyecto',
+              lang: (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es',
             }),
           });
           const data = await res.json();

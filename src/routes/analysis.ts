@@ -3,6 +3,7 @@ import { orchestrator } from '../services/multiAgentOrchestrator';
 import { pool } from '../db';
 import { generateMockAnalysis, isMockEnabled, getCacheDurationHours } from '../utils/mockAnalysis';
 import { ProjectIdParamSchema, AnalysisBodySchema, OrgQuerySchema } from '../config/validation';
+import { normalizeLang } from '../config/language';
 import { routeLogger } from '../core/logger';
 
 const router = express.Router();
@@ -29,6 +30,9 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     const body = AnalysisBodySchema.safeParse(req.body);
     if (!body.success) return res.status(400).json({ success: false, error: body.error.flatten() });
     const { framework: fw, forceRefresh } = body.data;
+    // Idioma del contenido IA: explícito del body, o detectado del navegador
+    // vía Accept-Language; default 'es' (comportamiento histórico).
+    const lang = body.data.lang ?? normalizeLang(req.headers['accept-language']);
 
     // Si USE_MOCK_DATA está activado, devolver mock sin llamar API
     if (isMockEnabled() && !forceRefresh) {
@@ -63,7 +67,7 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     }
 
     // Si llegamos aquí, ejecutar análisis real (gasta API credits)
-    const result = await orchestrator.analyzeProject(projectId, fw);
+    const result = await orchestrator.analyzeProject(projectId, fw, undefined, lang);
     
     return res.json({ 
       success: true, 

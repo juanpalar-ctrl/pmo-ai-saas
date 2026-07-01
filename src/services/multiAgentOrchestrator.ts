@@ -7,7 +7,7 @@ import { calculateFrameworkMetrics } from './frameworkMetrics';
 import { detectWarnings } from './earlyWarning';
 
 export const orchestrator = {
-  async analyzeProject(projectId: number, framework: string, org?: string) {
+  async analyzeProject(projectId: number, framework: string, org?: string, lang: 'es' | 'en' = 'es') {
     const metrics = await calculateProjectMetrics(projectId, framework);
 
     // Resolve org from normalization record if not passed directly
@@ -23,7 +23,8 @@ export const orchestrator = {
       projectId,
       projectName: metrics.projectName,
       timeline: { percentageComplete: parseFloat(metrics.percentComplete as string), daysRemaining: 30 },
-      budget: { total: parseFloat(metrics.pv as string), spent: parseFloat(metrics.ac as string) }
+      budget: { total: parseFloat(metrics.pv as string), spent: parseFloat(metrics.ac as string) },
+      lang,
     };
 
     riskAgent.setFramework(framework);
@@ -77,6 +78,7 @@ export const orchestrator = {
       earlyWarnings: earlyWarningResult,
       timestamp: new Date().toISOString(),
       org,
+      lang,
     };
 
     await pool.query(
