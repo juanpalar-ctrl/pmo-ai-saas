@@ -131,6 +131,33 @@ router.get('/projects/:projectId', async (req: Request, res: Response) => {
   }
 });
  
+// DELETE /api/data/projects/:id
+// :id is the project_data.id (same identifier used by the portfolio grid and
+// the history sidebar to navigate to a project), not the business projectid.
+router.delete('/projects/:id', async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ success: false, error: 'id inválido' });
+    }
+
+    const projectResult = await pool.query(`SELECT projectid FROM project_data WHERE id = $1`, [id]);
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+    const realProjectId = projectResult.rows[0].projectid;
+
+    await pool.query('DELETE FROM ai_analyses WHERE projectid = $1', [realProjectId]);
+    await pool.query('DELETE FROM project_data WHERE id = $1', [id]);
+
+    routeLogger.info({ id, realProjectId }, 'Project deleted');
+    res.json({ success: true });
+  } catch (error: any) {
+    routeLogger.error({ err: error.message }, 'DELETE /projects/:id error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
 router.get('/projects/history/latest', async (req: Request, res: Response) => {
   try {
     const query = `

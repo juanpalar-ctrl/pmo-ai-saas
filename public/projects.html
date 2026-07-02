@@ -523,6 +523,7 @@
     let myChart = null;
     let analysisData = null;
     let currentUserRole = 'user';
+    let latestHistory = [];
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
@@ -657,9 +658,15 @@
         
         const historyList = document.getElementById('history-list');
         if (data.success && data.data.length > 0) {
+          latestHistory = data.data;
           historyList.innerHTML = data.data.map(project => `
-            <div class="history-card" onclick="navigateToProject(${project.projectId}, '${project.framework}')">
-              <div class="history-card-title">${project.projectName}</div>
+            <div class="history-card" style="position:relative;" onclick="navigateToProject(${project.projectId}, '${project.framework}')">
+              <button onclick="event.stopPropagation(); deleteHistoryProject(${project.projectId})"
+                      style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; color:#ccc;"
+                      onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#ccc'" title="Eliminar proyecto">
+                <i class="fa-solid fa-trash-can" style="font-size:0.8em;"></i>
+              </button>
+              <div class="history-card-title" style="padding-right:20px;">${project.projectName}</div>
               <div class="history-card-meta">
                 <div>🏢 ${project.org}</div>
                 <div>📅 ${new Date(project.timestamp).toLocaleDateString()}</div>
@@ -679,6 +686,29 @@
 
     function navigateToProject(projectId, framework) {
       window.location = `/projects?id=${projectId}&framework=${framework}`;
+    }
+
+    async function deleteHistoryProject(id) {
+      const proj = latestHistory.find(p => p.projectId === id);
+      const name = proj ? proj.projectName : 'este proyecto';
+      if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer y también borrará su historial de análisis.`)) return;
+
+      try {
+        const res = await fetch(`/api/data/projects/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) {
+          alert(data.error || 'Error eliminando el proyecto.');
+          return;
+        }
+        const currentId = new URLSearchParams(location.search).get('id');
+        if (currentId && Number(currentId) === id) {
+          window.location = '/portfolio';
+          return;
+        }
+        loadHistory();
+      } catch (e) {
+        alert('Error eliminando el proyecto.');
+      }
     }
 
    async function loadReports() {

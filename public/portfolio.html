@@ -189,9 +189,11 @@
         document.getElementById('loading').classList.add('hidden');
 
         if (!data.success || data.projects.length === 0) {
+          document.getElementById('portfolio-content').classList.add('hidden');
           document.getElementById('empty-state').classList.remove('hidden');
           return;
         }
+        document.getElementById('empty-state').classList.add('hidden');
 
         allProjects = data.projects;
         document.getElementById('portfolio-content').classList.remove('hidden');
@@ -280,7 +282,13 @@
                   <h3 class="font-bold text-gray-800 text-sm leading-tight truncate" title="${p.name}">${p.name}</h3>
                   <p class="text-xs text-gray-400 mt-0.5">🏢 ${p.org}</p>
                 </div>
-                <span class="shrink-0 text-lg font-black text-gray-700">${p.healthScore}</span>
+                <div class="shrink-0 flex items-center gap-2">
+                  <span class="text-lg font-black text-gray-700">${p.healthScore}</span>
+                  <button onclick="event.stopPropagation(); deleteProject(${p.id})"
+                          class="text-gray-300 hover:text-red-600 transition" title="Eliminar proyecto">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                  </button>
+                </div>
               </div>
 
               <!-- Progress bar -->
@@ -347,6 +355,24 @@
       });
       document.getElementById(`filter-${f}`).className = 'px-3 py-1.5 rounded-full font-semibold bg-teal-600 text-white text-xs';
       renderProjects(allProjects);
+    }
+
+    async function deleteProject(id) {
+      const proj = allProjects.find(p => p.id === id);
+      const name = proj ? proj.name : 'este proyecto';
+      if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer y también borrará su historial de análisis.`)) return;
+
+      try {
+        const res = await fetch(`/api/data/projects/${id}`, { method: 'DELETE', credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+          alert(data.error || 'Error eliminando el proyecto.');
+          return;
+        }
+        loadPortfolio();
+      } catch (e) {
+        alert('Error eliminando el proyecto.');
+      }
     }
 
     function logout() {
