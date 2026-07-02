@@ -78,7 +78,7 @@ describe('getPortfolioData', () => {
 
   it('returns empty projects and HEALTHY summary when no rows', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
-    const data = await getPortfolioData();
+    const data = await getPortfolioData('user_1');
     expect(data.projects).toHaveLength(0);
     expect(data.summary.totalProjects).toBe(0);
     expect(data.summary.portfolioHealth).toBe('HEALTHY');
@@ -86,7 +86,7 @@ describe('getPortfolioData', () => {
 
   it('maps a healthy project correctly', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [makeRow({ cpi: 1.1, spi: 1.05 })] });
-    const data = await getPortfolioData();
+    const data = await getPortfolioData('user_1');
     expect(data.projects[0].healthLabel).toBe('HEALTHY');
     expect(data.projects[0].name).toBe('Test Project');
     expect(data.projects[0].framework).toBe('scrum');
@@ -94,7 +94,7 @@ describe('getPortfolioData', () => {
 
   it('marks portfolio as CRITICAL when a project is critical', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [makeRow({ cpi: 0.4, spi: 0.4, criticalCount: 4 })] });
-    const data = await getPortfolioData();
+    const data = await getPortfolioData('user_1');
     expect(data.summary.portfolioHealth).toBe('CRITICAL');
     expect(data.summary.criticalProjects).toBe(1);
   });
@@ -102,20 +102,20 @@ describe('getPortfolioData', () => {
   it('revenueAtStake is |vac| when vac < 0', async () => {
     const row = makeRow({ bac: 100000, eac: 120000, vac: -20000 });
     mockQuery.mockResolvedValueOnce({ rows: [row] });
-    const data = await getPortfolioData();
+    const data = await getPortfolioData('user_1');
     expect(data.projects[0].revenueAtStake).toBe(20000);
   });
 
   it('revenueAtStake is 0 when project is under budget', async () => {
     const row = makeRow({ bac: 100000, eac: 90000, vac: 10000 });
     mockQuery.mockResolvedValueOnce({ rows: [row] });
-    const data = await getPortfolioData();
+    const data = await getPortfolioData('user_1');
     expect(data.projects[0].revenueAtStake).toBe(0);
   });
 
   it('summary totals are sum of all projects', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [makeRow({ bac: 100000, ac: 80000 }), makeRow({ bac: 50000, ac: 40000 })] });
-    const data = await getPortfolioData();
+    const data = await getPortfolioData('user_1');
     expect(data.summary.totalProjects).toBe(2);
     expect(data.summary.totalBAC).toBe(150000);
     expect(data.summary.totalAC).toBe(120000);
@@ -123,6 +123,6 @@ describe('getPortfolioData', () => {
 
   it('propagates DB errors', async () => {
     mockQuery.mockRejectedValueOnce(new Error('DB connection lost'));
-    await expect(getPortfolioData()).rejects.toThrow('DB connection lost');
+    await expect(getPortfolioData('user_1')).rejects.toThrow('DB connection lost');
   });
 });

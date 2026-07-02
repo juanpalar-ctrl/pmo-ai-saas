@@ -5,6 +5,7 @@ import { ChatMessageSchema, ProjectIdParamSchema, DraftMessageSchema, SimulateSc
 import { simulateScenario, SimulationDelta } from '../services/scenarioSimulator';
 import { normalizeLang, languageDirective } from '../config/language';
 import { routeLogger } from '../core/logger';
+import { AuthRequest } from '../middleware/requireAuth';
 
 const router = express.Router();
 
@@ -240,14 +241,15 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
     const params = ProjectIdParamSchema.safeParse(req.params);
     if (!params.success) return res.status(400).json({ error: 'projectId inválido' });
     const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
     const result = await pool.query(
       `SELECT pd.projectname, aa.output
        FROM project_data pd
        LEFT JOIN ai_analyses aa ON aa.projectid = pd.projectid
-       WHERE pd.id = $1
+       WHERE pd.id = $1 AND pd.user_id = $2
        ORDER BY aa.generatedat DESC
        LIMIT 1`,
-      [projectId]
+      [projectId, userId]
     );
 
     if (!result.rows[0]) {

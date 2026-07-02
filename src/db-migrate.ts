@@ -59,16 +59,49 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
-  // Password reset tokens table
+  // Owner of each project — enables per-user data isolation (portfolio, history, chat context)
+  // users.id is VARCHAR(255) (e.g. "user_<timestamp>"), not a serial int — match that type.
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id SERIAL PRIMARY KEY,
-      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      token VARCHAR(255) NOT NULL UNIQUE,
-      expires_at TIMESTAMP NOT NULL,
-      used BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
+    ALTER TABLE project_data ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id)
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_project_data_user_id ON project_data(user_id)
+  `);
+  // Backfill legacy rows (created before ownership existed) to the first admin,
+  // so they stay accessible to someone instead of becoming permanently orphaned.
+  await pool.query(`
+    UPDATE project_data
+    SET user_id = (SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1)
+    WHERE user_id IS NULL
+      AND EXISTS (SELECT 1 FROM users WHERE role = 'admin')
+  `);
+
+  // Password resets table. On this DB it was created out-of-band with different
+  // column names (userid/expiresat instead of user_id/expires_at) — rename in place
+  // rather than duplicate the table under IF NOT EXISTS, which would silently no-op.
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'password_resets') THEN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'password_resets' AND column_name = 'userid') THEN
+          ALTER TABLE password_resets RENAME COLUMN userid TO user_id;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'password_resets' AND column_name = 'expiresat') THEN
+          ALTER TABLE password_resets RENAME COLUMN expiresat TO expires_at;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'password_resets' AND column_name = 'createdat') THEN
+          ALTER TABLE password_resets RENAME COLUMN createdat TO created_at;
+        END IF;
+      ELSE
+        CREATE TABLE password_resets (
+          id VARCHAR(255) PRIMARY KEY,
+          user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          token VARCHAR(255) NOT NULL UNIQUE,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      END IF;
+    END $$;
   `);
 
   // Branding / organization config table

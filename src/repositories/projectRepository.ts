@@ -30,14 +30,14 @@ export class ProjectRepository {
    * 
    * PASO CRÍTICO: Convierte strings JSON → objetos reales
    */
-  async getProjectForAnalysis(projectId: number): Promise<ProjectData | null> {
+  async getProjectForAnalysis(projectId: number, userId: string): Promise<ProjectData | null> {
     try {
       dbLogger.info(`\n🔍 Buscando proyecto ${projectId} en BD...`);
-      
+
       const result = await pool.query(
-        `SELECT 
-         projectId as "projectId", 
-          projectName as "projectName", 
+        `SELECT
+         projectId as "projectId",
+          projectName as "projectName",
           status,
           timelineData as "timelineData",
           velocityData as "velocityData",
@@ -45,9 +45,9 @@ export class ProjectRepository {
           budgetData as "budgetData",
           resourcesData as "resourcesData",
           risksData as "risksData"
-         FROM project_data 
-         WHERE projectId = $1`,
-        [projectId]
+         FROM project_data
+         WHERE projectId = $1 AND user_id = $2`,
+        [projectId, userId]
       );
       
       dbLogger.info(`   ✅ Query ejecutada. Filas encontradas: ${result.rows.length}`);
@@ -120,13 +120,13 @@ export class ProjectRepository {
    * 
    * USO: Se llama después de cargar datos desde Excel/API
    */
-  async saveProject(data: ProjectData): Promise<void> {
+  async saveProject(data: ProjectData, userId: string): Promise<void> {
     try {
       await pool.query(
-        `INSERT INTO project_data 
-         (projectId, projectName, status, timelineData, velocityData, workPendingData, budgetData, resourcesData, risksData)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         ON CONFLICT (projectId) DO UPDATE SET 
+        `INSERT INTO project_data
+         (projectId, projectName, status, timelineData, velocityData, workPendingData, budgetData, resourcesData, risksData, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (projectId) DO UPDATE SET
          projectName = EXCLUDED.projectName,
          status = EXCLUDED.status,
          timelineData = EXCLUDED.timelineData,
@@ -146,6 +146,7 @@ export class ProjectRepository {
           JSON.stringify(data.budget),
           JSON.stringify(data.resources),
           JSON.stringify(data.risks),
+          userId,
         ]
       );
     } catch (error: any) {
@@ -168,15 +169,15 @@ export class ProjectRepository {
    * - page=1, limit=50 → primeros 50
    * - page=2, limit=50 → registros 51-100
    */
-  async getAllProjects(page: number = 1, limit: number = 50): Promise<ProjectData[]> {
+  async getAllProjects(userId: string, page: number = 1, limit: number = 50): Promise<ProjectData[]> {
     try {
       // Calcular offset: página 1 = 0, página 2 = 50, etc
       const offset = (page - 1) * limit;
-      
+
       const result = await pool.query(
-        `SELECT 
-         projectId as "projectId", 
-          projectName as "projectName", 
+        `SELECT
+         projectId as "projectId",
+          projectName as "projectName",
           status,
           timelineData as "timelineData",
           velocityData as "velocityData",
@@ -184,10 +185,11 @@ export class ProjectRepository {
           budgetData as "budgetData",
           resourcesData as "resourcesData",
           risksData as "risksData"
-         FROM project_data 
+         FROM project_data
+         WHERE user_id = $1
          ORDER BY updatedat DESC
-         LIMIT $1 OFFSET $2`,
-        [limit, offset]
+         LIMIT $2 OFFSET $3`,
+        [userId, limit, offset]
       );
       
       // Parsear cada fila (igual que getProjectForAnalysis)
@@ -230,11 +232,11 @@ export class ProjectRepository {
    * 
    * @param projectId - ID del proyecto a eliminar
    */
-  async deleteProject(projectId: number): Promise<void> {
+  async deleteProject(projectId: number, userId: string): Promise<void> {
     try {
       await pool.query(
-        'DELETE FROM project_data WHERE projectId = $1',
-        [projectId]
+        'DELETE FROM project_data WHERE projectId = $1 AND user_id = $2',
+        [projectId, userId]
       );
       dbLogger.info(`✅ Proyecto ${projectId} eliminado`);
     } catch (error: any) {

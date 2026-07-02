@@ -9,6 +9,7 @@ import { UPLOAD_MESSAGES } from '../config/messages';
 import { ProjectIdParamSchema, PaginationQuerySchema } from '../config/validation';
 import { routeLogger } from '../core/logger';
 import { computeHealthScore } from '../services/portfolioService';
+import { AuthRequest } from '../middleware/requireAuth';
  
 const router = express.Router();
  
@@ -55,7 +56,8 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
     }
     
     const adapter = new ExcelAdapter(req.file.path);
-    const result = await dataIngestService.ingestFromAdapterWithDetails(adapter);
+    const userId = (req as AuthRequest).user!.id;
+    const result = await dataIngestService.ingestFromAdapterWithDetails(adapter, userId);
     
     fs.unlinkSync(req.file.path);
     
@@ -94,8 +96,9 @@ router.get('/projects', async (req: Request, res: Response) => {
     const pq = PaginationQuerySchema.safeParse(req.query);
     if (!pq.success) return res.status(400).json({ success: false, error: pq.error.flatten() });
     const { page, limit } = pq.data;
+    const userId = (req as AuthRequest).user!.id;
 
-    const projects = await projectRepository.getAllProjects(page, limit);
+    const projects = await projectRepository.getAllProjects(userId, page, limit);
 
     res.json({
       success: true,
@@ -116,8 +119,9 @@ router.get('/projects/:projectId', async (req: Request, res: Response) => {
     const params = ProjectIdParamSchema.safeParse(req.params);
     if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
     const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
 
-    const project = await projectRepository.getProjectForAnalysis(projectId);
+    const project = await projectRepository.getProjectForAnalysis(projectId, userId);
 
     if (!project) {
       return res.status(404).json({ success: false, error: `Proyecto ${projectId} no encontrado` });
@@ -140,8 +144,9 @@ router.delete('/projects/:id', async (req: Request, res: Response) => {
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, error: 'id inválido' });
     }
+    const userId = (req as AuthRequest).user!.id;
 
-    const projectResult = await pool.query(`SELECT projectid FROM project_data WHERE id = $1`, [id]);
+    const projectResult = await pool.query(`SELECT projectid FROM project_data WHERE id = $1 AND user_id = $2`, [id, userId]);
     if (projectResult.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
     }
@@ -160,19 +165,21 @@ router.delete('/projects/:id', async (req: Request, res: Response) => {
 
 router.get('/projects/history/latest', async (req: Request, res: Response) => {
   try {
+    const userId = (req as AuthRequest).user!.id;
     const query = `
       SELECT pd.*, aa.output
       FROM project_data pd
       INNER JOIN ai_analyses aa ON pd.projectid = aa.projectid
       WHERE aa.agenttype != 'normalization'
+        AND pd.user_id = $1
         AND aa.id IN (
           SELECT MAX(id) FROM ai_analyses WHERE agenttype != 'normalization' GROUP BY projectid
         )
       ORDER BY aa.id DESC
       LIMIT 10
     `;
-    
-    const { rows } = await pool.query(query);
+
+    const { rows } = await pool.query(query, [userId]);
     
     const data = rows.map(row => ({
       projectId: row.id,
@@ -199,10 +206,11 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
 router.get('/analysis/:projectId/latest', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
-    
+    const userId = (req as AuthRequest).user!.id;
+
     const projectResult = await pool.query(
-      `SELECT projectid FROM project_data WHERE id = $1`,
-      [projectId]
+      `SELECT projectid FROM project_data WHERE id = $1 AND user_id = $2`,
+      [projectId, userId]
     );
  
     if (projectResult.rows.length === 0) {
@@ -257,10 +265,11 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
       return res.status(400).json({ success: false, error: 'projectId inválido' });
     }
     const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
 
     const projectResult = await pool.query(
-      `SELECT projectid FROM project_data WHERE id = $1`,
-      [projectId]
+      `SELECT projectid FROM project_data WHERE id = $1 AND user_id = $2`,
+      [projectId, userId]
     );
     if (projectResult.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });

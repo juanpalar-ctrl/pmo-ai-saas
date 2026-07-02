@@ -41,9 +41,10 @@ export async function createPasswordResetToken(
     // 3. Guardar en BD (eliminar anteriores primero)
     await pool.query("DELETE FROM password_resets WHERE user_id = $1", [userId]);
 
+    // password_resets.id has no DB default — generate it here
     await pool.query(
-      "INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)",
-      [userId, token, expiresAt]
+      "INSERT INTO password_resets (id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)",
+      [crypto.randomUUID(), userId, token, expiresAt]
     );
 
     // 4. Generar reset link (para mock, usamos localhost)

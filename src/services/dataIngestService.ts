@@ -22,20 +22,20 @@ export class DataIngestService {
    * ORIGINAL METHOD: Procesar datos desde cualquier adapter
    * (Backwards compatible)
    */
-  async ingestFromAdapter(adapter: IDataAdapter): Promise<IngestResult> {
+  async ingestFromAdapter(adapter: IDataAdapter, userId: string): Promise<IngestResult> {
     try {
       serviceLogger.info(`\n${'='.repeat(60)}`);
       serviceLogger.info(`🔄 Iniciando ingesta: ${adapter.name}`);
       serviceLogger.info(`${'='.repeat(60)}\n`);
-      
+
       // 1. Leer datos
       const projects = await adapter.read();
       const validCount = projects.length;
-      
+
       // 2. Guardar en BD
       serviceLogger.info(`\n💾 Guardando ${validCount} proyectos en BD...`);
       for (const project of projects) {
-        await projectRepository.saveProject(project);
+        await projectRepository.saveProject(project, userId);
       }
       
       serviceLogger.info(`\n✅ Ingesta completada: ${validCount} proyectos`);
@@ -55,7 +55,7 @@ export class DataIngestService {
    * NEW METHOD: Procesar datos con detalles de errores
    * Usa readWithDetails() si está disponible en el adapter
    */
-  async ingestFromAdapterWithDetails(adapter: IDataAdapter): Promise<IngestResultWithDetails> {
+  async ingestFromAdapterWithDetails(adapter: IDataAdapter, userId: string): Promise<IngestResultWithDetails> {
     try {
       serviceLogger.info(`\n${'='.repeat(60)}`);
       serviceLogger.info(`🔄 Iniciando ingesta con detalles: ${adapter.name}`);
@@ -79,7 +79,7 @@ export class DataIngestService {
       // 3. Guardar proyectos válidos en BD
       serviceLogger.info(`\n💾 Guardando ${validCount} proyectos válidos en BD...`);
       for (const project of validProjects) {
-        await projectRepository.saveProject(project);
+        await projectRepository.saveProject(project, userId);
       }
       
       serviceLogger.info(`\n✅ Ingesta completada: ${validCount} válidos, ${rejectedCount} rechazados`);

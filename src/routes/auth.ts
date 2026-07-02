@@ -38,11 +38,14 @@ router.post('/signup', async (req: Request, res: Response) => {
 
     // Hash password
     const hash = await bcrypt.hash(password, 10);
-    
+
+    // users.id has no DB default — generate it here (same "user_<timestamp>" convention as existing rows)
+    const id = `user_${Date.now()}`;
+
     // Create user with default role='user' and status='pending_approval'
     const result = await pool.query(
-      'INSERT INTO users (email, password_hash, role, status) VALUES ($1, $2, $3, $4) RETURNING id, email, role, status',
-      [email.toLowerCase(), hash, 'user', 'pending_approval']
+      'INSERT INTO users (id, email, password_hash, role, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, role, status',
+      [id, email.toLowerCase(), hash, 'user', 'pending_approval']
     );
 
     const user = result.rows[0];

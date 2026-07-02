@@ -131,7 +131,7 @@ function aggregateSummary(projects: ProjectSummary[]): PortfolioSummary {
   };
 }
 
-export async function getPortfolioData(): Promise<PortfolioData> {
+export async function getPortfolioData(userId: string): Promise<PortfolioData> {
   const result = await pool.query(`
     SELECT
       pd.id,
@@ -142,12 +142,13 @@ export async function getPortfolioData(): Promise<PortfolioData> {
     FROM project_data pd
     INNER JOIN ai_analyses aa ON aa.projectid = pd.projectid
     WHERE aa.agenttype = 'combined'
+      AND pd.user_id = $1
       AND aa.id IN (
         SELECT MAX(id) FROM ai_analyses WHERE agenttype = 'combined' GROUP BY projectid
       )
     ORDER BY aa.generatedat DESC
     LIMIT 50
-  `);
+  `, [userId]);
 
   const projects = result.rows.map(mapRow);
   const summary  = aggregateSummary(projects);
