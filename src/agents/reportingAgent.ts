@@ -1,17 +1,37 @@
 import { BaseAgent } from './baseAgent';
-import { AgentInput } from '../types/agents';
+import { AgentInput, AgentOutput } from '../types/agents';
+import { anthropicClient, aiConfig } from '../config/anthropic';
 import { agentLogger } from '../core/logger';
 import { normalizeLang, languageDirective, ragLabel, RagColor } from '../config/language';
 
+interface ReportContext {
+  lang: 'es' | 'en';
+  projectName: string;
+  pctComplete: number;
+  daysRemaining: number | string;
+  budgetSpent: number;
+  budgetTotal: number;
+  burnRate: string;
+  delayProb: string;
+  riskScore: string;
+  budgetStatus: string;
+  costOfDelay: string;
+  worstCase: string;
+  topRisks: string;
+  mitigations: string;
+  ragOverall: string;
+  ragSchedule: string;
+  ragBudget: string;
+  ragRisk: string;
+}
+
 export class ReportingAgent extends BaseAgent {
   name = '📄 Reporting Agent';
-  version = '2.0.0';
-  // Generates two full markdown reports (senior + technical) in one response —
-  // the shared aiConfig.maxTokens (2000) was cutting the technical_report off
-  // mid-sentence since senior_report consumed most of the budget first. A
-  // complete two-report response measured ~3700 output tokens; 4096 still left
-  // too little margin and truncated on a verbose run, so this needs headroom.
-  protected maxTokens = 6144;
+  version = '3.0.0';
+  // Each report gets its own full budget now (see analyze() override below) —
+  // no longer shared between senior_report and technical_report, so this only
+  // needs to cover ONE report's worst case.
+  protected maxTokens = 4096;
   private riskOutput: any;
   private economicOutput: any;
 
@@ -24,7 +44,7 @@ export class ReportingAgent extends BaseAgent {
     return !!(input.projectId && input.projectName);
   }
 
-  buildPrompt(input: AgentInput): string {
+  private buildContext(input: AgentInput): ReportContext {
     const risk = this.riskOutput?.analysis?.analysis || {};
     const econ = this.economicOutput?.analysis?.analysis || {};
 
@@ -63,44 +83,51 @@ export class ReportingAgent extends BaseAgent {
       : budgetStatus === 'AT_RISK' ? 'yellow'
       : 'red';
 
-    const ragOverall = ragLabel(overallColor, lang);
-    const ragSchedule = ragLabel(scheduleColor, lang);
-    const ragBudget = ragLabel(budgetColor, lang);
-    const ragRisk = ragOverall;
+    return {
+      lang, projectName: input.projectName, pctComplete, daysRemaining, budgetSpent, budgetTotal,
+      burnRate, delayProb, riskScore, budgetStatus, costOfDelay, worstCase, topRisks, mitigations,
+      ragOverall: ragLabel(overallColor, lang),
+      ragSchedule: ragLabel(scheduleColor, lang),
+      ragBudget: ragLabel(budgetColor, lang),
+      ragRisk: ragLabel(overallColor, lang),
+    };
+  }
 
-    return `${languageDirective(lang)}
+  private buildSeniorPrompt(input: AgentInput): string {
+    const c = this.buildContext(input);
+    return `${languageDirective(c.lang)}
 
 Eres un PMO senior experto en comunicación ejecutiva. Genera un Executive Status Report para el stakeholder de este proyecto.
 
 DATOS DEL PROYECTO:
-- Nombre: ${input.projectName}
-- Avance: ${pctComplete}% completado | ${daysRemaining} días restantes
-- Presupuesto gastado: $${Number(budgetSpent).toLocaleString()} de $${Number(budgetTotal).toLocaleString()} total
-- Burn rate: ${burnRate}
-- Probabilidad de delay: ${delayProb}
-- Riesgo general: ${riskScore}
-- Estado de presupuesto: ${budgetStatus}
-- Costo del delay (si ocurre): ${costOfDelay}
-- Costo peor caso: ${worstCase}
+- Nombre: ${c.projectName}
+- Avance: ${c.pctComplete}% completado | ${c.daysRemaining} días restantes
+- Presupuesto gastado: $${Number(c.budgetSpent).toLocaleString()} de $${Number(c.budgetTotal).toLocaleString()} total
+- Burn rate: ${c.burnRate}
+- Probabilidad de delay: ${c.delayProb}
+- Riesgo general: ${c.riskScore}
+- Estado de presupuesto: ${c.budgetStatus}
+- Costo del delay (si ocurre): ${c.costOfDelay}
+- Costo peor caso: ${c.worstCase}
 
 TOP RIESGOS:
-${topRisks}
+${c.topRisks}
 
 MITIGACIONES ACTIVAS:
-${mitigations}
+${c.mitigations}
 
 RAG STATUS (pre-calculado para que lo uses):
-- Estado general: ${ragOverall}
-- Tiempo / Schedule: ${ragSchedule}
-- Presupuesto: ${ragBudget}
-- Riesgos: ${ragRisk}
+- Estado general: ${c.ragOverall}
+- Tiempo / Schedule: ${c.ragSchedule}
+- Presupuesto: ${c.ragBudget}
+- Riesgos: ${c.ragRisk}
 
-INSTRUCCIÓN: Genera el reporte para DOS audiencias. Para el reporte ejecutivo (senior_report), sigue EXACTAMENTE esta estructura:
+INSTRUCCIÓN: Genera el reporte ejecutivo (senior_report), siguiendo EXACTAMENTE esta estructura:
 
 ---
-## 📊 Estado Ejecutivo del Proyecto — ${input.projectName}
+## 📊 Estado Ejecutivo del Proyecto — ${c.projectName}
 
-**Estado General:** ${ragOverall}
+**Estado General:** ${c.ragOverall}
 
 ### 1. Resumen Ejecutivo
 **Hitos clave del período:** [2-3 logros concretos y tangibles que el equipo entregó, basados en el % de avance]
@@ -111,9 +138,9 @@ INSTRUCCIÓN: Genera el reporte para DOS audiencias. Para el reporte ejecutivo (
 | Indicador | Estado | Nota |
 |-----------|--------|------|
 | Alcance (Scope) | [RAG emoji] | [1 línea honesta] |
-| Tiempo (Schedule) | ${ragSchedule} | [1 línea concreta con días/% de desviación si aplica] |
-| Presupuesto | ${ragBudget} | [burn rate + estado real] |
-| Riesgos | ${ragRisk} | [el riesgo principal en 1 línea] |
+| Tiempo (Schedule) | ${c.ragSchedule} | [1 línea concreta con días/% de desviación si aplica] |
+| Presupuesto | ${c.ragBudget} | [burn rate + estado real] |
+| Riesgos | ${c.ragRisk} | [el riesgo principal en 1 línea] |
 
 ### 3. ¿Dónde están los problemas?
 **Bloqueos activos:** [Qué está frenando el proyecto HOY — sé específico y honesto]
@@ -126,10 +153,33 @@ INSTRUCCIÓN: Genera el reporte para DOS audiencias. Para el reporte ejecutivo (
 > 💬 Nota del PM: [Una línea honesta y humana sobre el estado real del proyecto. Sin decorar la realidad.]
 ---
 
-Para el technical_report, genera un reporte técnico para el líder de desarrollo / líder técnico. Habla de colega a colega: sin diplomacia corporativa, directo al motor del proyecto. Sigue EXACTAMENTE esta estructura:
+RESPONDE ÚNICAMENTE con el reporte ejecutivo completo en el formato de arriba (texto plano, sin bloques de código, sin explicaciones adicionales, sin repetir este prompt).`;
+  }
+
+  private buildTechnicalPrompt(input: AgentInput): string {
+    const c = this.buildContext(input);
+    return `${languageDirective(c.lang)}
+
+Eres un PMO senior experto en comunicación técnica. Genera un Technical Health & Delivery Flow Report para el líder técnico / líder de desarrollo de este proyecto.
+
+DATOS DEL PROYECTO:
+- Nombre: ${c.projectName}
+- Avance: ${c.pctComplete}% completado | ${c.daysRemaining} días restantes
+- Probabilidad de delay: ${c.delayProb}
+- Riesgo general: ${c.riskScore}
+- Estado de presupuesto: ${c.budgetStatus}
+- Burn rate: ${c.burnRate}
+
+TOP RIESGOS:
+${c.topRisks}
+
+MITIGACIONES ACTIVAS:
+${c.mitigations}
+
+INSTRUCCIÓN: Genera el reporte técnico (technical_report) para el líder de desarrollo / líder técnico. Habla de colega a colega: sin diplomacia corporativa, directo al motor del proyecto. Sigue EXACTAMENTE esta estructura:
 
 ---
-## 🛠️ Salud Técnica y Flujo de Entrega — ${input.projectName}
+## 🛠️ Salud Técnica y Flujo de Entrega — ${c.projectName}
 
 ### 1. Estado del Flujo de Características
 **Deployment Frequency:** [Estimado basado en el avance: ¿se está desplegando frecuentemente o hay cuellos de botella?]
@@ -165,54 +215,13 @@ Para el technical_report, genera un reporte técnico para el líder de desarroll
 > 🔧 Nota técnica: [Una línea honesta sobre el estado real del stack/equipo. Sin abstracciones.]
 ---
 
-RESPONDE usando EXACTAMENTE este formato de texto plano (NO uses JSON, NO uses bloques de código):
-
-===SENIOR_REPORT===
-[aquí el reporte ejecutivo completo con la estructura de arriba]
-===TECHNICAL_REPORT===
-[aquí el reporte técnico completo con la estructura de arriba]
-===END===`;
+RESPONDE ÚNICAMENTE con el reporte técnico completo en el formato de arriba (texto plano, sin bloques de código, sin explicaciones adicionales, sin repetir este prompt).`;
   }
 
-  parseResponse(response: string): any {
-    try {
-      const clean = response.replace(/```[a-z]*\n?/gi, '').trim();
-      // Markers MUST be fenced with "=" (the prompt emits ===SENIOR_REPORT===,
-      // ===TECHNICAL_REPORT===, ===END===). The leading `={2,}` is critical:
-      // an earlier `=*` (zero-or-more) collapsed END to the bare substring
-      // "end", so the first Spanish word containing it ("dependen", "recomienda",
-      // "entender"…) was treated as the closing fence and truncated the
-      // technical_report mid-sentence. Still tolerant of spaces/underscores/
-      // dashes inside the keyword and a variable number of "=", case-insensitive.
-      const SENIOR = /={2,}\s*SENIOR[_\s-]?REPORT\s*=*/i;
-      const TECHNICAL = /={2,}\s*TECHNICAL[_\s-]?REPORT\s*=*/i;
-      const END = /={2,}\s*END\s*=*/i;
-
-      const seniorStart = clean.search(SENIOR);
-      const technicalStart = clean.search(TECHNICAL);
-
-      let senior: string | undefined;
-      let technical: string | undefined;
-
-      if (seniorStart !== -1 && technicalStart !== -1 && technicalStart > seniorStart) {
-        senior = clean.slice(seniorStart, technicalStart).replace(SENIOR, '').trim();
-        const rest = clean.slice(technicalStart).replace(TECHNICAL, '').trim();
-        const endStart = rest.search(END);
-        if (endStart === -1) {
-          agentLogger.warn({ agent: this.name }, 'technical_report sin marcador ===END=== — la respuesta pudo truncarse por max_tokens');
-        }
-        technical = (endStart !== -1 ? rest.slice(0, endStart) : rest).trim();
-      }
-
-      if (senior && technical) {
-        return { senior_report: senior, technical_report: technical };
-      }
-    } catch (_) {}
-
+  private fallbackSeniorReport(): string {
     const risk = this.riskOutput?.analysis?.analysis || {};
     const econ = this.economicOutput?.analysis?.analysis || {};
-    return {
-      senior_report: `## 📊 Estado Ejecutivo — ${this.riskOutput?.projectName || 'Proyecto'}
+    return `## 📊 Estado Ejecutivo — Proyecto
 
 **Estado General:** 🟡 Amarillo
 
@@ -226,9 +235,80 @@ Análisis en progreso. Risk: ${risk.overallRiskScore || 'N/A'} | Budget: ${econ.
 | Riesgos | 🟡 | ${risk.overallRiskScore || 'Revisar'} |
 
 ### 4. ¿Qué necesitas de mí?
-Revisar análisis completo de riesgos y económico para detalles adicionales.`,
-      technical_report: `Reporte técnico no disponible. Revisar análisis de riesgo y económico.`
-    };
+Revisar análisis completo de riesgos y económico para detalles adicionales.`;
+  }
+
+  private fallbackTechnicalReport(): string {
+    return 'Reporte técnico no disponible. Revisar análisis de riesgo y económico.';
+  }
+
+  private extractText(response: any, kind: 'senior' | 'technical'): string {
+    const block = response?.content?.[0];
+    const text = block && block.type === 'text' ? block.text.trim() : '';
+    if (text) return text;
+    agentLogger.warn({ agent: this.name, kind }, 'Respuesta vacía o sin texto de la API — usando fallback');
+    return kind === 'senior' ? this.fallbackSeniorReport() : this.fallbackTechnicalReport();
+  }
+
+  // Not used — analyze() is overridden below to make two independent API
+  // calls (senior + technical), each with its own full token budget, instead
+  // of one shared call. Kept only to satisfy BaseAgent's abstract contract.
+  buildPrompt(input: AgentInput): string {
+    return this.buildSeniorPrompt(input);
+  }
+
+  parseResponse(response: string): any {
+    return { senior_report: response, technical_report: '' };
+  }
+
+  async analyze(input: AgentInput): Promise<AgentOutput> {
+    try {
+      if (!this.validateInput(input)) {
+        throw new Error(`Input inválido para ${this.name}`);
+      }
+
+      agentLogger.info({ agent: this.name, projectId: input.projectId }, 'Iniciando análisis (2 llamadas: ejecutivo + técnico)');
+      const startTime = Date.now();
+
+      const [seniorResponse, technicalResponse] = await Promise.all([
+        anthropicClient.messages.create({
+          model: aiConfig.model,
+          max_tokens: this.maxTokens,
+          temperature: aiConfig.temperature,
+          messages: [{ role: 'user', content: this.buildSeniorPrompt(input) }],
+        }),
+        anthropicClient.messages.create({
+          model: aiConfig.model,
+          max_tokens: this.maxTokens,
+          temperature: aiConfig.temperature,
+          messages: [{ role: 'user', content: this.buildTechnicalPrompt(input) }],
+        }),
+      ]);
+
+      const senior_report = this.extractText(seniorResponse, 'senior');
+      const technical_report = this.extractText(technicalResponse, 'technical');
+
+      const executionTimeMs = Date.now() - startTime;
+      const tokensUsed =
+        seniorResponse.usage.output_tokens + seniorResponse.usage.input_tokens +
+        technicalResponse.usage.output_tokens + technicalResponse.usage.input_tokens;
+
+      const output: AgentOutput = {
+        agentName: this.name,
+        timestamp: new Date().toISOString(),
+        projectId: input.projectId,
+        analysis: { senior_report, technical_report },
+        confidence: 0.92,
+        tokensUsed,
+        executionTimeMs,
+      };
+
+      agentLogger.info({ agent: this.name, ms: executionTimeMs, tokens: tokensUsed }, 'Análisis completado');
+      return output;
+    } catch (error: any) {
+      agentLogger.error({ agent: this.name, err: error.message }, 'Error en análisis');
+      throw error;
+    }
   }
 }
 

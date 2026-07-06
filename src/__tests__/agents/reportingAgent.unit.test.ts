@@ -6,11 +6,20 @@ jest.mock('../../config/anthropic', () => ({
   aiConfig: { model: 'claude-opus-4-6', maxTokens: 2000, temperature: 0.7 },
 }));
 
+import { anthropicClient } from '../../config/anthropic';
+
+const mockCreate = anthropicClient.messages.create as jest.Mock;
+
+function textResponse(text: string, tokens = 100) {
+  return { content: [{ type: 'text', text }], usage: { input_tokens: tokens, output_tokens: tokens } };
+}
+
 describe('[UNIT] ReportingAgent', () => {
   let agent: ReportingAgent;
 
   beforeEach(() => {
     agent = new ReportingAgent();
+    mockCreate.mockReset();
   });
 
   describe('validateInput', () => {
@@ -23,7 +32,7 @@ describe('[UNIT] ReportingAgent', () => {
     });
   });
 
-  describe('buildPrompt', () => {
+  describe('buildPrompt (delegates to the senior/executive prompt)', () => {
     it('includes the project name and key metrics', () => {
       agent.setAnalysisOutputs(
         { analysis: { analysis: { overallRiskScore: 'HIGH', delayProbability: 0.4, topRisks: [] } } },
@@ -49,53 +58,75 @@ describe('[UNIT] ReportingAgent', () => {
     });
   });
 
-  describe('parseResponse', () => {
-    it('extracts senior_report and technical_report between fenced markers', () => {
-      const response = `===SENIOR_REPORT===
-Reporte ejecutivo de prueba.
-===TECHNICAL_REPORT===
-Reporte técnico de prueba.
-===END===`;
-      const result = agent.parseResponse(response);
-      expect(result.senior_report).toBe('Reporte ejecutivo de prueba.');
-      expect(result.technical_report).toBe('Reporte técnico de prueba.');
+  describe('analyze — two independent API calls', () => {
+    const input: AgentInput = {
+      projectId: 1,
+      projectName: 'Proyecto Fénix',
+      timeline: { percentageComplete: 40, daysRemaining: 20 },
+      budget: { total: 10000, spent: 6000 },
+    };
+
+    it('makes exactly two API calls, each with the agent\'s own full maxTokens budget', async () => {
+      mockCreate
+        .mockResolvedValueOnce(textResponse('Reporte ejecutivo completo.'))
+        .mockResolvedValueOnce(textResponse('Reporte técnico completo.'));
+
+      const result = await agent.analyze(input);
+
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+      for (const call of mockCreate.mock.calls) {
+        expect(call[0].max_tokens).toBe((agent as any).maxTokens);
+      }
+      expect(result.analysis.senior_report).toBe('Reporte ejecutivo completo.');
+      expect(result.analysis.technical_report).toBe('Reporte técnico completo.');
     });
 
-    it('does not truncate the technical report on Spanish words containing "end" (e.g. "entender")', () => {
-      const response = `===SENIOR_REPORT===
-Resumen ejecutivo.
-===TECHNICAL_REPORT===
-Necesitamos entender el problema de arquitectura antes de recomendar nada.
-===END===`;
-      const result = agent.parseResponse(response);
-      expect(result.technical_report).toContain('Necesitamos entender el problema de arquitectura antes de recomendar nada.');
+    it('a verbose senior_report does not truncate technical_report (separate budgets)', async () => {
+      const longSeniorReport = 'x'.repeat(50000); // would have exhausted a shared 6144-token budget
+      mockCreate
+        .mockResolvedValueOnce(textResponse(longSeniorReport))
+        .mockResolvedValueOnce(textResponse('Reporte técnico completo, sin cortes.'));
+
+      const result = await agent.analyze(input);
+
+      expect(result.analysis.senior_report).toBe(longSeniorReport);
+      expect(result.analysis.technical_report).toBe('Reporte técnico completo, sin cortes.');
     });
 
-    it('still extracts the technical report when the ===END=== marker is missing', () => {
-      const response = `===SENIOR_REPORT===
-Resumen ejecutivo.
-===TECHNICAL_REPORT===
-Reporte técnico sin cierre.`;
-      const result = agent.parseResponse(response);
-      expect(result.technical_report).toBe('Reporte técnico sin cierre.');
+    it('sums token usage from both calls', async () => {
+      mockCreate
+        .mockResolvedValueOnce(textResponse('A', 200))
+        .mockResolvedValueOnce(textResponse('B', 300));
+
+      const result = await agent.analyze(input);
+
+      expect(result.tokensUsed).toBe(200 + 200 + 300 + 300);
     });
 
-    it('strips markdown code fences before parsing', () => {
-      const response = '```\n===SENIOR_REPORT===\nA.\n===TECHNICAL_REPORT===\nB.\n===END===\n```';
-      const result = agent.parseResponse(response);
-      expect(result.senior_report).toBe('A.');
-      expect(result.technical_report).toBe('B.');
-    });
-
-    it('falls back to a generated report when markers are missing entirely', () => {
+    it('falls back gracefully when a response has no text content', async () => {
       agent.setAnalysisOutputs(
         { analysis: { analysis: { overallRiskScore: 'HIGH' } } },
         { analysis: { analysis: { budget_status: 'CRITICAL' } } }
       );
-      const result = agent.parseResponse('respuesta sin ningún formato reconocible');
-      expect(result.senior_report).toContain('HIGH');
-      expect(result.senior_report).toContain('CRITICAL');
-      expect(result.technical_report).toBeDefined();
+      mockCreate
+        .mockResolvedValueOnce({ content: [{ type: 'other' }], usage: { input_tokens: 1, output_tokens: 0 } })
+        .mockResolvedValueOnce(textResponse('Reporte técnico completo.'));
+
+      const result = await agent.analyze(input);
+
+      expect(result.analysis.senior_report).toContain('HIGH');
+      expect(result.analysis.senior_report).toContain('CRITICAL');
+      expect(result.analysis.technical_report).toBe('Reporte técnico completo.');
+    });
+
+    it('rejects when validateInput fails, without calling the API', async () => {
+      await expect(agent.analyze({ projectId: 1 } as any)).rejects.toThrow(/Input inválido/);
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
+
+    it('propagates errors from the API', async () => {
+      mockCreate.mockRejectedValueOnce(new Error('API down'));
+      await expect(agent.analyze(input)).rejects.toThrow('API down');
     });
   });
 });
