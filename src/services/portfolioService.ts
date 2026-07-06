@@ -48,15 +48,34 @@ export interface PortfolioData {
   projects: ProjectSummary[];
 }
 
+// Penalty for the AI risk agent's overallRiskScore (LOW/MEDIUM/HIGH/CRITICAL).
+// Without this, computeHealthScore only reflected CPI/SPI + deterministic
+// early-warning alerts — a project could show green/"Saludable" in the
+// portfolio grid while its own detail page flagged "Risk Score: HIGH/CRITICAL"
+// in red, because the AI risk assessment (narrative risks like vendor
+// dependency, team turnover) never moved CPI/SPI and never tripped an
+// early-warning. Magnitudes are chosen to roughly match alertPenalty
+// (criticalCount*10 / highCount*5) so one CRITICAL risk verdict moves the
+// needle about as much as 2-3 critical alerts.
+function riskScorePenalty(riskScore?: string): number {
+  switch ((riskScore || '').toUpperCase()) {
+    case 'CRITICAL': return 25;
+    case 'HIGH':      return 15;
+    case 'MEDIUM':    return 5;
+    default:          return 0; // LOW, missing, or unrecognized
+  }
+}
+
 export function computeHealthScore(
   cpi: number,
   spi: number,
   criticalCount: number,
-  highCount: number
+  highCount: number,
+  riskScore?: string
 ): { score: number; label: 'HEALTHY' | 'AT_RISK' | 'CRITICAL'; color: 'green' | 'amber' | 'red' } {
   const cpiScore    = Math.min(cpi, 1.5) / 1.5 * 40;
   const spiScore    = Math.min(spi, 1.5) / 1.5 * 30;
-  const alertPenalty = criticalCount * 10 + highCount * 5;
+  const alertPenalty = criticalCount * 10 + highCount * 5 + riskScorePenalty(riskScore);
   const score       = Math.max(0, Math.min(100, Math.round(cpiScore + spiScore + 30 - alertPenalty)));
   const label       = score >= 75 ? 'HEALTHY' : score >= 50 ? 'AT_RISK' : 'CRITICAL';
   const color       = score >= 75 ? 'green'   : score >= 50 ? 'amber'   : 'red';
@@ -80,7 +99,7 @@ function mapRow(row: any): ProjectSummary {
   const percentComplete = parseFloat(metrics.percentComplete || 0);
 
   const { score: healthScore, label: healthLabel, color: healthColor } =
-    computeHealthScore(cpi, spi, ew.criticalCount || 0, ew.highCount || 0);
+    computeHealthScore(cpi, spi, ew.criticalCount || 0, ew.highCount || 0, risk.overallRiskScore);
 
   return {
     id:             row.id,

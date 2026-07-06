@@ -235,12 +235,15 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
 
     // Compute healthScore/healthLabel here (same formula portfolioService.ts uses
     // for /portfolio) so the frontend displays this value instead of recomputing
-    // it independently — that's what let the two pages disagree before.
+    // it independently — that's what let the two pages disagree before. The
+    // riskScore arg keeps this in sync with the AI risk agent's verdict too —
+    // see the comment on riskScorePenalty() in portfolioService.ts.
     const { score: healthScore, label: healthLabel } = computeHealthScore(
       parseFloat(output.metrics?.cpi || 1),
       parseFloat(output.metrics?.spi || 1),
       output.earlyWarnings?.criticalCount || 0,
-      output.earlyWarnings?.highCount || 0
+      output.earlyWarnings?.highCount || 0,
+      output.risk?.analysis?.analysis?.overallRiskScore
     );
 
     // Pass the full stored output through rather than hand-picking fields —

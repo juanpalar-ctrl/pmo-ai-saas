@@ -207,7 +207,7 @@
     }
 
     function renderSummary(s) {
-      const fmt = n => `$${Math.round(n).toLocaleString('es')}`;
+      const fmt = n => `$${Math.round(n).toLocaleString('es-MX')}`;
       document.getElementById('kpi-total').textContent = s.totalProjects;
       document.getElementById('kpi-revenue-risk').textContent = fmt(s.totalRevenueAtStake);
       document.getElementById('kpi-bac').textContent = fmt(s.totalBAC);
@@ -253,10 +253,26 @@
         CRITICAL: { bar: 'bg-red-500',    badge: 'bg-red-100 text-red-700',     dot: 'bg-red-500 pulse-red', label: 'Crítico' },
       };
 
+      // Colors mirror ragRisk() in public/projects.html (LOW→green, MEDIUM→amber,
+      // HIGH/CRITICAL→red) so the AI risk verdict shown here never contradicts
+      // the "Risk Score" card on the project detail page. Surfaced explicitly
+      // because it also now feeds into the health score itself — see
+      // riskScorePenalty() in src/services/portfolioService.ts.
+      const riskCfg = {
+        LOW:      { badge: 'bg-green-100 text-green-700' },
+        MEDIUM:   { badge: 'bg-amber-100 text-amber-700' },
+        HIGH:     { badge: 'bg-red-100 text-red-700' },
+        CRITICAL: { badge: 'bg-red-100 text-red-700' },
+      };
+
       const fwIcon = { scrum: '🔄', kanban: '📋', waterfall: '💧', safe: '🏢' };
 
       grid.innerHTML = filtered.map(p => {
         const cfg = healthCfg[p.healthLabel] || healthCfg.AT_RISK;
+        const riskLevel = (p.riskScore || '').toUpperCase();
+        const risk = riskCfg[riskLevel]
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full ${riskCfg[riskLevel].badge}">🎯 Riesgo IA: ${riskLevel}</span>`
+          : '';
         const alerts = p.criticalAlerts > 0
           ? `<span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full pulse-red">🚨 ${p.criticalAlerts} crítica(s)</span>`
           : p.highAlerts > 0
@@ -265,7 +281,7 @@
         // Cutoffs (>=1.0 green, >=0.80 amber) must match ragIndex() in public/projects.html.
         const cpiColor = p.cpi >= 1 ? 'text-green-700' : p.cpi >= 0.8 ? 'text-amber-700' : 'text-red-700';
         const spiColor = p.spi >= 1 ? 'text-green-700' : p.spi >= 0.8 ? 'text-amber-700' : 'text-red-700';
-        const fmt = n => `$${Math.round(n).toLocaleString('es')}`;
+        const fmt = n => `$${Math.round(n).toLocaleString('es-MX')}`;
 
         return `
           <div class="project-card bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden cursor-pointer"
@@ -324,6 +340,7 @@
                 <span>AC: <strong class="text-gray-700">${fmt(p.ac)}</strong></span>
                 ${alerts}
               </div>
+              ${risk ? `<div class="flex items-center justify-end mt-2">${risk}</div>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -335,7 +352,7 @@
       if (atRisk.length === 0) return;
 
       document.getElementById('revenue-detail').classList.remove('hidden');
-      const fmt = n => `$${Math.round(n).toLocaleString('es')}`;
+      const fmt = n => `$${Math.round(n).toLocaleString('es-MX')}`;
       document.getElementById('revenue-list').innerHTML = atRisk.map(p => `
         <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           <div>

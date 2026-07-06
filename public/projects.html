@@ -578,7 +578,7 @@
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
             <div>
               <p class="font-semibold text-gray-800">${user.email}</p>
-              <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString()}</p>
+              <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString('es-MX')}</p>
             </div>
             <div class="flex gap-2">
               <button onclick="approveUser('${user.id}')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
@@ -679,9 +679,9 @@
               <div class="history-card-title" style="padding-right:20px;">${project.projectName}</div>
               <div class="history-card-meta">
                 <div>🏢 ${project.org}</div>
-                <div>📅 ${new Date(project.timestamp).toLocaleDateString()}</div>
+                <div>📅 ${new Date(project.timestamp).toLocaleDateString('es-MX')}</div>
                 <div>🎯 ${project.framework.toUpperCase()}</div>
-                <div>💰 $${(project.totalBudget || 0).toLocaleString()}</div>
+                <div>💰 $${(project.totalBudget || 0).toLocaleString('es-MX')}</div>
               </div>
             </div>
           `).join('');
@@ -990,9 +990,9 @@
 
       const cards = [
         { icon:'🎯', label:'Risk Score',    value: riskScore,       detail:`Delay: ${((risk.delayProbability||0)*100).toFixed(0)}%`, rag: ragR },
-        { icon:'💰', label:'Budget Status', value: budgetStatus,    detail:`Burn: $${Math.round(economic.daily_burn_rate||0).toLocaleString()}/día`, rag: ragB },
+        { icon:'💰', label:'Budget Status', value: budgetStatus,    detail:`Burn: $${Math.round(economic.daily_burn_rate||0).toLocaleString('es-MX')}/día`, rag: ragB },
         { icon:'📊', label:'CPI',           value: cpi.toFixed(2),  detail:'Cost Performance Index', rag: ragCPI },
-        { icon:'⏱️', label:'SPI',           value: spi.toFixed(2),  detail:`SV: $${Math.round(sv).toLocaleString()}`, rag: ragSPI },
+        { icon:'⏱️', label:'SPI',           value: spi.toFixed(2),  detail:`SV: $${Math.round(sv).toLocaleString('es-MX')}`, rag: ragSPI },
         { icon:'🏁', label:'TCPI',          value: tcpi.toFixed(2), detail:'To-Complete Performance', rag: ragT },
         { icon:'🔍', label:'DIS Score',     value: disValue,        detail: disDetail, rag: ragD },
       ];
@@ -1050,12 +1050,12 @@
       const vac         = parseFloat(metrics.vac) || (totalBudget - eac);
 
       // ── KPI cards (always from aggregate metrics) ──
-      document.getElementById('kpi-budget').textContent   = `$${Math.round(totalBudget).toLocaleString()}`;
-      document.getElementById('kpi-spent').textContent    = `$${Math.round(totalSpent).toLocaleString()}`;
+      document.getElementById('kpi-budget').textContent   = `$${Math.round(totalBudget).toLocaleString('es-MX')}`;
+      document.getElementById('kpi-spent').textContent    = `$${Math.round(totalSpent).toLocaleString('es-MX')}`;
       document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
-      document.getElementById('kpi-cv').textContent       = `$${Math.round(cv).toLocaleString()}`;
-      document.getElementById('kpi-eac').textContent      = `$${Math.round(eac).toLocaleString()}`;
-      document.getElementById('kpi-saldo').textContent    = `$${Math.round(vac).toLocaleString()}`;
+      document.getElementById('kpi-cv').textContent       = `$${Math.round(cv).toLocaleString('es-MX')}`;
+      document.getElementById('kpi-eac').textContent      = `$${Math.round(eac).toLocaleString('es-MX')}`;
+      document.getElementById('kpi-saldo').textContent    = `$${Math.round(vac).toLocaleString('es-MX')}`;
 
       // Real plan% from elapsed-time (metrics.pv = planPercent/100 * bac, computed
       // server-side in metricsCalculator.ts) — deriving this from SPI instead used
@@ -1131,8 +1131,8 @@
               ${t.name}
               ${dateLabel ? `<div style="font-size:10px;color:#9ca3af;font-weight:400;margin-top:2px">${dateLabel}</div>` : ''}
             </td>
-            <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString()}</td>
-            <td class="p-4 font-mono" style="color:${actualColor}">$${Math.round(t.actual).toLocaleString()}</td>
+            <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString('es-MX')}</td>
+            <td class="p-4 font-mono" style="color:${actualColor}">$${Math.round(t.actual).toLocaleString('es-MX')}</td>
             <td class="p-4">
               <div class="flex items-center gap-2">
                 <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">

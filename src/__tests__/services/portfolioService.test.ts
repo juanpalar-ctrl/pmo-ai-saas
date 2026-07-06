@@ -69,6 +69,42 @@ describe('computeHealthScore', () => {
     const one_crit  = computeHealthScore(1, 1, 1, 0);
     expect(no_alerts.score - one_crit.score).toBe(10);
   });
+
+  // ─── riskScore penalty ────────────────────────────────────────────────────
+  // Regression coverage for the 2026-07-06 fix: the AI risk agent's
+  // overallRiskScore used to be completely ignored here, so a project could
+  // show green/"Saludable" in the portfolio while its own detail page flagged
+  // "Risk Score: HIGH" in red.
+
+  it('defaults to no risk penalty when riskScore is omitted (backward compatible)', () => {
+    const withoutArg = computeHealthScore(1, 1, 0, 0);
+    const withLow    = computeHealthScore(1, 1, 0, 0, 'LOW');
+    expect(withoutArg.score).toBe(withLow.score);
+  });
+
+  it('a HIGH AI risk verdict can pull an otherwise-healthy project out of HEALTHY', () => {
+    const noRisk = computeHealthScore(1.1, 1.05, 0, 0);
+    const highRisk = computeHealthScore(1.1, 1.05, 0, 0, 'HIGH');
+    expect(noRisk.label).toBe('HEALTHY');
+    expect(highRisk.score).toBe(noRisk.score - 15);
+  });
+
+  it('CRITICAL AI risk verdict penalises more than HIGH, which penalises more than MEDIUM', () => {
+    const medium   = computeHealthScore(1, 1, 0, 0, 'MEDIUM');
+    const high     = computeHealthScore(1, 1, 0, 0, 'HIGH');
+    const critical = computeHealthScore(1, 1, 0, 0, 'CRITICAL');
+    expect(medium.score).toBeGreaterThan(high.score);
+    expect(high.score).toBeGreaterThan(critical.score);
+  });
+
+  it('is case-insensitive and treats unrecognized values like LOW (no penalty)', () => {
+    const lower = computeHealthScore(1, 1, 0, 0, 'high');
+    const upper = computeHealthScore(1, 1, 0, 0, 'HIGH');
+    const bogus = computeHealthScore(1, 1, 0, 0, 'not-a-real-value');
+    const low   = computeHealthScore(1, 1, 0, 0, 'LOW');
+    expect(lower.score).toBe(upper.score);
+    expect(bogus.score).toBe(low.score);
+  });
 });
 
 // ─── getPortfolioData ─────────────────────────────────────────────────────────
@@ -124,5 +160,16 @@ describe('getPortfolioData', () => {
   it('propagates DB errors', async () => {
     mockQuery.mockRejectedValueOnce(new Error('DB connection lost'));
     await expect(getPortfolioData('user_1')).rejects.toThrow('DB connection lost');
+  });
+
+  it('a HIGH AI risk verdict downgrades healthLabel even with clean CPI/SPI and no early warnings', async () => {
+    const healthyRow = makeRow({ cpi: 1.1, spi: 1.05 });
+    healthyRow.output.risk.analysis.analysis.overallRiskScore = 'HIGH';
+    mockQuery.mockResolvedValueOnce({ rows: [healthyRow] });
+
+    const data = await getPortfolioData('user_1');
+
+    expect(data.projects[0].healthLabel).not.toBe('HEALTHY');
+    expect(data.projects[0].riskScore).toBe('HIGH');
   });
 });
