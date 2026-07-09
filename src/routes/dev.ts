@@ -9,12 +9,16 @@ const router = express.Router();
 // GET /api/dev/init-database - Crear tablas
 router.get('/init-database', async (_req: any, res: any) => {
   try {
-    // Tabla de usuarios
+    // Tabla de usuarios — debe coincidir con db-migrate.ts (fuente de verdad):
+    // id VARCHAR (no SERIAL) + role/status. Antes creaba un esquema divergente
+    // que rompía las FKs varchar y el signup en una BD nueva.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id VARCHAR(255) PRIMARY KEY,
         email VARCHAR(255) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(50) NOT NULL DEFAULT 'user',
+        status VARCHAR(50) NOT NULL DEFAULT 'pending_approval',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
