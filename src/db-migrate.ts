@@ -117,6 +117,48 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
+  // Team members table — auto-populated from the "assignee" column on Excel
+  // upload (Hito 5.1). project_id is the business projectid (matches
+  // ai_analyses.projectid), same plain-int-link convention as the rest of
+  // this schema — no FK.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS team_members (
+      id SERIAL PRIMARY KEY,
+      project_id INT NOT NULL,
+      user_id VARCHAR(255) REFERENCES users(id),
+      name VARCHAR(255) NOT NULL,
+      role VARCHAR(255),
+      last_feedback_at TIMESTAMP,
+      latest_wellbeing_score NUMERIC(3,2),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  // Case-insensitive uniqueness: "Juan Pérez" and "juan perez" from different
+  // rows of the same sheet must resolve to one team member.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_team_members_project_name_ci ON team_members (project_id, lower(name))
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_team_members_project_id ON team_members(project_id)
+  `);
+
+  // 1-on-1 feedback log per team member (Hito 5.2). wellbeing_score/ai_reasoning
+  // come from wellbeingAgent's semantic analysis of note_text.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS team_feedback_notes (
+      id SERIAL PRIMARY KEY,
+      team_member_id INT NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+      note_text TEXT NOT NULL,
+      wellbeing_score NUMERIC(3,2),
+      ai_reasoning TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_team_feedback_member_id ON team_feedback_notes(team_member_id)
+  `);
+
   dbLogger.info('Database migrations complete');
 }
 

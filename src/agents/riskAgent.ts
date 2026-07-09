@@ -41,6 +41,21 @@ export class RiskAgent extends BaseAgent {
     return prompts[this.framework] || prompts.scrum;
   }
 
+  // Hito 5.3: red/orange disconnection alerts from the team board feed
+  // directly into the Risk Agent's analysis. Empty/absent moraleAlerts
+  // renders to '' — no-op for projects without a populated team.
+  private formatMoraleAlerts(alerts: any[] | undefined): string {
+    if (!alerts || alerts.length === 0) return '';
+    const lines = alerts.map((a) => {
+      const days = a.daysSinceContact !== null && a.daysSinceContact !== undefined
+        ? `${a.daysSinceContact} días sin feedback`
+        : 'nunca ha recibido feedback';
+      const label = a.level === 'red' ? 'RIESGO DE BURNOUT' : 'Desconexión';
+      return `- ${a.name}: ${label} (${days}, ${a.criticalDelayedCount} tareas críticas retrasadas)`;
+    });
+    return `\nALERTAS DE DESCONEXIÓN DEL EQUIPO:\n${lines.join('\n')}\nConsidera estas alertas de moral del equipo en tus riesgos y recomendaciones si son relevantes.\n`;
+  }
+
   buildPrompt(input: AgentInput): string {
     const lang = normalizeLang(input.lang);
     return `${languageDirective(lang)}
@@ -52,7 +67,7 @@ ${this.getFrameworkSpecificPrompt()}
 PROYECTO: "${input.projectName}"
 AVANCE: ${input.timeline?.percentageComplete || 0}%
 FRAMEWORK: ${this.framework.toUpperCase()}
-
+${this.formatMoraleAlerts(input.moraleAlerts)}
 INSTRUCCIÓN CRÍTICA:
 - Retorna SIEMPRE un JSON válido (sin markdown)
 - GARANTIZA al menos 3 riesgos (pueden ser genéricos si no hay datos específicos)

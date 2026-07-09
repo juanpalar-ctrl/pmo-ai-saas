@@ -20,6 +20,7 @@ import adminRouter from './routes/admin';
 import dataMappingRoutes from './routes/dataMapping';
 import chatRouter from './routes/chat';
 import portfolioRouter from './routes/portfolio';
+import teamRouter from './routes/team';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { runMigrations, seedAdminUser } from './db-migrate';
 import { mkdirSync } from 'fs';
@@ -111,6 +112,7 @@ app.use('/api/chat', requireAuth, chatLimiter, chatRouter);
 app.use('/api/portfolio', requireAuth, heavyLimiter, portfolioRouter);
 app.use('/api/analysis', requireAuth, heavyLimiter, analysisRouter);
 app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
+app.use('/api/team', requireAuth, heavyLimiter, teamRouter);
 app.use('/api/dev', adminAuthMiddleware, devRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 

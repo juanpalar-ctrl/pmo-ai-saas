@@ -197,6 +197,15 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
     routeLogger.info(`[save-mapping] ✅ Analysis data stored`);
 
+    // Hito 5.1: auto-populate the team board from the "assignee" column.
+    // Non-fatal — a mapping without that column just means an empty board.
+    try {
+      const { teamService } = await import('../services/teamService');
+      await teamService.autoPopulateTeam(projectId, userId, validatedRows);
+    } catch (err) {
+      routeLogger.error({ err }, '[save-mapping] Team auto-populate failed');
+    }
+
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       fs.unlinkSync(tempFilePath);
       routeLogger.info(`[save-mapping] 🗑️ Cleaned up temp file`);

@@ -13,6 +13,7 @@ export interface TransformedRow {
   start_date?: string | null;
   end_date?: string | null;
   risks?: string | null;
+  assignee?: string | null;
 }
 
 export interface FrameworkMetricCard {

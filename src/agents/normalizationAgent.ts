@@ -38,6 +38,7 @@ Map each column to one of these standard fields, or suggest NULL if unmappable:
 - start_date: Task start date
 - end_date: Task deadline or end date
 - risks: Identified risks or risk description
+- assignee: Person assigned/responsible for the task (Asignado a, Responsable, Owner, Assignee, etc.)
 
 Respond ONLY with valid JSON (no markdown, no extra text). Example:
 {

@@ -16,6 +16,7 @@ interface TransformationContext {
   startDateField?: string;
   endDateField?: string;
   risksField?: string;
+  assigneeField?: string;
 }
 
 /**
@@ -215,6 +216,7 @@ export function transformRow(
     start_date: parseDate(context.startDateField ? row[context.startDateField] : undefined, today),
     end_date: parseDate(context.endDateField ? row[context.endDateField] : undefined, thirtyDaysLater),
     risks: context.risksField ? String(row[context.risksField] || '').trim() || null : null,
+    assignee: context.assigneeField ? String(row[context.assigneeField] || '').trim() || null : null,
   } as TransformedProjectRow;
 }
 
@@ -243,6 +245,7 @@ export function transformDataset(
     startDateField: undefined,
     endDateField: undefined,
     risksField: undefined,
+    assigneeField: undefined,
   };
 
   // Find which Excel column maps to each standard field
@@ -273,6 +276,9 @@ export function transformDataset(
         break;
       case 'risks':
         context.risksField = originalHeader;
+        break;
+      case 'assignee':
+        context.assigneeField = originalHeader;
         break;
     }
   }

@@ -17,6 +17,12 @@ jest.mock('../../services/frameworkMetrics', () => ({
 jest.mock('../../services/earlyWarning', () => ({
   detectWarnings: jest.fn(),
 }));
+jest.mock('../../services/teamService', () => ({
+  teamService: { getDisconnectionAlertsForRiskAgent: jest.fn() },
+}));
+jest.mock('../../core/logger', () => ({
+  routeLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
 
 import { orchestrator } from '../../services/multiAgentOrchestrator';
 import { pool } from '../../db';
@@ -26,6 +32,7 @@ import { reportingAgent } from '../../agents/reportingAgent';
 import { calculateProjectMetrics } from '../../services/metricsCalculator';
 import { calculateFrameworkMetrics } from '../../services/frameworkMetrics';
 import { detectWarnings } from '../../services/earlyWarning';
+import { teamService } from '../../services/teamService';
 
 const mockQuery = pool.query as jest.Mock;
 const mockCalculateProjectMetrics = calculateProjectMetrics as jest.Mock;
@@ -34,6 +41,7 @@ const mockDetectWarnings = detectWarnings as jest.Mock;
 const mockRiskAnalyze = riskAgent.analyze as jest.Mock;
 const mockEconomicAnalyze = economicAgent.analyze as jest.Mock;
 const mockReportingAnalyze = reportingAgent.analyze as jest.Mock;
+const mockGetDisconnectionAlerts = teamService.getDisconnectionAlertsForRiskAgent as jest.Mock;
 
 const baseMetrics = {
   projectName: 'Proyecto X',
@@ -53,8 +61,10 @@ describe('orchestrator.analyzeProject', () => {
     mockRiskAnalyze.mockReset();
     mockEconomicAnalyze.mockReset();
     mockReportingAnalyze.mockReset();
+    mockGetDisconnectionAlerts.mockReset();
 
     mockCalculateProjectMetrics.mockResolvedValue(baseMetrics);
+    mockGetDisconnectionAlerts.mockResolvedValue([]);
     mockRiskAnalyze.mockResolvedValue({ analysis: { analysis: { overallRiskScore: 'MEDIUM' } } });
     mockEconomicAnalyze.mockResolvedValue({ analysis: { analysis: { budget_status: 'ON_TRACK' } } });
     mockReportingAnalyze.mockResolvedValue({ analysis: { senior_report: 'Senior text', technical_report: 'Tech text' } });
@@ -202,5 +212,31 @@ describe('orchestrator.analyzeProject', () => {
     await orchestrator.analyzeProject(1, 'scrum', 'Org');
 
     expect(order.indexOf('economic-start')).toBeLessThan(order.indexOf('risk-end'));
+  });
+
+  it('feeds team disconnection alerts into the risk/economic agent input', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ output: { projects: [{ project_name: 'Fase 1', assignee: 'Beto' }] } }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const alerts = [{ name: 'Beto', level: 'red', daysSinceContact: 50, criticalDelayedCount: 4 }];
+    mockGetDisconnectionAlerts.mockResolvedValueOnce(alerts);
+
+    await orchestrator.analyzeProject(1, 'scrum', 'Org');
+
+    expect(mockGetDisconnectionAlerts).toHaveBeenCalledWith(1, [{ project_name: 'Fase 1', assignee: 'Beto' }]);
+    expect(mockRiskAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: alerts }));
+    expect(mockEconomicAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: alerts }));
+  });
+
+  it('does not fail the analysis when team alerts lookup throws', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    mockGetDisconnectionAlerts.mockRejectedValueOnce(new Error('team lookup failed'));
+
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'Org');
+
+    expect(result).toBeDefined();
+    expect(mockRiskAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: [] }));
   });
 });

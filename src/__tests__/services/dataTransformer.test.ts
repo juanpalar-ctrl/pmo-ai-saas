@@ -10,6 +10,7 @@ const baseContext = {
   startDateField: 'Start',
   endDateField: 'End',
   risksField: 'Risks',
+  assigneeField: 'Assignee',
 };
 
 describe('transformRow', () => {
@@ -83,6 +84,18 @@ describe('transformRow', () => {
     expect(result?.progress_percent).toBe(100);
   });
 
+  it('trims the assignee field', () => {
+    const row = { Name: 'P1', Assignee: '  Juan Pérez  ' };
+    const result = transformRow(row, baseContext);
+    expect(result?.assignee).toBe('Juan Pérez');
+  });
+
+  it('defaults assignee to null when the column is empty or unmapped', () => {
+    const row = { Name: 'P1', Assignee: '' };
+    expect(transformRow(row, baseContext)?.assignee).toBeNull();
+    expect(transformRow(row, { ...baseContext, assigneeField: undefined })?.assignee).toBeNull();
+  });
+
   it('parses ISO date strings', () => {
     const row = { Name: 'P1', Start: '2026-03-15' };
     const result = transformRow(row, baseContext);
@@ -149,5 +162,11 @@ describe('transformDataset', () => {
     const rows = [{ Name: 'P1', Ignored: 'whatever' }];
     const result = transformDataset(rows, { ...mapping, Ignored: null });
     expect(result).toHaveLength(1);
+  });
+
+  it('maps an assignee column when present', () => {
+    const rows = [{ Name: 'P1', Owner: 'Ana Torres' }];
+    const result = transformDataset(rows, { ...mapping, Owner: 'assignee' });
+    expect(result[0].assignee).toBe('Ana Torres');
   });
 });

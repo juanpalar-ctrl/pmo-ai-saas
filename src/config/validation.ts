@@ -20,6 +20,7 @@ export const ColumnSuggestionSchema = z.object({
     'start_date',
     'end_date',
     'risks',
+    'assignee',
   ]).nullable(),
   framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum')
 });
@@ -56,6 +57,7 @@ export const TransformedProjectRowSchema = z.object({
   start_date: z.string().optional().nullable(),
   end_date: z.string().optional().nullable(),
   risks: z.string().optional().nullable(),
+  assignee: z.string().optional().nullable(),
 });
 
 
@@ -75,6 +77,7 @@ export const SaveMappingRequestSchema = z.object({
       'start_date',
       'end_date',
       'risks',
+      'assignee',
     ]).nullable()
   ),
   framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),
@@ -142,6 +145,15 @@ export const SimulateSchema = z.object({
   }).optional(),
   projectName: z.string().max(200).optional().default('el proyecto'),
   lang:        z.enum(['es', 'en']).optional(),
+});
+
+export const TeamFeedbackSchema = z.object({
+  noteText: z.string().min(1).max(2000),
+  lang:     z.enum(['es', 'en']).optional(),
+});
+
+export const TeamRoleSchema = z.object({
+  role: z.string().min(1).max(200),
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
