@@ -17,6 +17,15 @@ async function resolveRealProjectId(projectId: number, userId: string): Promise<
   return result.rows.length > 0 ? result.rows[0].projectid : null;
 }
 
+async function resolveProject(projectId: number, userId: string): Promise<{ realProjectId: number; projectName: string } | null> {
+  const result = await pool.query(
+    `SELECT projectid, projectname FROM project_data WHERE id = $1 AND user_id = $2`,
+    [projectId, userId]
+  );
+  if (result.rows.length === 0) return null;
+  return { realProjectId: result.rows[0].projectid, projectName: result.rows[0].projectname };
+}
+
 async function fetchTaskRows(realProjectId: number): Promise<any[]> {
   const result = await pool.query(
     `SELECT output FROM ai_analyses
@@ -27,6 +36,17 @@ async function fetchTaskRows(realProjectId: number): Promise<any[]> {
   return result.rows[0]?.output?.projects || [];
 }
 
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthRequest).user!.id;
+    const data = await teamService.getTeamBoardsForUser(userId);
+    res.json({ success: true, data });
+  } catch (error: any) {
+    routeLogger.error({ err: error.message }, 'GET /api/team error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
 router.get('/:projectId', async (req: Request, res: Response) => {
   try {
     const params = ProjectIdParamSchema.safeParse(req.params);
@@ -36,15 +56,15 @@ router.get('/:projectId', async (req: Request, res: Response) => {
     const { projectId } = params.data;
     const userId = (req as AuthRequest).user!.id;
 
-    const realProjectId = await resolveRealProjectId(projectId, userId);
-    if (realProjectId === null) {
+    const project = await resolveProject(projectId, userId);
+    if (project === null) {
       return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
     }
 
-    const taskRows = await fetchTaskRows(realProjectId);
-    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(realProjectId, taskRows);
+    const taskRows = await fetchTaskRows(project.realProjectId);
+    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(project.realProjectId, taskRows);
 
-    res.json({ success: true, data: { members, groupSatisfactionScore } });
+    res.json({ success: true, data: { members, groupSatisfactionScore, projectName: project.projectName } });
   } catch (error: any) {
     routeLogger.error({ err: error.message }, 'GET /api/team/:projectId error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });

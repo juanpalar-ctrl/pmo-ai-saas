@@ -33,6 +33,13 @@ export interface DisconnectionAlert {
   criticalDelayedCount: number;
 }
 
+export interface TeamProjectGroup {
+  projectId: number; // project_data.id — matches the :projectId convention used by /api/team/:projectId
+  projectName: string;
+  groupSatisfactionScore: number | null;
+  members: TeamMemberCard[];
+}
+
 /**
  * Feature 5.1 — extracts distinct assignee names from the normalized task
  * rows and upserts them as team members. Called right after upload; safe to
@@ -114,6 +121,58 @@ async function getTeamBoard(
       : null;
 
   return { members, groupSatisfactionScore };
+}
+
+async function fetchTaskRowsForProject(realProjectId: number): Promise<TransformedRow[]> {
+  const result = await pool.query(
+    `SELECT output FROM ai_analyses
+     WHERE projectid = $1 AND agenttype = 'normalization'
+     ORDER BY generatedat DESC LIMIT 1`,
+    [realProjectId]
+  );
+  return result.rows[0]?.output?.projects || [];
+}
+
+/**
+ * Team Morale (portfolio-wide) — same per-member computation as getTeamBoard,
+ * fanned out across every project of the user that has team members, plus an
+ * overall GSS across all of them. Backs GET /api/team (no projectId), used
+ * when the Team Morale page is opened from the portfolio rather than from a
+ * single project.
+ */
+async function getTeamBoardsForUser(
+  userId: string
+): Promise<{ groupSatisfactionScore: number | null; projects: TeamProjectGroup[] }> {
+  const projectRows = await pool.query(
+    `SELECT DISTINCT pd.id AS project_data_id, pd.projectid, pd.projectname
+     FROM team_members tm
+     JOIN project_data pd ON pd.projectid = tm.project_id
+     WHERE tm.user_id = $1
+     ORDER BY pd.projectname ASC
+     LIMIT 50`,
+    [userId]
+  );
+
+  const projects: TeamProjectGroup[] = [];
+  for (const row of projectRows.rows) {
+    const taskRows = await fetchTaskRowsForProject(row.projectid);
+    const { members, groupSatisfactionScore } = await getTeamBoard(row.projectid, taskRows);
+    if (members.length === 0) continue;
+    projects.push({
+      projectId: row.project_data_id,
+      projectName: row.projectname,
+      groupSatisfactionScore,
+      members,
+    });
+  }
+
+  const allScored = projects.flatMap((p) => p.members).filter((m) => m.latestWellbeingScore !== null);
+  const groupSatisfactionScore =
+    allScored.length > 0
+      ? Math.round((allScored.reduce((sum, m) => sum + (m.latestWellbeingScore as number), 0) / allScored.length) * 100)
+      : null;
+
+  return { groupSatisfactionScore, projects };
 }
 
 /**
@@ -214,6 +273,7 @@ async function getDisconnectionAlertsForRiskAgent(
 export const teamService = {
   autoPopulateTeam,
   getTeamBoard,
+  getTeamBoardsForUser,
   addFeedbackNote,
   getFeedbackNotes,
   updateMemberRole,

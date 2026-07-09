@@ -103,6 +103,42 @@ describe('getTeamBoard', () => {
   });
 });
 
+describe('getTeamBoardsForUser', () => {
+  it('aggregates team boards across all of a user\'s projects that have members', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ project_data_id: 10, projectid: 5, projectname: 'Proyecto X' }] }) // project list
+      .mockResolvedValueOnce({ rows: [{ output: { projects: [{ project_name: 'X', assignee: 'Ana', status: 'in progress' }] } }] }) // task rows
+      .mockResolvedValueOnce({ rows: [{ id: 1, name: 'Ana', role: 'Dev', last_feedback_at: daysAgo(1), latest_wellbeing_score: '0.9' }] }); // team_members
+
+    const result = await teamService.getTeamBoardsForUser('user-1');
+
+    expect(result.projects).toHaveLength(1);
+    expect(result.projects[0]).toMatchObject({ projectId: 10, projectName: 'Proyecto X', groupSatisfactionScore: 90 });
+    expect(result.projects[0].members).toHaveLength(1);
+    expect(result.groupSatisfactionScore).toBe(90);
+  });
+
+  it('skips projects that resolve to zero team members', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ project_data_id: 10, projectid: 5, projectname: 'Proyecto X' }] })
+      .mockResolvedValueOnce({ rows: [] }) // task rows
+      .mockResolvedValueOnce({ rows: [] }); // team_members empty
+
+    const result = await teamService.getTeamBoardsForUser('user-1');
+
+    expect(result.projects).toEqual([]);
+    expect(result.groupSatisfactionScore).toBeNull();
+  });
+
+  it('returns an empty aggregate when the user has no team members at all', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const result = await teamService.getTeamBoardsForUser('user-1');
+
+    expect(result).toEqual({ groupSatisfactionScore: null, projects: [] });
+  });
+});
+
 describe('addFeedbackNote', () => {
   it('analyzes the note, logs it, and refreshes the member row', async () => {
     mockQuery
