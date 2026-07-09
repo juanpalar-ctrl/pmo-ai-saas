@@ -9,10 +9,15 @@ import { dbLogger } from './core/logger';
 export async function runMigrations(): Promise<void> {
   dbLogger.info('Running database migrations...');
 
-  // Users table — includes role and status required by auth routes
+  // Users table — includes role and status required by auth routes.
+  // id is VARCHAR (not SERIAL): the app generates string ids ("user_<timestamp>"
+  // in auth.ts / seedAdminUser) and every FK to users(id) is VARCHAR(255)
+  // (project_data.user_id, team_members.user_id, password_resets.user_id).
+  // A SERIAL here would make fresh-DB deploys fail — the varchar FKs wouldn't
+  // match and signup's string id insert would error.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
+      id VARCHAR(255) PRIMARY KEY,
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(50) NOT NULL DEFAULT 'user',
@@ -195,11 +200,14 @@ export async function seedAdminUser(): Promise<void> {
 
   const bcrypt = await import('bcryptjs');
   const hash = await bcrypt.hash(password, 10);
+  // users.id has no DB default — generate it explicitly (same "user_<timestamp>"
+  // convention as signup in auth.ts).
+  const id = `user_${Date.now()}`;
   await pool.query(
-    `INSERT INTO users (email, password_hash, role, status)
-     VALUES ($1, $2, 'admin', 'active')
+    `INSERT INTO users (id, email, password_hash, role, status)
+     VALUES ($1, $2, $3, 'admin', 'active')
      ON CONFLICT (email) DO NOTHING`,
-    [email.toLowerCase(), hash]
+    [id, email.toLowerCase(), hash]
   );
   dbLogger.info({ email }, 'Admin user seeded');
 }

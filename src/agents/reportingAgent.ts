@@ -298,7 +298,6 @@ Revisar análisis completo de riesgos y económico para detalles adicionales.`;
         timestamp: new Date().toISOString(),
         projectId: input.projectId,
         analysis: { senior_report, technical_report },
-        confidence: 0.92,
         tokensUsed,
         executionTimeMs,
       };

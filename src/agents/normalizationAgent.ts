@@ -5,7 +5,7 @@
  * Implements retry logic and token optimization
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import { anthropicClient, aiConfig } from '../config/anthropic';
 import { ColumnSuggestion, ColumnSuggestionSchema } from '../config/validation';
 import { agentLogger } from '../core/logger';
 
@@ -81,8 +81,6 @@ function formatDataForAnalysis(headers: string[], sampleRows: Record<string, any
  * @throws Error if all retries exhausted
  */
 export async function detectColumns(input: NormalizationInput): Promise<NormalizationOutput> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
   const systemPrompt = createSystemPrompt();
   const dataForAnalysis = formatDataForAnalysis(input.headers, input.sampleRows);
 
@@ -97,9 +95,9 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
 
-      // Call Claude API
-      const response = await client.messages.create({
-        model: 'claude-opus-4-6',
+      // Call Claude API (shared client + centralized model from config/anthropic)
+      const response = await anthropicClient.messages.create({
+        model: aiConfig.model,
         max_tokens: 1000, // Sufficient for JSON response with ~20 columns
         system: systemPrompt,
         messages: [

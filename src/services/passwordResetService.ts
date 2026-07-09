@@ -47,8 +47,10 @@ export async function createPasswordResetToken(
       [crypto.randomUUID(), userId, token, expiresAt]
     );
 
-    // 4. Generar reset link (para mock, usamos localhost)
-    const resetLink = `http://localhost:3001/reset-password?token=${token}`;
+    // 4. Generar reset link. La base sale de APP_BASE_URL (p.ej.
+    // https://pmo-ai-saas.onrender.com en prod); localhost solo como fallback dev.
+    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3001';
+    const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
     serviceLogger.info({ email, expiresAt: expiresAt.toISOString() }, 'FORGOT PASSWORD mock email sent');
 

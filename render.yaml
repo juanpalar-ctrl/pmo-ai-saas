@@ -19,3 +19,6 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      # Base pública para los enlaces de reseteo de contraseña (passwordResetService)
+      - key: APP_BASE_URL
+        sync: false

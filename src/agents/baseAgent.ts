@@ -62,7 +62,6 @@ export abstract class BaseAgent implements IAgent {
         timestamp: new Date().toISOString(),
         projectId: input.projectId,
         analysis,
-        confidence: 0.92,
         tokensUsed: response.usage.output_tokens + response.usage.input_tokens,
         executionTimeMs,
       };

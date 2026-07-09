@@ -46,6 +46,7 @@ const mockGetDisconnectionAlerts = teamService.getDisconnectionAlertsForRiskAgen
 const baseMetrics = {
   projectName: 'Proyecto X',
   percentComplete: '50',
+  daysRemaining: 42,
   pv: '10000',
   ac: '4000',
   bac: '10000', ev: '5000', cv: '1000', sv: '-500',

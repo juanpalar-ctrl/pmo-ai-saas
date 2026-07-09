@@ -318,6 +318,9 @@
           <a href="/portfolio" class="flex items-center gap-1.5 text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition">
             <i class="fa-solid fa-briefcase text-teal-600"></i> <span class="hidden sm:inline">Portfolio C-Level</span>
           </a>
+          <a id="team-morale-nav-link" href="/team-morale" class="flex items-center gap-1.5 text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition">
+            <i class="fa-solid fa-users text-teal-600"></i> <span class="hidden sm:inline">Team Morale</span>
+          </a>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
           <span class="hidden lg:inline text-sm text-gray-600">👋 Bienvenido, <strong class="text-gray-800" id="userEmail"></strong></span>
@@ -481,18 +484,23 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-xl p-6 shadow-lg space-y-4">
+        <div class="bg-white rounded-xl p-6 shadow-lg space-y-3" id="team-summary-card">
           <div class="flex items-center justify-between border-b border-teal-200 pb-4 flex-wrap gap-2">
             <div class="flex items-center space-x-3">
               <i class="fa-solid fa-people-group text-teal-600 text-2xl"></i>
               <div>
-                <h3 class="font-bold text-lg text-gray-800">Tablero de Equipo</h3>
+                <h3 class="font-bold text-lg text-gray-800">Resumen de Equipo</h3>
                 <p class="text-xs text-gray-500 mt-1">Moral y feedback del personal asignado</p>
               </div>
             </div>
-            <div id="team-gss-badge"></div>
           </div>
-          <div id="team-board-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          <div id="team-summary-body" class="flex flex-wrap items-center gap-4">
+            <p class="text-gray-400 text-sm">Cargando...</p>
+          </div>
+          <div id="team-summary-insight"></div>
+          <a id="team-summary-link" href="/team-morale" class="block text-center border border-teal-200 text-teal-700 hover:bg-teal-50 font-semibold text-sm py-2 rounded-lg transition">
+            Ver equipo completo <i class="fa-solid fa-arrow-right ml-1"></i>
+          </a>
         </div>
 
         <div class="bg-white rounded-xl p-6 shadow-lg space-y-6 pdf-report-section">
@@ -542,24 +550,6 @@
     </div>
   </div>
 
-  <!-- MODAL FEEDBACK 1-ON-1 -->
-  <div id="feedbackModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-      <div style="background: linear-gradient(to right, #17B8A0, #0B7B8C); color: white; padding: 24px;">
-        <h2 style="font-size: 1.3em; font-weight: bold; margin: 0;">Registrar feedback</h2>
-        <p id="feedback-modal-subtitle" style="font-size: 0.9em; margin: 8px 0 0 0; opacity: 0.9;"></p>
-      </div>
-      <div style="padding: 24px;">
-        <textarea id="feedback-note-text" rows="4" placeholder="¿Cómo está el equipo? ej. 'Se siente frustrado por la falta de especificación en el diseño de las APIs, pero está motivado con el proyecto'" style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px; font-family:inherit; font-size:0.9em;"></textarea>
-        <div id="feedback-result" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:#f0fdf4; border:1px solid #86efac;"></div>
-      </div>
-      <div style="background: #f5f5f5; padding: 16px 24px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; gap: 12px;">
-        <button onclick="closeFeedbackModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cerrar</button>
-        <button onclick="submitFeedback()" id="submitFeedbackBtn" style="background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Guardar</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     let activeFramework = 'scrum';
     let myChart = null;
@@ -583,7 +573,7 @@
       await loadHistory();
       switchFramework(activeFramework);
       loadReports();
-      renderTeamBoard();
+      renderTeamSummary();
     };
 
     function toggleAdminPanel() {
@@ -1191,135 +1181,61 @@
       }).join('');
     }
 
-    // ── Tablero de Equipo (Hito 5) ──────────────────────────────────
-    let teamMembersCache = [];
-    let activeFeedbackMemberId = null;
-
-    function levelToRag(level) {
-      // Team semaphore only has green/orange/red; reuse the existing
-      // green/yellow/red RAG palette (orange -> yellow key).
-      return level === 'orange' ? 'yellow' : level;
-    }
-
-    async function renderTeamBoard() {
-      const grid = document.getElementById('team-board-grid');
-      const gssBadge = document.getElementById('team-gss-badge');
+    // ── Resumen de Equipo (global, no per-member cards — those live on Team Morale) ──
+    async function renderTeamSummary() {
+      const body = document.getElementById('team-summary-body');
+      const insight = document.getElementById('team-summary-insight');
+      const link = document.getElementById('team-summary-link');
+      const navLink = document.getElementById('team-morale-nav-link');
       const projectId = new URLSearchParams(location.search).get('id');
       if (!projectId) return;
 
+      link.href = `/team-morale?id=${projectId}`;
+      if (navLink) navLink.href = `/team-morale?id=${projectId}`;
+
       try {
         const r = await fetch(`/api/team/${projectId}`, { credentials: 'include' });
-        if (!r.ok) { grid.innerHTML = ''; gssBadge.innerHTML = ''; return; }
         const json = await r.json();
-        if (!json.success) { grid.innerHTML = ''; gssBadge.innerHTML = ''; return; }
+        if (!r.ok || !json.success) { body.innerHTML = ''; insight.innerHTML = ''; return; }
 
         const { members, groupSatisfactionScore } = json.data;
-        teamMembersCache = members;
-
-        gssBadge.innerHTML = groupSatisfactionScore !== null
-          ? ragBadge(groupSatisfactionScore >= 70 ? 'green' : groupSatisfactionScore >= 50 ? 'yellow' : 'red', `Satisfacción del equipo: ${groupSatisfactionScore}%`)
-          : '';
 
         if (members.length === 0) {
-          grid.innerHTML = `<p class="text-gray-500 text-sm col-span-full">Aún no se detectó personal asignado. Mapea la columna "Responsable / Asignado a" al subir tu Excel para poblar este tablero.</p>`;
+          body.innerHTML = `<p class="text-gray-500 text-sm">Aún no se detectó personal asignado. Mapea la columna "Responsable / Asignado a" al subir tu Excel para poblar el equipo.</p>`;
+          insight.innerHTML = '';
           return;
         }
 
-        grid.innerHTML = members.map(m => {
-          const rag = levelToRag(m.disconnectionLevel);
-          const col = RAG_COLORS[rag];
-          const scoreLabel = m.latestWellbeingScore !== null ? `${(m.latestWellbeingScore * 100).toFixed(0)}%` : 'Sin datos';
-          const tasksHtml = m.currentTasks.length > 0
-            ? m.currentTasks.map(t => `<span class="text-xs bg-gray-100 border rounded px-2 py-0.5 text-gray-600 truncate max-w-[140px] inline-block" title="${t}">${t}</span>`).join(' ')
-            : '<span class="text-xs text-gray-400">Sin tareas activas</span>';
+        // Team semaphore only has green/orange/red; reuse the existing
+        // green/yellow/red RAG palette (orange -> yellow key).
+        const toRag = (level) => level === 'orange' ? 'yellow' : level;
+        const counts = { green: 0, yellow: 0, red: 0 };
+        members.forEach(m => counts[toRag(m.disconnectionLevel)]++);
 
-          return `
-            <div class="bg-white rounded-xl p-4 shadow-md border-t-4 ${col.border} hover:shadow-lg transition">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <p class="font-bold text-gray-800 truncate">${m.name}</p>
-                  <button class="text-xs text-teal-600 hover:underline" onclick="editMemberRole(${m.id}, '${(m.role || '').replace(/'/g, "\\'")}')">
-                    ${m.role ? m.role : '+ Agregar rol'}
-                  </button>
-                </div>
-                ${ragBadge(rag, rag === 'green' ? 'Al día' : rag === 'yellow' ? 'Reconectar' : 'Burnout')}
-              </div>
-              <div class="mt-3 flex flex-wrap gap-1">${tasksHtml}</div>
-              <div class="mt-3 flex items-center justify-between">
-                <span class="text-xs text-gray-500">🙂 Bienestar: <span class="font-semibold ${col.text}">${scoreLabel}</span></span>
-                <button class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3 py-1 rounded-lg" onclick="openFeedbackModal(${m.id}, '${m.name.replace(/'/g, "\\'")}')">
-                  + Feedback
-                </button>
-              </div>
-            </div>`;
-        }).join('');
-      } catch (_) {
-        grid.innerHTML = '';
-      }
-    }
+        const scoreHtml = groupSatisfactionScore !== null
+          ? `<div><span class="text-2xl font-bold text-gray-800">${groupSatisfactionScore}%</span><p class="text-xs text-gray-400">satisfacción grupal</p></div>`
+          : `<div><span class="text-2xl font-bold text-gray-400">—</span><p class="text-xs text-gray-400">sin feedback aún</p></div>`;
 
-    function openFeedbackModal(memberId, memberName) {
-      activeFeedbackMemberId = memberId;
-      document.getElementById('feedback-modal-subtitle').textContent = memberName;
-      document.getElementById('feedback-note-text').value = '';
-      document.getElementById('feedback-result').style.display = 'none';
-      document.getElementById('feedbackModal').style.display = 'flex';
-    }
+        body.innerHTML = scoreHtml + `
+          <div class="flex gap-4 text-sm text-gray-600">
+            <span class="flex items-center gap-1.5">${RAG_COLORS.green.emoji} ${counts.green} al día</span>
+            <span class="flex items-center gap-1.5">${RAG_COLORS.yellow.emoji} ${counts.yellow} reconectar</span>
+            <span class="flex items-center gap-1.5">${RAG_COLORS.red.emoji} ${counts.red} burnout</span>
+          </div>`;
 
-    function closeFeedbackModal() {
-      document.getElementById('feedbackModal').style.display = 'none';
-      activeFeedbackMemberId = null;
-    }
-
-    async function submitFeedback() {
-      const noteText = document.getElementById('feedback-note-text').value.trim();
-      if (!noteText || !activeFeedbackMemberId) return;
-
-      const projectId = new URLSearchParams(location.search).get('id');
-      const btn = document.getElementById('submitFeedbackBtn');
-      btn.disabled = true;
-      btn.textContent = 'Analizando...';
-
-      try {
-        const r = await fetch(`/api/team/${projectId}/members/${activeFeedbackMemberId}/feedback`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ noteText }),
-        });
-        const json = await r.json();
-        const resultBox = document.getElementById('feedback-result');
-        if (json.success) {
-          resultBox.style.display = 'block';
-          resultBox.innerHTML = `<p class="text-sm text-green-800"><strong>Score de bienestar: ${(json.data.wellbeingScore * 100).toFixed(0)}%</strong></p><p class="text-xs text-green-700 mt-1">${json.data.reasoning}</p>`;
-          await renderTeamBoard();
+        if (counts.red > 0) {
+          const atRisk = members.find(m => toRag(m.disconnectionLevel) === 'red');
+          const scoreLabel = atRisk.latestWellbeingScore !== null ? ` (${(atRisk.latestWellbeingScore * 100).toFixed(0)}% bienestar)` : '';
+          insight.innerHTML = `<div class="rag-bg-red border rounded-lg px-3 py-2 text-sm rag-red">${atRisk.name} muestra señales de burnout${scoreLabel}</div>`;
+        } else if (counts.yellow > 0) {
+          insight.innerHTML = `<div class="rag-bg-yellow border rounded-lg px-3 py-2 text-sm rag-yellow">${counts.yellow} persona(s) necesitan reconectar — revisa el detalle</div>`;
         } else {
-          resultBox.style.display = 'block';
-          resultBox.innerHTML = `<p class="text-sm text-red-700">${json.error || 'Error al guardar el feedback'}</p>`;
+          insight.innerHTML = '';
         }
       } catch (_) {
-        document.getElementById('feedback-result').style.display = 'block';
-        document.getElementById('feedback-result').innerHTML = `<p class="text-sm text-red-700">Error de conexión</p>`;
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Guardar';
+        body.innerHTML = '';
+        insight.innerHTML = '';
       }
-    }
-
-    async function editMemberRole(memberId, currentRole) {
-      const role = prompt('Rol de este miembro del equipo:', currentRole || '');
-      if (role === null || role.trim() === '') return;
-
-      const projectId = new URLSearchParams(location.search).get('id');
-      try {
-        await fetch(`/api/team/${projectId}/members/${memberId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ role: role.trim() }),
-        });
-        await renderTeamBoard();
-      } catch (_) {}
     }
     // ─────────────────────────────────────────────────────────────
 

@@ -12,8 +12,8 @@ export const anthropicClient = new Anthropic({
 
 // Configuración por defecto para todos los agentes
 export const aiConfig = {
-  // Modelo a usar
-  model: process.env.AI_MODEL || 'claude-opus-4-6',
+  // Modelo a usar (configurable con AI_MODEL; default: modelo Opus vigente)
+  model: process.env.AI_MODEL || 'claude-opus-4-8',
   
   // Máximo de tokens en la respuesta
   maxTokens: parseInt(process.env.AI_MAX_TOKENS || '2000', 10),

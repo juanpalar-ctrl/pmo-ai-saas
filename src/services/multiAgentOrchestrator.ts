@@ -53,7 +53,7 @@ export const orchestrator = {
     const input = {
       projectId,
       projectName: metrics.projectName,
-      timeline: { percentageComplete: parseFloat(metrics.percentComplete as string), daysRemaining: 30 },
+      timeline: { percentageComplete: parseFloat(metrics.percentComplete as string), daysRemaining: metrics.daysRemaining },
       budget: { total: parseFloat(metrics.pv as string), spent: parseFloat(metrics.ac as string) },
       moraleAlerts,
       lang,

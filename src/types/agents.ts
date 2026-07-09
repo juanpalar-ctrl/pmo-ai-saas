@@ -24,7 +24,6 @@ export interface AgentOutput {
   timestamp: string;
   projectId: number;
   analysis: any;
-  confidence: number;
   tokensUsed?: number;
   executionTimeMs?: number;
 }
