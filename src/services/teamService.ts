@@ -38,11 +38,22 @@ export interface DisconnectionAlert {
  * rows and upserts them as team members. Called right after upload; safe to
  * re-run (ON CONFLICT DO NOTHING against the case-insensitive unique index).
  */
+// The "assignee" field comes from whatever Excel column the user mapped to
+// it during upload — nothing guarantees that column actually holds person
+// names. Column mismatches (e.g. mapping a "resources" breakdown column
+// instead of "Responsable") produce JSON blobs here; reject anything that
+// doesn't plausibly look like a name rather than polluting the team board.
+function looksLikePersonName(value: string): boolean {
+  if (value.length === 0 || value.length > 100) return false;
+  if (/^[[{]/.test(value)) return false;
+  return true;
+}
+
 async function autoPopulateTeam(projectId: number, userId: string, taskRows: TransformedRow[]): Promise<void> {
   const names = new Set<string>();
   for (const row of taskRows) {
     const name = (row.assignee || '').trim();
-    if (name) names.add(name);
+    if (name && looksLikePersonName(name)) names.add(name);
   }
 
   for (const name of names) {

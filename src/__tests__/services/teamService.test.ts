@@ -52,6 +52,23 @@ describe('autoPopulateTeam', () => {
       teamService.autoPopulateTeam(1, 'user-1', [{ project_name: 'A', assignee: 'Ana' }])
     ).resolves.toBeUndefined();
   });
+
+  it('skips assignee values that are JSON blobs from a mismapped column', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    const badAssignee = JSON.stringify([{ role: 'QA Engineer', count: 3, costPerMonth: 3500 }]);
+    const taskRows: TransformedRow[] = [
+      { project_name: 'A', assignee: badAssignee },
+      { project_name: 'B', assignee: 'Ana Torres' },
+    ];
+
+    await teamService.autoPopulateTeam(1, 'user-1', taskRows);
+
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO team_members'),
+      [1, 'user-1', 'Ana Torres']
+    );
+  });
 });
 
 describe('getTeamBoard', () => {
