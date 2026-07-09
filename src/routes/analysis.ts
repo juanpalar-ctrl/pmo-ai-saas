@@ -5,8 +5,22 @@ import { generateMockAnalysis, isMockEnabled, getCacheDurationHours } from '../u
 import { ProjectIdParamSchema, AnalysisBodySchema, OrgQuerySchema } from '../config/validation';
 import { normalizeLang } from '../config/language';
 import { routeLogger } from '../core/logger';
+import { AuthRequest } from '../middleware/requireAuth';
 
 const router = express.Router();
+
+// Ownership gate: an analysis is scoped to whoever owns the matching project_data
+// row (same model as /api/data/*). Without this, any authenticated user could
+// read/generate analysis for another user's projectid — and projectid is a
+// timestamp (dataMapping.ts), so it's enumerable. ai_analyses itself has no
+// user_id column yet, so we verify ownership through project_data.
+async function userOwnsProject(projectId: number, userId: string): Promise<boolean> {
+  const result = await pool.query(
+    'SELECT 1 FROM project_data WHERE projectid = $1 AND user_id = $2 LIMIT 1',
+    [projectId, userId]
+  );
+  return result.rows.length > 0;
+}
 
 // Función para verificar si análisis es válido en cache
 async function getCachedAnalysis(projectId: number) {
@@ -33,6 +47,11 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     // Idioma del contenido IA: explícito del body, o detectado del navegador
     // vía Accept-Language; default 'es' (comportamiento histórico).
     const lang = body.data.lang ?? normalizeLang(req.headers['accept-language']);
+
+    const userId = (req as AuthRequest).user!.id;
+    if (!(await userOwnsProject(projectId, userId))) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
 
     // Si USE_MOCK_DATA está activado, devolver mock sin llamar API
     if (isMockEnabled() && !forceRefresh) {
@@ -87,11 +106,17 @@ router.get('/:projectId/latest', async (req: Request, res: Response) => {
     const params = ProjectIdParamSchema.safeParse(req.params);
     if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
     const projectId = params.data.projectId;
+
+    const userId = (req as AuthRequest).user!.id;
+    if (!(await userOwnsProject(projectId, userId))) {
+      return res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
+    }
+
     const result = await pool.query(
       `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
       [projectId]
     );
-    
+
     if (!result.rows[0]) {
       return res.json({ success: false, message: 'No hay análisis' });
     }
@@ -116,6 +141,11 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
     const params = ProjectIdParamSchema.safeParse(req.params);
     if (!params.success) return res.status(400).json({ success: false, error: 'projectId inválido' });
     const projectId = params.data.projectId;
+
+    const userId = (req as AuthRequest).user!.id;
+    if (!(await userOwnsProject(projectId, userId))) {
+      return res.status(404).send('<h1>Proyecto no encontrado</h1>');
+    }
 
     const query = OrgQuerySchema.safeParse(req.query);
     const org = escapeHtml(query.success ? query.data.org : 'Sin especificar');

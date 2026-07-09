@@ -16,8 +16,17 @@ import { orchestrator } from '../../services/multiAgentOrchestrator';
 const mockQuery = pool.query as jest.Mock;
 const mockAnalyzeProject = orchestrator.analyzeProject as jest.Mock;
 
+// Ownership gate query result: a non-empty row means "user owns this projectid".
+const OWNS = { rows: [{ '?column?': 1 }] };
+const NOT_OWNS = { rows: [] };
+
 const app = express();
 app.use(express.json());
+// Simulate requireAuth (mounted before analysisRouter in production).
+app.use((req, _res, next) => {
+  (req as any).user = { id: 'u1', email: 'u@b.com', role: 'user' };
+  next();
+});
 app.use('/api/analysis', analysisRouter);
 
 const ORIGINAL_ENV = process.env;
@@ -43,9 +52,19 @@ describe('POST /api/analysis/:projectId', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 404 when the user does not own the projectid', async () => {
+    mockQuery.mockResolvedValueOnce(NOT_OWNS); // ownership gate
+
+    const res = await request(app).post('/api/analysis/1').send({ framework: 'scrum' });
+
+    expect(res.status).toBe(404);
+    expect(mockAnalyzeProject).not.toHaveBeenCalled();
+  });
+
   it('returns mock data without calling the orchestrator when USE_MOCK_DATA=true', async () => {
     process.env.USE_MOCK_DATA = 'true';
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce(OWNS);       // ownership gate
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // mock insert
 
     const res = await request(app).post('/api/analysis/1').send({ framework: 'scrum' });
 
@@ -55,6 +74,7 @@ describe('POST /api/analysis/:projectId', () => {
   });
 
   it('returns cached analysis when a recent one exists and forceRefresh is not set', async () => {
+    mockQuery.mockResolvedValueOnce(OWNS); // ownership gate
     mockQuery.mockResolvedValueOnce({ rows: [{ output: { some: 'data' }, generatedat: '2026-01-01' }] });
 
     const res = await request(app).post('/api/analysis/1').send({ framework: 'scrum' });
@@ -65,7 +85,8 @@ describe('POST /api/analysis/:projectId', () => {
   });
 
   it('runs a fresh analysis when there is no cache', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce(OWNS);       // ownership gate
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // cache lookup
     mockAnalyzeProject.mockResolvedValueOnce({ risk: {}, economic: {} });
 
     const res = await request(app).post('/api/analysis/1').send({ framework: 'scrum' });
@@ -77,6 +98,7 @@ describe('POST /api/analysis/:projectId', () => {
   });
 
   it('forces a fresh analysis even when a cache entry exists, when forceRefresh=true', async () => {
+    mockQuery.mockResolvedValueOnce(OWNS); // ownership gate
     mockQuery.mockResolvedValueOnce({ rows: [{ output: { stale: true }, generatedat: '2026-01-01' }] });
     mockAnalyzeProject.mockResolvedValueOnce({ fresh: true });
 
@@ -88,7 +110,8 @@ describe('POST /api/analysis/:projectId', () => {
   });
 
   it('returns 500 when the orchestrator throws', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce(OWNS);       // ownership gate
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // cache lookup
     mockAnalyzeProject.mockRejectedValueOnce(new Error('AI service down'));
 
     const res = await request(app).post('/api/analysis/1').send({ framework: 'scrum' });
@@ -103,14 +126,22 @@ describe('GET /api/analysis/:projectId/latest', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 404 when the user does not own the projectid', async () => {
+    mockQuery.mockResolvedValueOnce(NOT_OWNS); // ownership gate
+    const res = await request(app).get('/api/analysis/1/latest');
+    expect(res.status).toBe(404);
+  });
+
   it('returns success:false when there is no analysis yet', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce(OWNS);       // ownership gate
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // analysis lookup
     const res = await request(app).get('/api/analysis/1/latest');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(false);
   });
 
   it('returns the latest stored analysis', async () => {
+    mockQuery.mockResolvedValueOnce(OWNS); // ownership gate
     mockQuery.mockResolvedValueOnce({ rows: [{ output: { foo: 'bar' }, generatedat: '2026-01-01' }] });
     const res = await request(app).get('/api/analysis/1/latest');
     expect(res.status).toBe(200);
@@ -124,14 +155,22 @@ describe('GET /api/analysis/:projectId/view', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 404 when the user does not own the projectid', async () => {
+    mockQuery.mockResolvedValueOnce(NOT_OWNS); // ownership gate
+    const res = await request(app).get('/api/analysis/1/view');
+    expect(res.status).toBe(404);
+  });
+
   it('renders a fallback page when there is no analysis', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce(OWNS);       // ownership gate
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // analysis lookup
     const res = await request(app).get('/api/analysis/1/view');
     expect(res.status).toBe(200);
     expect(res.text).toContain('No hay análisis');
   });
 
   it('escapes HTML in the org query param to prevent XSS', async () => {
+    mockQuery.mockResolvedValueOnce(OWNS); // ownership gate
     mockQuery.mockResolvedValueOnce({
       rows: [{ output: { risk: {}, economic: {}, reports: {} }, generatedat: '2026-01-01' }],
     });
