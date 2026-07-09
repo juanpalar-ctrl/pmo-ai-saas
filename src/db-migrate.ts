@@ -59,6 +59,12 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
+  // Backfill: velocitydata was added to the code after project_data already
+  // existed on this DB, so CREATE TABLE IF NOT EXISTS above silently skipped it.
+  await pool.query(`
+    ALTER TABLE project_data ADD COLUMN IF NOT EXISTS velocitydata JSONB
+  `);
+
   // Owner of each project — enables per-user data isolation (portfolio, history, chat context)
   // users.id is VARCHAR(255) (e.g. "user_<timestamp>"), not a serial int — match that type.
   await pool.query(`
@@ -66,6 +72,11 @@ export async function runMigrations(): Promise<void> {
   `);
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_project_data_user_id ON project_data(user_id)
+  `);
+  // saveProject() upserts on (projectid, user_id) — each user has their own
+  // row per business projectid. Needed for ON CONFLICT to have a target.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_project_data_projectid_user_id ON project_data(projectid, user_id)
   `);
   // Backfill legacy rows (created before ownership existed) to the first admin,
   // so they stay accessible to someone instead of becoming permanently orphaned.

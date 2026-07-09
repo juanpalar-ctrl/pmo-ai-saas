@@ -205,7 +205,11 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
  
 router.get('/analysis/:projectId/latest', async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.params;
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ success: false, message: 'projectId inválido' });
+    }
+    const { projectId } = params.data;
     const userId = (req as AuthRequest).user!.id;
 
     const projectResult = await pool.query(

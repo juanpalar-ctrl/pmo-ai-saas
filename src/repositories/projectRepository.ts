@@ -126,7 +126,7 @@ export class ProjectRepository {
         `INSERT INTO project_data
          (projectId, projectName, status, timelineData, velocityData, workPendingData, budgetData, resourcesData, risksData, user_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (projectId) DO UPDATE SET
+         ON CONFLICT (projectId, user_id) DO UPDATE SET
          projectName = EXCLUDED.projectName,
          status = EXCLUDED.status,
          timelineData = EXCLUDED.timelineData,
