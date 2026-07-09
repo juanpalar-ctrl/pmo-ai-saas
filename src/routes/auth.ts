@@ -100,6 +100,17 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
+    // Block login for accounts an admin rejected (via /api/admin/update-status).
+    // Without this the login gate only excluded 'pending_approval', so a
+    // rejected user could still sign in — defeating the rejection.
+    if (user.status === 'rejected') {
+      res.clearCookie('auth_token');
+      return res.status(403).json({
+        code: 'ERR_REJECTED',
+        message: AUTH_MESSAGES.REJECTED,
+      });
+    }
+
     // Verify password
     const isValid = await bcrypt.compare(password, user.password_hash);
 

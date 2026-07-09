@@ -7,6 +7,8 @@
 export const AUTH_MESSAGES = {
   PENDING_APPROVAL:
     "Tu registro se completó con éxito. Tu cuenta está en espera de aprobación por el Administrador.",
+  REJECTED:
+    "Tu cuenta fue rechazada por el administrador. Contacta a soporte si crees que es un error.",
   LOGIN_SUCCESS: "Inicio de sesión exitoso.",
   INVALID_CREDENTIALS: "Credenciales inválidas.",
   USER_NOT_FOUND: "Usuario no encontrado.",
