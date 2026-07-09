@@ -15,6 +15,9 @@ const mockQuery = pool.query as jest.Mock;
 
 beforeEach(() => {
   mockQuery.mockReset();
+  // The reset link base is env-driven; keep the default (localhost) unless a
+  // test opts into APP_BASE_URL explicitly.
+  delete process.env.APP_BASE_URL;
 });
 
 describe('createPasswordResetToken', () => {
@@ -46,6 +49,19 @@ describe('createPasswordResetToken', () => {
 
     expect(result?.token).toMatch(/^[a-f0-9]{64}$/);
     expect(result?.resetLink).toBe(`http://localhost:3001/reset-password?token=${result?.token}`);
+  });
+
+  it('builds the reset link from APP_BASE_URL when it is set (production)', async () => {
+    process.env.APP_BASE_URL = 'https://pmo-ai-saas.onrender.com';
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'user-1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await createPasswordResetToken('me@b.com');
+
+    expect(result?.resetLink).toBe(`https://pmo-ai-saas.onrender.com/reset-password?token=${result?.token}`);
+    expect(result?.resetLink).not.toContain('localhost');
   });
 
   it('propagates errors from the database', async () => {
