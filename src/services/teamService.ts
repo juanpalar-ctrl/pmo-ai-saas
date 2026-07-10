@@ -299,6 +299,51 @@ async function getFeedbackNotes(teamMemberId: number, projectId: number, userId:
   }));
 }
 
+/**
+ * Manual resource management — lets the user add a team member who wasn't in
+ * the uploaded file (or remove one). Complements autoPopulateTeam: same table,
+ * same case-insensitive uniqueness (idx_team_members_project_name_ci).
+ */
+async function createMember(
+  projectId: number,
+  userId: string,
+  name: string,
+  role?: string | null
+): Promise<{ id: number; name: string; role: string | null }> {
+  try {
+    const result = await pool.query(
+      `INSERT INTO team_members (project_id, user_id, name, role)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, role`,
+      [projectId, userId, name, role?.trim() || null]
+    );
+    return result.rows[0];
+  } catch (error: any) {
+    // 23505 = unique_violation against the (project_id, lower(name)) index.
+    if (error.code === '23505') {
+      throw new Error('Ya existe un recurso con ese nombre en el proyecto');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Hard-deletes a team member (and, via ON DELETE CASCADE, their feedback notes).
+ * Scoped by project_id + user_id so it can't touch another tenant's row.
+ * Note: a member auto-populated from the "assignee" column will re-appear on the
+ * next upload of that same file — manual delete is permanent only for people not
+ * present in the source data.
+ */
+async function deleteMember(teamMemberId: number, projectId: number, userId: string): Promise<void> {
+  const result = await pool.query(
+    `DELETE FROM team_members WHERE id = $1 AND project_id = $2 AND user_id = $3`,
+    [teamMemberId, projectId, userId]
+  );
+  if (result.rowCount === 0) {
+    throw new Error('Miembro de equipo no encontrado');
+  }
+}
+
 async function updateMemberRole(teamMemberId: number, projectId: number, userId: string, role: string): Promise<void> {
   const result = await pool.query(
     `UPDATE team_members SET role = $1, updated_at = NOW() WHERE id = $2 AND project_id = $3 AND user_id = $4`,
@@ -334,6 +379,8 @@ export const teamService = {
   getTeamBoardsForUser,
   addFeedbackNote,
   getFeedbackNotes,
+  createMember,
+  deleteMember,
   updateMemberRole,
   getDisconnectionAlertsForRiskAgent,
 };

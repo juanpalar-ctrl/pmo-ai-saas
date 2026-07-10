@@ -89,6 +89,9 @@
             <div class="flex items-center gap-2 flex-wrap">
               <label for="project-select" class="text-xs font-semibold text-gray-500 uppercase">Proyecto</label>
               <select id="project-select" onchange="onProjectChange(this.value)" class="text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg px-3 py-2 bg-white"></select>
+              <button id="add-member-btn" onclick="openCreateModal()" class="hidden text-sm bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-2 rounded-lg whitespace-nowrap">
+                <i class="fa-solid fa-user-plus"></i> Agregar recurso
+              </button>
             </div>
             <div id="gss-badge"></div>
           </div>
@@ -122,6 +125,27 @@
       <div style="background: #f5f5f5; padding: 16px 24px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; gap: 12px;">
         <button onclick="closeFeedbackModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cerrar</button>
         <button onclick="submitFeedback()" id="submitFeedbackBtn" style="background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CREAR RECURSO MANUAL -->
+  <div id="createModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 460px; width: 90%;">
+      <div style="background: linear-gradient(to right, #17B8A0, #0B7B8C); color: white; padding: 24px;">
+        <h2 style="font-size: 1.3em; font-weight: bold; margin: 0;">Agregar recurso</h2>
+        <p id="create-modal-subtitle" style="font-size: 0.9em; margin: 8px 0 0 0; opacity: 0.9;"></p>
+      </div>
+      <div style="padding: 24px;">
+        <label style="font-size: 0.8em; font-weight: 600; color: #555;">Nombre <span style="color:#dc2626;">*</span></label>
+        <input id="create-member-name" type="text" placeholder="ej. Ana Torres" style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px; margin:6px 0 14px; font-family:inherit; font-size:0.9em;">
+        <label style="font-size: 0.8em; font-weight: 600; color: #555;">Rol (opcional)</label>
+        <input id="create-member-role" type="text" placeholder="ej. QA Lead" style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px; margin:6px 0 0; font-family:inherit; font-size:0.9em;">
+        <div id="create-result" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; font-size:0.85em;"></div>
+      </div>
+      <div style="background: #f5f5f5; padding: 16px 24px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; gap: 12px;">
+        <button onclick="closeCreateModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
+        <button onclick="submitCreateMember()" id="submitCreateBtn" style="background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Agregar</button>
       </div>
     </div>
   </div>
@@ -236,6 +260,11 @@
     function render() {
       const scoped = scopedProjects();
       const showTag = currentProjectId === 'all' && scoped.length > 1;
+
+      // "Agregar recurso" needs a single project to attach to — only show it
+      // when a specific project (not "Todos") is selected.
+      const addBtn = document.getElementById('add-member-btn');
+      addBtn.classList.toggle('hidden', currentProjectId === 'all');
       const flat = scoped.flatMap(p => p.members.map(m => ({ ...m, projectId: p.projectId, projectName: p.projectName })));
 
       const gss = currentProjectId === 'all' ? overallGSS : (scoped[0]?.groupSatisfactionScore ?? null);
@@ -289,7 +318,12 @@
               </button>
               ${tag}
             </div>
-            ${ragBadge(m.overallLevel, OVERALL_LABEL[m.overallLevel])}
+            <div class="flex items-center gap-2 flex-shrink-0">
+              ${ragBadge(m.overallLevel, OVERALL_LABEL[m.overallLevel])}
+              <button class="text-gray-300 hover:text-red-500 transition" title="Eliminar recurso" onclick="deleteMember(${m.projectId}, ${m.id}, '${m.name.replace(/'/g, "\\'")}')">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
           </div>
           <div class="grid grid-cols-2 border-t border-gray-100">
             <div class="p-3 border-r border-gray-100">
@@ -382,6 +416,78 @@
         });
         await loadTeamData();
       } catch (_) {}
+    }
+
+    function openCreateModal() {
+      if (currentProjectId === 'all') return;
+      const proj = projects.find(p => String(p.projectId) === String(currentProjectId));
+      document.getElementById('create-modal-subtitle').textContent = proj ? proj.projectName : '';
+      document.getElementById('create-member-name').value = '';
+      document.getElementById('create-member-role').value = '';
+      document.getElementById('create-result').style.display = 'none';
+      document.getElementById('createModal').style.display = 'flex';
+      document.getElementById('create-member-name').focus();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').style.display = 'none';
+    }
+
+    async function submitCreateMember() {
+      const name = document.getElementById('create-member-name').value.trim();
+      const role = document.getElementById('create-member-role').value.trim();
+      const resultBox = document.getElementById('create-result');
+      if (!name) {
+        resultBox.style.display = 'block';
+        resultBox.textContent = 'El nombre es obligatorio.';
+        return;
+      }
+      if (currentProjectId === 'all') return;
+
+      const btn = document.getElementById('submitCreateBtn');
+      btn.disabled = true;
+      btn.textContent = 'Agregando...';
+
+      try {
+        const r = await fetch(`/api/team/${currentProjectId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, role: role || null }),
+        });
+        const json = await r.json();
+        if (json.success) {
+          closeCreateModal();
+          await loadTeamData();
+        } else {
+          resultBox.style.display = 'block';
+          resultBox.textContent = typeof json.error === 'string' ? json.error : 'No se pudo agregar el recurso.';
+        }
+      } catch (_) {
+        resultBox.style.display = 'block';
+        resultBox.textContent = 'Error de conexión.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Agregar';
+      }
+    }
+
+    async function deleteMember(projectId, memberId, memberName) {
+      if (!confirm(`¿Eliminar a "${memberName}" del equipo? Se borrará también su historial de feedback.`)) return;
+      try {
+        const r = await fetch(`/api/team/${projectId}/members/${memberId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        const json = await r.json();
+        if (json.success) {
+          await loadTeamData();
+        } else {
+          alert(typeof json.error === 'string' ? json.error : 'No se pudo eliminar el recurso.');
+        }
+      } catch (_) {
+        alert('Error de conexión.');
+      }
     }
 
     function logout() {

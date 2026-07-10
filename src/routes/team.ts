@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import { pool } from '../db';
 import { routeLogger } from '../core/logger';
 import { AuthRequest } from '../middleware/requireAuth';
-import { ProjectIdParamSchema, TeamFeedbackSchema, TeamRoleSchema } from '../config/validation';
+import { ProjectIdParamSchema, TeamFeedbackSchema, TeamRoleSchema, TeamMemberCreateSchema } from '../config/validation';
 import { teamService } from '../services/teamService';
 
 const router = express.Router();
@@ -67,6 +67,63 @@ router.get('/:projectId', async (req: Request, res: Response) => {
     res.json({ success: true, data: { members, groupSatisfactionScore, projectName: project.projectName } });
   } catch (error: any) {
     routeLogger.error({ err: error.message }, 'GET /api/team/:projectId error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Manual create — add a resource that wasn't in the uploaded file.
+router.post('/:projectId/members', async (req: Request, res: Response) => {
+  try {
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ success: false, error: 'projectId inválido' });
+    }
+    const body = TeamMemberCreateSchema.safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ success: false, error: body.error.flatten() });
+    }
+    const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
+
+    const realProjectId = await resolveRealProjectId(projectId, userId);
+    if (realProjectId === null) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+
+    const member = await teamService.createMember(realProjectId, userId, body.data.name, body.data.role);
+    res.status(201).json({ success: true, data: member });
+  } catch (error: any) {
+    routeLogger.error({ err: error.message }, 'POST /api/team/:projectId/members error');
+    if (error.message === 'Ya existe un recurso con ese nombre en el proyecto') {
+      return res.status(409).json({ success: false, error: error.message });
+    }
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Manual delete — removes a resource (and cascades its feedback notes).
+router.delete('/:projectId/members/:memberId', async (req: Request, res: Response) => {
+  try {
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    const memberId = Number(req.params.memberId);
+    if (!params.success || !Number.isInteger(memberId) || memberId <= 0) {
+      return res.status(400).json({ success: false, error: 'Parámetros inválidos' });
+    }
+    const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
+
+    const realProjectId = await resolveRealProjectId(projectId, userId);
+    if (realProjectId === null) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+
+    await teamService.deleteMember(memberId, realProjectId, userId);
+    res.json({ success: true });
+  } catch (error: any) {
+    routeLogger.error({ err: error.message }, 'DELETE /api/team/:projectId/members/:memberId error');
+    if (error.message === 'Miembro de equipo no encontrado') {
+      return res.status(404).json({ success: false, error: error.message });
+    }
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });

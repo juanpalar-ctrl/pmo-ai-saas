@@ -174,6 +174,52 @@ describe('addFeedbackNote', () => {
   });
 });
 
+describe('createMember', () => {
+  it('inserts a member and returns the new row', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 9, name: 'Ana', role: 'QA' }] });
+
+    const result = await teamService.createMember(5, 'user-1', 'Ana', 'QA');
+
+    expect(result).toEqual({ id: 9, name: 'Ana', role: 'QA' });
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO team_members'),
+      [5, 'user-1', 'Ana', 'QA']
+    );
+  });
+
+  it('normalizes an empty role to null', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 9, name: 'Ana', role: null }] });
+
+    await teamService.createMember(5, 'user-1', 'Ana', '   ');
+
+    expect(mockQuery).toHaveBeenCalledWith(expect.any(String), [5, 'user-1', 'Ana', null]);
+  });
+
+  it('throws a friendly error on a duplicate name (unique violation)', async () => {
+    mockQuery.mockRejectedValueOnce({ code: '23505' });
+
+    await expect(teamService.createMember(5, 'user-1', 'Ana')).rejects.toThrow(
+      'Ya existe un recurso con ese nombre en el proyecto'
+    );
+  });
+});
+
+describe('deleteMember', () => {
+  it('deletes when the member belongs to the project/user', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1 });
+    await expect(teamService.deleteMember(1, 10, 'user-1')).resolves.toBeUndefined();
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('DELETE FROM team_members'),
+      [1, 10, 'user-1']
+    );
+  });
+
+  it('throws when no row matched (wrong owner/project)', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+    await expect(teamService.deleteMember(1, 10, 'user-1')).rejects.toThrow('Miembro de equipo no encontrado');
+  });
+});
+
 describe('updateMemberRole', () => {
   it('updates the role when the member belongs to the project/user', async () => {
     mockQuery.mockResolvedValueOnce({ rowCount: 1 });
