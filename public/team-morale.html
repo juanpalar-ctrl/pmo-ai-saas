@@ -17,6 +17,7 @@
     .rag-border-green  { border-top-color: #16a34a !important; }
     .rag-border-yellow { border-top-color: #d97706 !important; }
     .rag-border-red    { border-top-color: #dc2626 !important; }
+    .rag-border-none   { border-top-color: #d1d5db !important; }
 
     .rag-badge {
       display: inline-flex; align-items: center; gap: 4px;
@@ -26,6 +27,10 @@
     .rag-badge.green  { background: #dcfce7; color: #15803d; }
     .rag-badge.yellow { background: #fef3c7; color: #92400e; }
     .rag-badge.red    { background: #fee2e2; color: #991b1b; }
+    .rag-badge.none   { background: #f3f4f6; color: #6b7280; }
+    .axis-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .04em; }
+    .axis-row   { display: flex; justify-content: space-between; font-size: 11px; color: #6b7280; padding: 1px 0; }
+    .axis-row b { font-weight: 600; color: #374151; }
 
     .filter-chip { font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 9999px; border: 1px solid #e5e7eb; color: #4b5563; background: white; cursor: pointer; transition: all .15s; }
     .filter-chip.active { background: #0B7B8C; color: white; border-color: #0B7B8C; }
@@ -91,8 +96,8 @@
             <input id="search-input" type="text" placeholder="Buscar por nombre..." oninput="render()" class="flex-1 min-w-[160px] text-sm border border-gray-200 rounded-lg px-3 py-2">
             <button class="filter-chip active" data-status="all" onclick="setStatusFilter('all', this)">Todos</button>
             <button class="filter-chip" data-status="green" onclick="setStatusFilter('green', this)">🟢 Al día</button>
-            <button class="filter-chip" data-status="yellow" onclick="setStatusFilter('yellow', this)">🟡 Reconectar</button>
-            <button class="filter-chip" data-status="red" onclick="setStatusFilter('red', this)">🔴 Burnout</button>
+            <button class="filter-chip" data-status="yellow" onclick="setStatusFilter('yellow', this)">🟡 Ojo</button>
+            <button class="filter-chip" data-status="red" onclick="setStatusFilter('red', this)">🔴 Atención</button>
           </div>
         </div>
 
@@ -122,18 +127,19 @@
   </div>
 
   <script>
-    const RAG_COLORS = {
-      green:  { border: 'rag-border-green',  text: 'rag-green',  badge: 'green',  emoji: '🟢' },
-      yellow: { border: 'rag-border-yellow', text: 'rag-yellow', badge: 'yellow', emoji: '🟡' },
-      red:    { border: 'rag-border-red',    text: 'rag-red',    badge: 'red',    emoji: '🔴' },
-    };
+    // Fase 1: two independent axes (workload / people health) + a combined
+    // overall level. Each is green/yellow/red; people health can also be "none"
+    // (never had feedback → gray "sin datos", not an alarm).
+    const BORDER = { green: 'rag-border-green', yellow: 'rag-border-yellow', red: 'rag-border-red', none: 'rag-border-none' };
+    const TEXT   = { green: 'rag-green', yellow: 'rag-yellow', red: 'rag-red', none: '' };
+    const EMOJI  = { green: '🟢', yellow: '🟡', red: '🔴', none: '⚪' };
+    const OVERALL_LABEL   = { green: 'Al día', yellow: 'Ojo', red: 'Atención' };
+    const WORKLOAD_LABEL  = { green: 'Al día', yellow: 'Ojo', red: 'Sobrecargado' };
+    const PEOPLE_LABEL    = { green: 'Motivado', yellow: 'Reconectar', red: 'En riesgo', none: 'Sin datos' };
+    const SENTIMENT_LABEL = { positive: 'positivo', neutral: 'neutral', negative: 'negativo', mixed: 'mixto' };
+
     function ragBadge(level, label) {
-      return `<span class="rag-badge ${level}">${RAG_COLORS[level].emoji} ${label}</span>`;
-    }
-    // Team semaphore only has green/orange/red; reuse the existing
-    // green/yellow/red RAG palette (orange -> yellow key).
-    function levelToRag(level) {
-      return level === 'orange' ? 'yellow' : level;
+      return `<span class="rag-badge ${level}">${EMOJI[level]} ${label}</span>`;
     }
 
     let projects = [];         // [{ projectId, projectName, groupSatisfactionScore, members: [...] }]
@@ -240,8 +246,7 @@
 
       const query = document.getElementById('search-input').value.trim().toLowerCase();
       const filtered = flat.filter(m => {
-        const rag = levelToRag(m.disconnectionLevel);
-        if (currentStatusFilter !== 'all' && rag !== currentStatusFilter) return false;
+        if (currentStatusFilter !== 'all' && m.overallLevel !== currentStatusFilter) return false;
         if (query && !m.name.toLowerCase().includes(query)) return false;
         return true;
       });
@@ -258,35 +263,61 @@
       }
       noResults.classList.add('hidden');
 
-      grid.innerHTML = filtered.map(m => {
-        const rag = levelToRag(m.disconnectionLevel);
-        const scoreLabel = m.latestWellbeingScore !== null ? `${(m.latestWellbeingScore * 100).toFixed(0)}%` : 'Sin datos';
-        const tasksHtml = m.currentTasks.length > 0
-          ? m.currentTasks.map(t => `<span class="text-xs bg-gray-100 border rounded px-2 py-0.5 text-gray-600 truncate max-w-[140px] inline-block" title="${t}">${t}</span>`).join(' ')
-          : '<span class="text-xs text-gray-400">Sin tareas activas</span>';
-        const tag = showTag ? `<p class="text-[11px] text-teal-600 font-semibold mt-0.5 truncate">${m.projectName}</p>` : '';
+      grid.innerHTML = filtered.map(m => renderMemberCard(m, showTag)).join('');
+    }
 
-        return `
-          <div class="bg-white rounded-xl p-4 shadow-md border-t-4 ${RAG_COLORS[rag].border} hover:shadow-lg transition">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <p class="font-bold text-gray-800 truncate">${m.name}</p>
-                <button class="text-xs text-teal-600 hover:underline" onclick="editMemberRole(${m.projectId}, ${m.id}, '${(m.role || '').replace(/'/g, "\\'")}')">
-                  ${m.role ? m.role : '+ Agregar rol'}
-                </button>
-                ${tag}
-              </div>
-              ${ragBadge(rag, rag === 'green' ? 'Al día' : rag === 'yellow' ? 'Reconectar' : 'Burnout')}
-            </div>
-            <div class="mt-3 flex flex-wrap gap-1">${tasksHtml}</div>
-            <div class="mt-3 flex items-center justify-between">
-              <span class="text-xs text-gray-500">🙂 Bienestar: <span class="font-semibold ${RAG_COLORS[rag].text}">${scoreLabel}</span></span>
-              <button class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3 py-1 rounded-lg" onclick="openFeedbackModal(${m.projectId}, ${m.id}, '${m.name.replace(/'/g, "\\'")}')">
-                + Feedback
+    function renderMemberCard(m, showTag) {
+      const w = m.workload, ph = m.peopleHealth;
+      const tag = showTag ? `<p class="text-[11px] text-teal-600 font-semibold mt-0.5 truncate">${m.projectName}</p>` : '';
+
+      const wellLabel = ph.wellbeingScore !== null ? `${(ph.wellbeingScore * 100).toFixed(0)}%` : 'Sin datos';
+      const feedbackLabel = ph.daysSinceFeedback !== null ? `hace ${ph.daysSinceFeedback} d` : 'Sin feedback';
+      const sentimentLabel = ph.sentiment ? (SENTIMENT_LABEL[ph.sentiment] || ph.sentiment) : '—';
+      const criticalClass = w.criticalDelayedCount > 0 ? 'rag-red' : '';
+
+      const tasksHtml = m.currentTasks.length > 0
+        ? m.currentTasks.map(t => `<span class="text-xs bg-gray-100 border rounded px-2 py-0.5 text-gray-600 truncate max-w-[120px] inline-block" title="${t}">${t}</span>`).join(' ')
+        : '<span class="text-xs text-gray-400">Sin tareas activas</span>';
+
+      return `
+        <div class="bg-white rounded-xl shadow-md border-t-4 ${BORDER[m.overallLevel]} hover:shadow-lg transition overflow-hidden">
+          <div class="p-4 pb-3 flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="font-bold text-gray-800 truncate">${m.name}</p>
+              <button class="text-xs text-teal-600 hover:underline" onclick="editMemberRole(${m.projectId}, ${m.id}, '${(m.role || '').replace(/'/g, "\\'")}')">
+                ${m.role ? m.role : '+ Agregar rol'}
               </button>
+              ${tag}
             </div>
-          </div>`;
-      }).join('');
+            ${ragBadge(m.overallLevel, OVERALL_LABEL[m.overallLevel])}
+          </div>
+          <div class="grid grid-cols-2 border-t border-gray-100">
+            <div class="p-3 border-r border-gray-100">
+              <p class="axis-label mb-2"><i class="fa-solid fa-chart-column"></i> Carga</p>
+              ${ragBadge(w.level, WORKLOAD_LABEL[w.level])}
+              <div class="mt-2">
+                <div class="axis-row"><span>Activas</span><b>${w.activeCount} <span class="text-gray-400 font-normal">(prom. ${w.teamAvgActive})</span></b></div>
+                <div class="axis-row"><span>Atrasadas</span><b>${w.overdueCount}</b></div>
+                <div class="axis-row"><span>Críticas</span><b class="${criticalClass}">${w.criticalDelayedCount}</b></div>
+              </div>
+            </div>
+            <div class="p-3">
+              <p class="axis-label mb-2"><i class="fa-solid fa-face-smile"></i> People Health</p>
+              ${ragBadge(ph.level, PEOPLE_LABEL[ph.level])}
+              <div class="mt-2">
+                <div class="axis-row"><span>Bienestar</span><b class="${TEXT[ph.level]}">${wellLabel}</b></div>
+                <div class="axis-row"><span>Feedback</span><b>${feedbackLabel}</b></div>
+                <div class="axis-row"><span>Sentimiento</span><b>${sentimentLabel}</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
+            <div class="flex flex-wrap gap-1 min-w-0 overflow-hidden">${tasksHtml}</div>
+            <button class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3 py-1 rounded-lg whitespace-nowrap flex-shrink-0" onclick="openFeedbackModal(${m.projectId}, ${m.id}, '${m.name.replace(/'/g, "\\'")}')">
+              + Feedback
+            </button>
+          </div>
+        </div>`;
     }
 
     function openFeedbackModal(projectId, memberId, memberName) {

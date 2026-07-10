@@ -9,26 +9,53 @@
 import { pool } from '../db';
 import { serviceLogger } from '../core/logger';
 import { TransformedRow } from './frameworkMetrics';
-import { countCriticalDelayedTasks, computeDisconnectionLevel, daysSinceFeedback, DisconnectionLevel } from './teamAlerts';
+import {
+  countCriticalDelayedTasks,
+  countActiveTasks,
+  countOverdueTasks,
+  computeWorkloadLevel,
+  computePeopleHealthLevel,
+  computeOverallLevel,
+  daysSinceFeedback,
+  HealthLevel,
+  PeopleHealthLevel,
+} from './teamAlerts';
 import { wellbeingAgent } from '../agents/wellbeingAgent';
 
 const DONE_STATUSES = ['done', 'completed', 'terminado', 'finalizado', 'cerrado', 'closed', 'complete'];
 const isDone = (s?: string | null) => DONE_STATUSES.some(k => (s || '').toLowerCase().includes(k));
+
+// Carga de trabajo — derived purely from tasks.
+export interface TeamMemberWorkload {
+  activeCount: number;
+  overdueCount: number;
+  criticalDelayedCount: number;
+  teamAvgActive: number; // project-wide average active load, for the "sobrecarga" comparison
+  level: HealthLevel;
+}
+
+// People health — derived purely from feedback.
+export interface TeamMemberPeopleHealth {
+  wellbeingScore: number | null;
+  lastFeedbackAt: string | null;
+  daysSinceFeedback: number | null;
+  sentiment: string | null;
+  level: PeopleHealthLevel;
+}
 
 export interface TeamMemberCard {
   id: number;
   name: string;
   role: string | null;
   currentTasks: string[];
-  lastFeedbackAt: string | null;
-  latestWellbeingScore: number | null;
-  disconnectionLevel: DisconnectionLevel;
-  criticalDelayedCount: number;
+  workload: TeamMemberWorkload;
+  peopleHealth: TeamMemberPeopleHealth;
+  overallLevel: HealthLevel; // combined roll-up = worst of the two axes
 }
 
 export interface DisconnectionAlert {
   name: string;
-  level: DisconnectionLevel;
+  level: HealthLevel;
   daysSinceContact: number | null;
   criticalDelayedCount: number;
 }
@@ -87,37 +114,67 @@ async function getTeamBoard(
   taskRows: TransformedRow[]
 ): Promise<{ members: TeamMemberCard[]; groupSatisfactionScore: number | null }> {
   const result = await pool.query(
-    `SELECT id, name, role, last_feedback_at, latest_wellbeing_score
+    `SELECT id, name, role, last_feedback_at, latest_wellbeing_score, latest_sentiment
      FROM team_members WHERE project_id = $1 ORDER BY name ASC`,
     [projectId]
   );
 
-  const members: TeamMemberCard[] = result.rows.map((row) => {
+  // First pass: raw per-member counts. We need the team-wide average active
+  // load before we can decide each member's *relative* workload level.
+  const interim = result.rows.map((row) => {
+    const activeCount = countActiveTasks(taskRows, row.name);
+    const overdueCount = countOverdueTasks(taskRows, row.name);
     const criticalDelayedCount = countCriticalDelayedTasks(taskRows, row.name);
     const lastFeedbackAt: Date | null = row.last_feedback_at ? new Date(row.last_feedback_at) : null;
-    const disconnectionLevel = computeDisconnectionLevel(lastFeedbackAt, criticalDelayedCount);
     const target = row.name.trim().toLowerCase();
     const currentTasks = taskRows
       .filter((t) => (t.assignee || '').trim().toLowerCase() === target && !isDone(t.status))
       .slice(0, 5)
       .map((t) => t.project_name);
+    const wellbeingScore = row.latest_wellbeing_score !== null ? parseFloat(row.latest_wellbeing_score) : null;
+    return { row, activeCount, overdueCount, criticalDelayedCount, lastFeedbackAt, currentTasks, wellbeingScore };
+  });
+
+  const teamAvgActive =
+    interim.length > 0 ? interim.reduce((sum, m) => sum + m.activeCount, 0) / interim.length : 0;
+
+  const members: TeamMemberCard[] = interim.map((m) => {
+    const workloadLevel = computeWorkloadLevel({
+      activeCount: m.activeCount,
+      overdueCount: m.overdueCount,
+      criticalDelayedCount: m.criticalDelayedCount,
+      teamAvgActive,
+    });
+    const days = daysSinceFeedback(m.lastFeedbackAt);
+    const peopleHealthLevel = computePeopleHealthLevel({ wellbeingScore: m.wellbeingScore, daysSinceFeedback: days });
 
     return {
-      id: row.id,
-      name: row.name,
-      role: row.role,
-      currentTasks,
-      lastFeedbackAt: lastFeedbackAt ? lastFeedbackAt.toISOString() : null,
-      latestWellbeingScore: row.latest_wellbeing_score !== null ? parseFloat(row.latest_wellbeing_score) : null,
-      disconnectionLevel,
-      criticalDelayedCount,
+      id: m.row.id,
+      name: m.row.name,
+      role: m.row.role,
+      currentTasks: m.currentTasks,
+      workload: {
+        activeCount: m.activeCount,
+        overdueCount: m.overdueCount,
+        criticalDelayedCount: m.criticalDelayedCount,
+        teamAvgActive: Math.round(teamAvgActive),
+        level: workloadLevel,
+      },
+      peopleHealth: {
+        wellbeingScore: m.wellbeingScore,
+        lastFeedbackAt: m.lastFeedbackAt ? m.lastFeedbackAt.toISOString() : null,
+        daysSinceFeedback: isFinite(days) ? days : null,
+        sentiment: m.row.latest_sentiment ?? null,
+        level: peopleHealthLevel,
+      },
+      overallLevel: computeOverallLevel(workloadLevel, peopleHealthLevel),
     };
   });
 
-  const scored = members.filter((m) => m.latestWellbeingScore !== null);
+  const scored = members.filter((m) => m.peopleHealth.wellbeingScore !== null);
   const groupSatisfactionScore =
     scored.length > 0
-      ? Math.round((scored.reduce((sum, m) => sum + (m.latestWellbeingScore as number), 0) / scored.length) * 100)
+      ? Math.round((scored.reduce((sum, m) => sum + (m.peopleHealth.wellbeingScore as number), 0) / scored.length) * 100)
       : null;
 
   return { members, groupSatisfactionScore };
@@ -166,10 +223,10 @@ async function getTeamBoardsForUser(
     });
   }
 
-  const allScored = projects.flatMap((p) => p.members).filter((m) => m.latestWellbeingScore !== null);
+  const allScored = projects.flatMap((p) => p.members).filter((m) => m.peopleHealth.wellbeingScore !== null);
   const groupSatisfactionScore =
     allScored.length > 0
-      ? Math.round((allScored.reduce((sum, m) => sum + (m.latestWellbeingScore as number), 0) / allScored.length) * 100)
+      ? Math.round((allScored.reduce((sum, m) => sum + (m.peopleHealth.wellbeingScore as number), 0) / allScored.length) * 100)
       : null;
 
   return { groupSatisfactionScore, projects };
@@ -204,14 +261,14 @@ async function addFeedbackNote(
   const { wellbeingScore, sentiment, reasoning } = output.analysis;
 
   await pool.query(
-    `INSERT INTO team_feedback_notes (team_member_id, note_text, wellbeing_score, ai_reasoning)
-     VALUES ($1, $2, $3, $4)`,
-    [teamMemberId, noteText, wellbeingScore, reasoning]
+    `INSERT INTO team_feedback_notes (team_member_id, note_text, wellbeing_score, sentiment, ai_reasoning)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [teamMemberId, noteText, wellbeingScore, sentiment, reasoning]
   );
 
   await pool.query(
-    `UPDATE team_members SET last_feedback_at = NOW(), latest_wellbeing_score = $1, updated_at = NOW() WHERE id = $2`,
-    [wellbeingScore, teamMemberId]
+    `UPDATE team_members SET last_feedback_at = NOW(), latest_wellbeing_score = $1, latest_sentiment = $2, updated_at = NOW() WHERE id = $3`,
+    [wellbeingScore, sentiment, teamMemberId]
   );
 
   return { wellbeingScore, sentiment, reasoning };
@@ -227,7 +284,7 @@ async function getFeedbackNotes(teamMemberId: number, projectId: number, userId:
   }
 
   const result = await pool.query(
-    `SELECT id, note_text, wellbeing_score, ai_reasoning, created_at
+    `SELECT id, note_text, wellbeing_score, sentiment, ai_reasoning, created_at
      FROM team_feedback_notes WHERE team_member_id = $1 ORDER BY created_at DESC`,
     [teamMemberId]
   );
@@ -236,6 +293,7 @@ async function getFeedbackNotes(teamMemberId: number, projectId: number, userId:
     id: row.id,
     noteText: row.note_text,
     wellbeingScore: row.wellbeing_score !== null ? parseFloat(row.wellbeing_score) : null,
+    sentiment: row.sentiment ?? null,
     reasoning: row.ai_reasoning,
     createdAt: row.created_at,
   }));
@@ -252,8 +310,8 @@ async function updateMemberRole(teamMemberId: number, projectId: number, userId:
 }
 
 /**
- * Feature 5.3 — only orange/red members, reduced shape, meant to be injected
- * into the Risk Agent prompt (multiAgentOrchestrator.ts).
+ * Feature 5.3 — only non-green members (by the combined overallLevel), reduced
+ * shape, meant to be injected into the Risk Agent prompt (multiAgentOrchestrator.ts).
  */
 async function getDisconnectionAlertsForRiskAgent(
   projectId: number,
@@ -261,12 +319,12 @@ async function getDisconnectionAlertsForRiskAgent(
 ): Promise<DisconnectionAlert[]> {
   const { members } = await getTeamBoard(projectId, taskRows);
   return members
-    .filter((m) => m.disconnectionLevel !== 'green')
+    .filter((m) => m.overallLevel !== 'green')
     .map((m) => ({
       name: m.name,
-      level: m.disconnectionLevel,
-      daysSinceContact: m.lastFeedbackAt ? daysSinceFeedback(new Date(m.lastFeedbackAt)) : null,
-      criticalDelayedCount: m.criticalDelayedCount,
+      level: m.overallLevel,
+      daysSinceContact: m.peopleHealth.daysSinceFeedback,
+      criticalDelayedCount: m.workload.criticalDelayedCount,
     }));
 }
 

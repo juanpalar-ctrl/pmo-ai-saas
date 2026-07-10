@@ -72,11 +72,11 @@ describe('autoPopulateTeam', () => {
 });
 
 describe('getTeamBoard', () => {
-  it('computes disconnection level, critical count and GSS from task rows', async () => {
+  it('computes workload, people health and GSS from task rows', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [
-        { id: 1, name: 'Ana', role: 'Dev', last_feedback_at: daysAgo(5), latest_wellbeing_score: '0.8' },
-        { id: 2, name: 'Beto', role: null, last_feedback_at: null, latest_wellbeing_score: null },
+        { id: 1, name: 'Ana', role: 'Dev', last_feedback_at: daysAgo(5), latest_wellbeing_score: '0.8', latest_sentiment: 'positive' },
+        { id: 2, name: 'Beto', role: null, last_feedback_at: null, latest_wellbeing_score: null, latest_sentiment: null },
       ],
     });
 
@@ -87,9 +87,11 @@ describe('getTeamBoard', () => {
     const { members, groupSatisfactionScore } = await teamService.getTeamBoard(1, taskRows);
 
     expect(members).toHaveLength(2);
-    expect(members[0]).toMatchObject({ id: 1, name: 'Ana', role: 'Dev', disconnectionLevel: 'green', latestWellbeingScore: 0.8 });
+    expect(members[0]).toMatchObject({ id: 1, name: 'Ana', role: 'Dev' });
     expect(members[0].currentTasks).toEqual(['X']);
-    expect(members[1]).toMatchObject({ id: 2, name: 'Beto', role: null, latestWellbeingScore: null });
+    expect(members[0].workload.activeCount).toBe(1);
+    expect(members[0].peopleHealth).toMatchObject({ wellbeingScore: 0.8, sentiment: 'positive', level: 'green' });
+    expect(members[1].peopleHealth).toMatchObject({ wellbeingScore: null, level: 'none' });
     // Only Ana has a score -> GSS = 0.8 * 100
     expect(groupSatisfactionScore).toBe(80);
   });
@@ -157,11 +159,11 @@ describe('addFeedbackNote', () => {
     );
     expect(mockQuery).toHaveBeenNthCalledWith(2,
       expect.stringContaining('INSERT INTO team_feedback_notes'),
-      [1, 'Todo bien', 0.7, 'Motivada']
+      [1, 'Todo bien', 0.7, 'positive', 'Motivada']
     );
     expect(mockQuery).toHaveBeenNthCalledWith(3,
       expect.stringContaining('UPDATE team_members'),
-      [0.7, 1]
+      [0.7, 'positive', 1]
     );
   });
 

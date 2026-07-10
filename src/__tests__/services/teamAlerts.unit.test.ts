@@ -1,4 +1,12 @@
-import { countCriticalDelayedTasks, computeDisconnectionLevel, daysSinceFeedback } from '../../services/teamAlerts';
+import {
+  countCriticalDelayedTasks,
+  countActiveTasks,
+  countOverdueTasks,
+  computeWorkloadLevel,
+  computePeopleHealthLevel,
+  computeOverallLevel,
+  daysSinceFeedback,
+} from '../../services/teamAlerts';
 import { TransformedRow } from '../../services/frameworkMetrics';
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
@@ -54,30 +62,98 @@ describe('countCriticalDelayedTasks', () => {
   });
 });
 
-describe('computeDisconnectionLevel', () => {
-  it('is green when feedback is recent (< 30 days)', () => {
-    expect(computeDisconnectionLevel(new Date(daysAgo(10)), 5)).toBe('green');
+describe('countActiveTasks', () => {
+  const task = (assignee: string, status: string): TransformedRow => ({ project_name: 'T', assignee, status });
+
+  it('counts non-done tasks for the assignee, case-insensitively', () => {
+    const rows = [task('Ana', 'in progress'), task('  ana  ', 'todo'), task('Ana', 'done'), task('Beto', 'todo')];
+    expect(countActiveTasks(rows, 'Ana')).toBe(2);
   });
 
-  it('is green at exactly 29 days', () => {
-    expect(computeDisconnectionLevel(new Date(daysAgo(29)), 5)).toBe('green');
+  it('returns 0 for an empty assignee name', () => {
+    expect(countActiveTasks([task('Ana', 'todo')], '')).toBe(0);
+  });
+});
+
+describe('countOverdueTasks', () => {
+  const task = (assignee: string, end: string, status = 'in progress'): TransformedRow => ({
+    project_name: 'T', assignee, status, end_date: end,
   });
 
-  it('is orange between 30 and 45 days regardless of critical task count', () => {
-    expect(computeDisconnectionLevel(new Date(daysAgo(35)), 10)).toBe('orange');
+  it('counts non-done tasks past their end_date', () => {
+    const rows = [task('Ana', daysAgo(3)), task('Ana', daysAhead(3)), task('Ana', daysAgo(1), 'done')];
+    expect(countOverdueTasks(rows, 'Ana')).toBe(1);
   });
 
-  it('is red past 45 days with more than 3 critical/delayed tasks', () => {
-    expect(computeDisconnectionLevel(new Date(daysAgo(50)), 4)).toBe('red');
+  it('ignores tasks without an end_date', () => {
+    expect(countOverdueTasks([{ project_name: 'T', assignee: 'Ana', status: 'todo' }], 'Ana')).toBe(0);
+  });
+});
+
+describe('computeWorkloadLevel', () => {
+  const base = { activeCount: 0, overdueCount: 0, criticalDelayedCount: 0, teamAvgActive: 4 };
+
+  it('is red when there is at least one critical+delayed task', () => {
+    expect(computeWorkloadLevel({ ...base, criticalDelayedCount: 1 })).toBe('red');
   });
 
-  it('stays orange past 45 days when critical/delayed count is 3 or fewer', () => {
-    expect(computeDisconnectionLevel(new Date(daysAgo(50)), 3)).toBe('orange');
+  it('is red when active load is 1.5x the team average or more (sobrecarga)', () => {
+    expect(computeWorkloadLevel({ ...base, activeCount: 6, teamAvgActive: 4 })).toBe('red');
   });
 
-  it('treats a member who never received feedback as very overdue', () => {
-    expect(computeDisconnectionLevel(null, 5)).toBe('red');
-    expect(computeDisconnectionLevel(null, 1)).toBe('orange');
+  it('is yellow when above the team average but not overloaded', () => {
+    expect(computeWorkloadLevel({ ...base, activeCount: 5, teamAvgActive: 4 })).toBe('yellow');
+  });
+
+  it('is yellow when there is an overdue task even at/below average', () => {
+    expect(computeWorkloadLevel({ ...base, activeCount: 2, overdueCount: 1 })).toBe('yellow');
+  });
+
+  it('is green at or below the team average with nothing overdue', () => {
+    expect(computeWorkloadLevel({ ...base, activeCount: 4, teamAvgActive: 4 })).toBe('green');
+  });
+
+  it('skips the relative check when the team average is 0', () => {
+    expect(computeWorkloadLevel({ activeCount: 3, overdueCount: 0, criticalDelayedCount: 0, teamAvgActive: 0 })).toBe('green');
+  });
+});
+
+describe('computePeopleHealthLevel', () => {
+  it('is none when the member never received feedback', () => {
+    expect(computePeopleHealthLevel({ wellbeingScore: null, daysSinceFeedback: Infinity })).toBe('none');
+  });
+
+  it('is red when wellbeing is below 0.4', () => {
+    expect(computePeopleHealthLevel({ wellbeingScore: 0.3, daysSinceFeedback: 2 })).toBe('red');
+  });
+
+  it('is red when the last feedback is more than 45 days old', () => {
+    expect(computePeopleHealthLevel({ wellbeingScore: 0.9, daysSinceFeedback: 50 })).toBe('red');
+  });
+
+  it('is yellow for a mid wellbeing score', () => {
+    expect(computePeopleHealthLevel({ wellbeingScore: 0.5, daysSinceFeedback: 2 })).toBe('yellow');
+  });
+
+  it('is yellow when feedback is stale (30-45 days) even with a good score', () => {
+    expect(computePeopleHealthLevel({ wellbeingScore: 0.9, daysSinceFeedback: 40 })).toBe('yellow');
+  });
+
+  it('is green with a high score and recent feedback', () => {
+    expect(computePeopleHealthLevel({ wellbeingScore: 0.8, daysSinceFeedback: 8 })).toBe('green');
+  });
+});
+
+describe('computeOverallLevel', () => {
+  it('takes the worst of the two axes', () => {
+    expect(computeOverallLevel('green', 'red')).toBe('red');
+    expect(computeOverallLevel('yellow', 'green')).toBe('yellow');
+    expect(computeOverallLevel('red', 'yellow')).toBe('red');
+  });
+
+  it('does not let "none" people-health drag the overall down', () => {
+    expect(computeOverallLevel('red', 'none')).toBe('red');
+    expect(computeOverallLevel('green', 'none')).toBe('green');
   });
 });
 

@@ -170,10 +170,14 @@ export async function runMigrations(): Promise<void> {
       role VARCHAR(255),
       last_feedback_at TIMESTAMP,
       latest_wellbeing_score NUMERIC(3,2),
+      latest_sentiment VARCHAR(20),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Fase 1 desglose: denormalized last sentiment (positive|neutral|negative|mixed)
+  // for the People Health panel. ADD COLUMN IF NOT EXISTS for DBs created before it.
+  await pool.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS latest_sentiment VARCHAR(20)`);
   // Case-insensitive uniqueness: "Juan Pérez" and "juan perez" from different
   // rows of the same sheet must resolve to one team member.
   await pool.query(`
@@ -191,10 +195,12 @@ export async function runMigrations(): Promise<void> {
       team_member_id INT NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
       note_text TEXT NOT NULL,
       wellbeing_score NUMERIC(3,2),
+      sentiment VARCHAR(20),
       ai_reasoning TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await pool.query(`ALTER TABLE team_feedback_notes ADD COLUMN IF NOT EXISTS sentiment VARCHAR(20)`);
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_team_feedback_member_id ON team_feedback_notes(team_member_id)
   `);
