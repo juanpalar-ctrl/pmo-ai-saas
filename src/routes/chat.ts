@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { errorMessage } from '../core/errors';
 import { anthropicClient, aiConfig } from '../config/anthropic';
 import { pool } from '../db';
 import { ChatMessageSchema, ProjectIdParamSchema, DraftMessageSchema, SimulateSchema } from '../config/validation';
@@ -96,8 +97,8 @@ router.post('/', async (req: Request, res: Response) => {
     const { reply, actions } = parseActionsFromReply(raw);
 
     res.json({ success: true, reply, actions });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'chat POST error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'chat POST error');
     res.status(500).json({ error: 'Error procesando tu mensaje' });
   }
 });
@@ -146,8 +147,8 @@ router.post('/draft', async (req: Request, res: Response) => {
 
     const draft = response.content[0].type === 'text' ? response.content[0].text.trim() : '';
     res.json({ success: true, draft, audience });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'draft POST error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'draft POST error');
     res.status(500).json({ error: 'Error generando el borrador' });
   }
 });
@@ -229,8 +230,8 @@ Cambio en Revenue at Stake: ${result.deltaSummary.revenueAtStakeChange >= 0 ? '+
     const narrative = narrateResponse.content[0].type === 'text' ? narrateResponse.content[0].text.trim() : '';
 
     res.json({ success: true, result, narrative, scenario: delta.label });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'simulate POST error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'simulate POST error');
     res.status(500).json({ error: 'Error ejecutando la simulación' });
   }
 });
@@ -268,8 +269,8 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
         frameworkMetrics: output?.frameworkMetrics || null,
       },
     });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
@@ -292,7 +293,20 @@ function parseActionsFromReply(raw: string): { reply: string; actions: ChatActio
   }
 }
 
-function buildContextMessage(ctx: any): string {
+// Shape of the (frontend-supplied, loosely-typed) project context threaded into
+// the chat prompt. Every field is optional and every access below is defensive.
+interface RiskItem { title?: string; description?: string; probability?: number; impact?: string; }
+interface WarningItem { severity?: string; title?: string; description?: string; action?: string; }
+interface ProjectChatContext {
+  projectName?: string;
+  metrics?: { framework?: string; percentComplete?: number | string; pv?: number; ev?: number; ac?: number; cpi?: number | string; spi?: number | string; roi?: number | string };
+  risk?: { overallRiskScore?: number | string; delayProbability?: number; topRisks?: RiskItem[] };
+  economic?: { budget_status?: string; worst_case_total_cost?: number; cost_of_delay?: number; daily_burn_rate?: number };
+  earlyWarnings?: { hasAlerts?: boolean; warnings: WarningItem[]; summary?: string };
+  frameworkMetrics?: { framework?: string; insights?: string[] };
+}
+
+function buildContextMessage(ctx: ProjectChatContext | null | undefined): string {
   if (!ctx) return '';
   const parts: string[] = [`## Contexto del Proyecto: ${ctx.projectName || 'Sin nombre'}`];
 
@@ -314,7 +328,7 @@ function buildContextMessage(ctx: any): string {
     parts.push(`\n### Análisis de Riesgos
 - Score General: ${r.overallRiskScore || 'N/A'}
 - Probabilidad de Delay: ${((r.delayProbability || 0) * 100).toFixed(0)}%
-- Top Riesgos: ${(r.topRisks || []).map((t: any) => t.description || t.title).join(', ') || 'Ninguno'}`);
+- Top Riesgos: ${(r.topRisks || []).map((t: RiskItem) => t.description || t.title).join(', ') || 'Ninguno'}`);
   }
 
   if (ctx.economic) {
@@ -328,17 +342,17 @@ function buildContextMessage(ctx: any): string {
 
   if (ctx.earlyWarnings?.hasAlerts) {
     const ew = ctx.earlyWarnings;
-    const criticals = ew.warnings.filter((w: any) => w.severity === 'CRITICAL');
-    const highs = ew.warnings.filter((w: any) => w.severity === 'HIGH');
+    const criticals = ew.warnings.filter((w: WarningItem) => w.severity === 'CRITICAL');
+    const highs = ew.warnings.filter((w: WarningItem) => w.severity === 'HIGH');
     parts.push(`\n### ⚠️ Alertas Tempranas Activas (${ew.warnings.length} total)
 ${ew.summary}
-${criticals.length > 0 ? `**CRÍTICAS:**\n${criticals.map((w: any) => `- ${w.title}: ${w.description} → Acción: ${w.action}`).join('\n')}` : ''}
-${highs.length > 0 ? `**ALTAS:**\n${highs.map((w: any) => `- ${w.title}: ${w.description}`).join('\n')}` : ''}`);
+${criticals.length > 0 ? `**CRÍTICAS:**\n${criticals.map((w: WarningItem) => `- ${w.title}: ${w.description} → Acción: ${w.action}`).join('\n')}` : ''}
+${highs.length > 0 ? `**ALTAS:**\n${highs.map((w: WarningItem) => `- ${w.title}: ${w.description}`).join('\n')}` : ''}`);
   }
 
-  if (ctx.frameworkMetrics?.insights?.length > 0) {
-    parts.push(`\n### Insights del Framework ${ctx.frameworkMetrics.framework?.toUpperCase()}
-${ctx.frameworkMetrics.insights.map((i: string) => `- ${i}`).join('\n')}`);
+  if ((ctx.frameworkMetrics?.insights?.length ?? 0) > 0) {
+    parts.push(`\n### Insights del Framework ${ctx.frameworkMetrics?.framework?.toUpperCase()}
+${(ctx.frameworkMetrics?.insights ?? []).map((i: string) => `- ${i}`).join('\n')}`);
   }
 
   parts.push('\nPor favor, úsalo como contexto para responder mis preguntas sobre este proyecto. Si hay alertas críticas, mencionarlas proactivamente al inicio de tu respuesta.');

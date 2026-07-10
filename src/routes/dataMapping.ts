@@ -7,6 +7,7 @@ import { detectColumns } from '../agents/normalizationAgent';
 import { parseExcelSample, parseExcelComplete } from '../services/excelParser';
 import { transformDataset, calculateDIS } from '../services/dataTransformer';
 import { validateUploadPath, isValidTempMappingFilename, getUploadsDir } from '../utils/pathValidator';
+import { AuthRequest } from '../middleware/requireAuth';
 import {
   DetectColumnsResponseSchema,
   SaveMappingRequestSchema,
@@ -31,7 +32,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: (error: Error | null, accept?: boolean) => void) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: (error: Error | null, accept?: boolean) => void) => {
   const allowedMimes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/vnd.ms-excel',
@@ -124,7 +125,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
     routeLogger.info(`[save-mapping] 💾 Processing mapping for: ${tempFilename}`);
 
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthRequest).user?.id;
     if (!userId) {
       throw new Error('Not authenticated');
     }

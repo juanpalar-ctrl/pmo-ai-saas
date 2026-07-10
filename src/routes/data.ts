@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { errorMessage } from '../core/errors';
 import multer from 'multer';
 import * as path from 'path';
 import { ExcelAdapter } from '../services/adapters/ExcelAdapter';
@@ -9,6 +10,7 @@ import { UPLOAD_MESSAGES } from '../config/messages';
 import { ProjectIdParamSchema, PaginationQuerySchema } from '../config/validation';
 import { routeLogger } from '../core/logger';
 import { computeHealthScore } from '../services/portfolioService';
+import { TransformedRow } from '../services/frameworkMetrics';
 import { AuthRequest } from '../middleware/requireAuth';
  
 const router = express.Router();
@@ -25,7 +27,7 @@ const storage = multer.diskStorage({
   },
 });
  
-const fileFilter = (req: any, file: any, cb: any) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const ext = path.extname(file.originalname).toLowerCase();
   
   if (ext !== '.xlsx') {
@@ -79,14 +81,14 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
       filename: req.file.filename,
     });
     
-  } catch (error: any) {
+  } catch (error) {
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
     
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: errorMessage(error),
     });
   }
 });
@@ -108,8 +110,8 @@ router.get('/projects', async (req: Request, res: Response) => {
       data: projects,
     });
 
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'GET /projects error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'GET /projects error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -129,8 +131,8 @@ router.get('/projects/:projectId', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: project });
 
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'GET /projects/:id error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'GET /projects/:id error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -157,8 +159,8 @@ router.delete('/projects/:id', async (req: Request, res: Response) => {
 
     routeLogger.info({ id, realProjectId }, 'Project deleted');
     res.json({ success: true });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'DELETE /projects/:id error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'DELETE /projects/:id error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -195,10 +197,10 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
       success: true,
       data
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: errorMessage(error)
     });
   }
 });
@@ -257,8 +259,8 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
       success: true,
       data: { ...output, healthScore, healthLabel }
     });
-  } catch (err: any) {
-    routeLogger.error({ err: err.message }, 'GET /analysis/:projectId/latest error');
+  } catch (err) {
+    routeLogger.error({ err: errorMessage(err) }, 'GET /analysis/:projectId/latest error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -290,13 +292,13 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
       [realProjectId, userId]
     );
 
-    const tasks: any[] = result.rows[0]?.output?.projects || [];
+    const tasks: TransformedRow[] = result.rows[0]?.output?.projects || [];
 
-    const mapped = tasks.map((t: any) => ({
+    const mapped = tasks.map((t) => ({
       name:     t.project_name  || 'Sin nombre',
-      plan:     parseFloat(t.estimated_cost)   || 0,
-      actual:   parseFloat(t.actual_cost)      || 0,
-      progress: parseFloat(t.progress_percent) || 0,
+      plan:     parseFloat(String(t.estimated_cost ?? ''))   || 0,
+      actual:   parseFloat(String(t.actual_cost ?? ''))      || 0,
+      progress: parseFloat(String(t.progress_percent ?? '')) || 0,
       status:   t.status        || '',
       start:    t.start_date    || null,
       end:      t.end_date      || null,
@@ -304,8 +306,8 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
 
     routeLogger.info({ projectId, taskCount: mapped.length }, 'Tasks fetched for Gantt');
     res.json({ success: true, tasks: mapped });
-  } catch (err: any) {
-    routeLogger.error({ err: err.message }, 'GET /analysis/:projectId/tasks error');
+  } catch (err) {
+    routeLogger.error({ err: errorMessage(err) }, 'GET /analysis/:projectId/tasks error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });

@@ -7,6 +7,7 @@
  */
 
 import { routeLogger } from '../core/logger';
+import { errorMessage } from '../core/errors';
 import express, { Request, Response } from 'express';
 import { pool } from '../db';
 
@@ -64,7 +65,7 @@ router.get('/', async (req: Request, res: Response) => {
       // Tabla no existe o DB error — devolver defaults sin crashear
       return res.status(200).json({ success: true, data: defaults });
     }
-  } catch (error: any) {
+  } catch (error) {
     res.status(200).json({
       success: true,
       data: { primaryColor: '#17B8A0', secondaryColor: '#0B7B8C', accentColor: '#9ED900', logoUrl: '/uploads/logos/lara-logo.png' },
@@ -216,12 +217,12 @@ router.post('/:organizationId', async (req: Request, res: Response) => {
       },
       message: `Branding updated for organization: ${organizationId}`,
     });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'POST /branding error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'POST /branding error');
     res.status(500).json({
       success: false,
       error: 'Failed to update branding',
-      message: error.message,
+      message: errorMessage(error),
     });
   }
 });

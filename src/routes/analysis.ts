@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { errorMessage } from '../core/errors';
 import { orchestrator } from '../services/multiAgentOrchestrator';
 import { pool } from '../db';
 import { generateMockAnalysis, isMockEnabled, getCacheDurationHours } from '../utils/mockAnalysis';
@@ -97,8 +98,8 @@ router.post('/:projectId', async (req: Request, res: Response) => {
       message: '✨ Fresh analysis - API credits spent'
     });
     
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, "route error"); res.status(500).json({ success: false, error: "Error interno del servidor" });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, "route error"); res.status(500).json({ success: false, error: "Error interno del servidor" });
   }
 });
 
@@ -123,8 +124,8 @@ router.get('/:projectId/latest', async (req: Request, res: Response) => {
     }
     
     res.json({ success: true, generatedAt: result.rows[0].generatedat, data: result.rows[0].output });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, "route error"); res.status(500).json({ success: false, error: "Error interno del servidor" });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, "route error"); res.status(500).json({ success: false, error: "Error interno del servidor" });
   }
 });
 
@@ -165,7 +166,7 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
     const economic = data.economic?.analysis?.analysis || {};
     const reports = data.reports || {};
 
-    const riskItems = (risk.topRisks || []).map((r: any) => `
+    const riskItems = (risk.topRisks || []).map((r: { title?: string; description?: string; probability?: number; impact?: string }) => `
       <div class="item">
         <strong>${escapeHtml(String(r.title || r.description || ''))}</strong>
         <p>${escapeHtml(String(r.description || ''))}</p>
@@ -264,8 +265,8 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
     
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, '[analysis/view] Error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, '[analysis/view] Error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });

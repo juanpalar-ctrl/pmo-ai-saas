@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db';
+import { errorMessage } from '../core/errors';
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get('/latest-analysis/:projectId', async (req: Request, res: Response) =>
       fullOutput: output
     });
   } catch (err) {
-    res.status(500).json({ error: (err as any).message });
+    res.status(500).json({ error: errorMessage(err) });
   }
 });
 
