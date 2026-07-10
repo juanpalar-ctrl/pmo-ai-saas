@@ -245,7 +245,7 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT pd.projectname, aa.output
        FROM project_data pd
-       LEFT JOIN ai_analyses aa ON aa.projectid = pd.projectid
+       LEFT JOIN ai_analyses aa ON aa.projectid = pd.projectid AND aa.user_id = pd.user_id
        WHERE pd.id = $1 AND pd.user_id = $2
        ORDER BY aa.generatedat DESC
        LIMIT 1`,

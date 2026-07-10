@@ -123,7 +123,7 @@ describe('DELETE /api/data/projects/:id', () => {
     expect(mockQuery).toHaveBeenNthCalledWith(1,
       expect.stringContaining('SELECT projectid FROM project_data'), [7, 'user-1']);
     expect(mockQuery).toHaveBeenNthCalledWith(2,
-      expect.stringContaining('DELETE FROM ai_analyses'), [99]);
+      expect.stringContaining('DELETE FROM ai_analyses'), [99, 'user-1']);
     expect(mockQuery).toHaveBeenNthCalledWith(3,
       expect.stringContaining('DELETE FROM project_data'), [7]);
   });

@@ -123,12 +123,12 @@ async function getTeamBoard(
   return { members, groupSatisfactionScore };
 }
 
-async function fetchTaskRowsForProject(realProjectId: number): Promise<TransformedRow[]> {
+async function fetchTaskRowsForProject(realProjectId: number, userId: string): Promise<TransformedRow[]> {
   const result = await pool.query(
     `SELECT output FROM ai_analyses
-     WHERE projectid = $1 AND agenttype = 'normalization'
+     WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization'
      ORDER BY generatedat DESC LIMIT 1`,
-    [realProjectId]
+    [realProjectId, userId]
   );
   return result.rows[0]?.output?.projects || [];
 }
@@ -155,7 +155,7 @@ async function getTeamBoardsForUser(
 
   const projects: TeamProjectGroup[] = [];
   for (const row of projectRows.rows) {
-    const taskRows = await fetchTaskRowsForProject(row.projectid);
+    const taskRows = await fetchTaskRowsForProject(row.projectid, userId);
     const { members, groupSatisfactionScore } = await getTeamBoard(row.projectid, taskRows);
     if (members.length === 0) continue;
     projects.push({

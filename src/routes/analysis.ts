@@ -23,14 +23,14 @@ async function userOwnsProject(projectId: number, userId: string): Promise<boole
 }
 
 // Función para verificar si análisis es válido en cache
-async function getCachedAnalysis(projectId: number) {
+async function getCachedAnalysis(projectId: number, userId: string) {
   const cacheHours = getCacheDurationHours();
   const result = await pool.query(
     `SELECT output, generatedat FROM ai_analyses
-     WHERE projectid = $1
-     AND generatedat > NOW() - ($2 * INTERVAL '1 hour')
+     WHERE projectid = $1 AND user_id = $2
+     AND generatedat > NOW() - ($3 * INTERVAL '1 hour')
      ORDER BY generatedat DESC LIMIT 1`,
-    [projectId, cacheHours]
+    [projectId, userId, cacheHours]
   );
   return result.rows[0] || null;
 }
@@ -57,11 +57,12 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     if (isMockEnabled() && !forceRefresh) {
       const mockData = generateMockAnalysis(fw);
       
-      // Guardar en BD para mantener consistencia
+      // Guardar en BD para mantener consistencia. INSERT (append), igual que los
+      // demás writers: ai_analyses es historial append-only y no tiene índice
+      // único sobre projectid, así que el ON CONFLICT anterior reventaba en runtime.
       await pool.query(
-        `INSERT INTO ai_analyses (projectid, output) VALUES ($1, $2)
-         ON CONFLICT (projectid) DO UPDATE SET output = $2, generatedat = NOW()`,
-        [projectId, mockData]
+        `INSERT INTO ai_analyses (projectid, user_id, output, generatedat) VALUES ($1, $2, $3, NOW())`,
+        [projectId, userId, mockData]
       );
       
       return res.json({ 
@@ -74,7 +75,7 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     }
 
     // Verificar cache (24h por defecto)
-    const cached = await getCachedAnalysis(projectId);
+    const cached = await getCachedAnalysis(projectId, userId);
     if (cached && !forceRefresh) {
       return res.json({ 
         success: true, 
@@ -86,7 +87,7 @@ router.post('/:projectId', async (req: Request, res: Response) => {
     }
 
     // Si llegamos aquí, ejecutar análisis real (gasta API credits)
-    const result = await orchestrator.analyzeProject(projectId, fw, undefined, lang);
+    const result = await orchestrator.analyzeProject(projectId, fw, userId, undefined, lang);
     
     return res.json({ 
       success: true, 
@@ -113,8 +114,8 @@ router.get('/:projectId/latest', async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
-      [projectId]
+      `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 AND user_id = $2 ORDER BY generatedat DESC LIMIT 1`,
+      [projectId, userId]
     );
 
     if (!result.rows[0]) {
@@ -151,8 +152,8 @@ router.get('/:projectId/view', async (req: Request, res: Response) => {
     const org = escapeHtml(query.success ? query.data.org : 'Sin especificar');
 
     const result = await pool.query(
-      `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 ORDER BY generatedat DESC LIMIT 1`,
-      [projectId]
+      `SELECT output, generatedat FROM ai_analyses WHERE projectid = $1 AND user_id = $2 ORDER BY generatedat DESC LIMIT 1`,
+      [projectId, userId]
     );
     
     if (!result.rows[0]) {

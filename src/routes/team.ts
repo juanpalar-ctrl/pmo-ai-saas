@@ -26,12 +26,12 @@ async function resolveProject(projectId: number, userId: string): Promise<{ real
   return { realProjectId: result.rows[0].projectid, projectName: result.rows[0].projectname };
 }
 
-async function fetchTaskRows(realProjectId: number): Promise<any[]> {
+async function fetchTaskRows(realProjectId: number, userId: string): Promise<any[]> {
   const result = await pool.query(
     `SELECT output FROM ai_analyses
-     WHERE projectid = $1 AND agenttype = 'normalization'
+     WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization'
      ORDER BY generatedat DESC LIMIT 1`,
-    [realProjectId]
+    [realProjectId, userId]
   );
   return result.rows[0]?.output?.projects || [];
 }
@@ -61,7 +61,7 @@ router.get('/:projectId', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
     }
 
-    const taskRows = await fetchTaskRows(project.realProjectId);
+    const taskRows = await fetchTaskRows(project.realProjectId, userId);
     const { members, groupSatisfactionScore } = await teamService.getTeamBoard(project.realProjectId, taskRows);
 
     res.json({ success: true, data: { members, groupSatisfactionScore, projectName: project.projectName } });

@@ -159,11 +159,11 @@ export async function getPortfolioData(userId: string): Promise<PortfolioData> {
       aa.output,
       aa.generatedat
     FROM project_data pd
-    INNER JOIN ai_analyses aa ON aa.projectid = pd.projectid
+    INNER JOIN ai_analyses aa ON aa.projectid = pd.projectid AND aa.user_id = pd.user_id
     WHERE aa.agenttype = 'combined'
       AND pd.user_id = $1
       AND aa.id IN (
-        SELECT MAX(id) FROM ai_analyses WHERE agenttype = 'combined' GROUP BY projectid
+        SELECT MAX(id) FROM ai_analyses WHERE agenttype = 'combined' AND user_id = $1 GROUP BY projectid
       )
     ORDER BY aa.generatedat DESC
     LIMIT 50

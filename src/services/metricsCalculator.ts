@@ -1,18 +1,18 @@
 import { pool } from '../db';
 
-export async function calculateProjectMetrics(projectId: number, framework: string) {
-  // Load project name
+export async function calculateProjectMetrics(projectId: number, userId: string, framework: string) {
+  // Load project name (scoped to the owner — projectid can collide across users)
   const projectRes = await pool.query(
-    `SELECT projectname FROM project_data WHERE projectid = $1`,
-    [projectId]
+    `SELECT projectname FROM project_data WHERE projectid = $1 AND user_id = $2`,
+    [projectId, userId]
   );
   if (projectRes.rows.length === 0) throw new Error('Project not found');
   const projectName = projectRes.rows[0].projectname || 'Project';
 
   // Load task rows from normalization record
   const normRes = await pool.query(
-    `SELECT output FROM ai_analyses WHERE projectid = $1 AND agenttype = 'normalization' LIMIT 1`,
-    [projectId]
+    `SELECT output FROM ai_analyses WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization' LIMIT 1`,
+    [projectId, userId]
   );
 
   const tasks: any[] = normRes.rows[0]?.output?.projects || [];

@@ -77,7 +77,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] }) // normalization record lookup
       .mockResolvedValueOnce({ rows: [] }); // insert combined analysis
 
-    const result = await orchestrator.analyzeProject(1, 'scrum');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1');
 
     expect(result.org).toBe('Acme Corp');
   });
@@ -88,7 +88,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    const result = await orchestrator.analyzeProject(1, 'scrum');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1');
 
     expect(result.org).toBe('Sin especificar');
   });
@@ -98,7 +98,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] }) // normalization record lookup
       .mockResolvedValueOnce({ rows: [] }); // insert combined analysis
 
-    await orchestrator.analyzeProject(1, 'scrum', 'Explicit Org');
+    await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Explicit Org');
 
     expect(mockQuery).toHaveBeenCalledTimes(2);
   });
@@ -108,7 +108,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    await orchestrator.analyzeProject(1, 'kanban', 'Org');
+    await orchestrator.analyzeProject(1, 'kanban', 'user_1', 'Org');
 
     expect(riskAgent.setFramework).toHaveBeenCalledWith('kanban');
     expect(economicAgent.setFramework).toHaveBeenCalledWith('kanban');
@@ -119,7 +119,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(reportingAgent.setAnalysisOutputs).toHaveBeenCalledWith(
       { analysis: { analysis: { overallRiskScore: 'MEDIUM' } } },
@@ -132,7 +132,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    const result = await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(result.reports.senior_report).toBe('Senior text');
     expect(result.reports.technical_report).toBe('Tech text');
@@ -144,7 +144,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    const result = await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(result.reports.senior_report).toBe('Flat senior');
     expect(result.reports.technical_report).toBe('Flat tech');
@@ -157,7 +157,7 @@ describe('orchestrator.analyzeProject', () => {
     mockCalculateFrameworkMetrics.mockReturnValue({ framework: 'scrum', insights: [] });
     mockDetectWarnings.mockReturnValue({ hasAlerts: false, warnings: [] });
 
-    const result = await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(result.dis).toEqual({ score: 80 });
     expect(result.frameworkMetrics).toEqual({ framework: 'scrum', insights: [] });
@@ -170,7 +170,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    const result = await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(result.dis).toBeNull();
     expect(result.frameworkMetrics).toBeNull();
@@ -183,12 +183,13 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
-    await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     const insertCall = mockQuery.mock.calls.find(call => String(call[0]).includes('INSERT INTO ai_analyses'));
     expect(insertCall).toBeDefined();
-    expect(insertCall![1][0]).toBe(1);
-    expect(insertCall![1][1]).toBe('combined');
+    expect(insertCall![1][0]).toBe(1);          // projectid
+    expect(insertCall![1][1]).toBe('user_1');   // user_id (owner)
+    expect(insertCall![1][2]).toBe('combined'); // agenttype
   });
 
   it('runs risk and economic analysis concurrently, not sequentially', async () => {
@@ -210,7 +211,7 @@ describe('orchestrator.analyzeProject', () => {
       return { analysis: { analysis: {} } };
     });
 
-    await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(order.indexOf('economic-start')).toBeLessThan(order.indexOf('risk-end'));
   });
@@ -222,7 +223,7 @@ describe('orchestrator.analyzeProject', () => {
     const alerts = [{ name: 'Beto', level: 'red', daysSinceContact: 50, criticalDelayedCount: 4 }];
     mockGetDisconnectionAlerts.mockResolvedValueOnce(alerts);
 
-    await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(mockGetDisconnectionAlerts).toHaveBeenCalledWith(1, [{ project_name: 'Fase 1', assignee: 'Beto' }]);
     expect(mockRiskAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: alerts }));
@@ -235,7 +236,7 @@ describe('orchestrator.analyzeProject', () => {
       .mockResolvedValueOnce({ rows: [] });
     mockGetDisconnectionAlerts.mockRejectedValueOnce(new Error('team lookup failed'));
 
-    const result = await orchestrator.analyzeProject(1, 'scrum', 'Org');
+    const result = await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
     expect(result).toBeDefined();
     expect(mockRiskAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: [] }));

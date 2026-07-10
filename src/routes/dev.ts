@@ -49,7 +49,8 @@ router.get('/init-database', async (_req: any, res: any) => {
         projectid INT,
         agenttype VARCHAR(100),
         output JSONB,
-        generatedat TIMESTAMP
+        generatedat TIMESTAMP,
+        user_id VARCHAR(255) REFERENCES users(id)
       )
     `);
 

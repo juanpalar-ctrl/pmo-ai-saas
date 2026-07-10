@@ -9,14 +9,14 @@ import { teamService } from './teamService';
 import { routeLogger } from '../core/logger';
 
 export const orchestrator = {
-  async analyzeProject(projectId: number, framework: string, org?: string, lang: 'es' | 'en' = 'es') {
-    const metrics = await calculateProjectMetrics(projectId, framework);
+  async analyzeProject(projectId: number, framework: string, userId: string, org?: string, lang: 'es' | 'en' = 'es') {
+    const metrics = await calculateProjectMetrics(projectId, userId, framework);
 
     // Resolve org from normalization record if not passed directly
     if (!org) {
       const orgResult = await pool.query(
-        `SELECT output->>'org' AS org FROM ai_analyses WHERE projectid = $1 AND agenttype = 'normalization' LIMIT 1`,
-        [projectId]
+        `SELECT output->>'org' AS org FROM ai_analyses WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization' LIMIT 1`,
+        [projectId, userId]
       );
       org = orgResult.rows[0]?.org || 'Sin especificar';
     }
@@ -30,8 +30,8 @@ export const orchestrator = {
     let earlyWarningResult: any = null;
     let taskRows: any[] = [];
     const normResult = await pool.query(
-      `SELECT output FROM ai_analyses WHERE projectid = $1 AND agenttype = 'normalization' LIMIT 1`,
-      [projectId]
+      `SELECT output FROM ai_analyses WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization' LIMIT 1`,
+      [projectId, userId]
     );
     if (normResult.rows[0]?.output) {
       const normOutput = normResult.rows[0].output;
@@ -96,8 +96,8 @@ export const orchestrator = {
     };
 
     await pool.query(
-      `INSERT INTO ai_analyses (projectid, agenttype, output, generatedat) VALUES ($1, $2, $3, NOW())`,
-      [projectId, 'combined', JSON.stringify(output)]
+      `INSERT INTO ai_analyses (projectid, user_id, agenttype, output, generatedat) VALUES ($1, $2, $3, $4, NOW())`,
+      [projectId, userId, 'combined', JSON.stringify(output)]
     );
 
     return output;

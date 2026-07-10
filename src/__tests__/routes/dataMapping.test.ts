@@ -175,7 +175,7 @@ describe('POST /api/data/mapping/save-mapping', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.rowsProcessed).toBe(1);
     expect(res.body.projectId).toBe(42);
-    expect(mockAnalyzeProject).toHaveBeenCalledWith(expect.any(Number), 'scrum', 'Acme', 'es');
+    expect(mockAnalyzeProject).toHaveBeenCalledWith(expect.any(Number), 'scrum', 'user-1', 'Acme', 'es');
   });
 
   it('returns 400 when every transformed row fails the strict schema', async () => {

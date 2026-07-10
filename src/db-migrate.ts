@@ -60,7 +60,8 @@ export async function runMigrations(): Promise<void> {
       projectid INT,
       agenttype VARCHAR(100),
       output JSONB,
-      generatedat TIMESTAMP
+      generatedat TIMESTAMP,
+      user_id VARCHAR(255) REFERENCES users(id)
     )
   `);
 
@@ -90,6 +91,29 @@ export async function runMigrations(): Promise<void> {
     SET user_id = (SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1)
     WHERE user_id IS NULL
       AND EXISTS (SELECT 1 FROM users WHERE role = 'admin')
+  `);
+
+  // Explicit owner on ai_analyses. Isolation used to be indirect (gate on
+  // project_data.user_id, then read ai_analyses WHERE projectid = $1), which
+  // leaked across tenants whenever projectid collided — projectid is
+  // floor(Date.now()/1000) (dataMapping.ts), so two users uploading in the same
+  // second share it. Scoping reads by user_id closes that. NOT unique: this is
+  // append-only history (normalization + combined + re-runs per projectid).
+  await pool.query(`
+    ALTER TABLE ai_analyses ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id)
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_ai_analyses_projectid_user_id ON ai_analyses(projectid, user_id)
+  `);
+  // Backfill legacy rows from their project's owner (runs after the project_data
+  // backfill above, so orphaned projects already point at the admin).
+  await pool.query(`
+    UPDATE ai_analyses aa
+    SET user_id = pd.user_id
+    FROM project_data pd
+    WHERE aa.projectid = pd.projectid
+      AND aa.user_id IS NULL
+      AND pd.user_id IS NOT NULL
   `);
 
   // Password resets table. On this DB it was created out-of-band with different

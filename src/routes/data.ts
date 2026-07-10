@@ -152,7 +152,7 @@ router.delete('/projects/:id', async (req: Request, res: Response) => {
     }
     const realProjectId = projectResult.rows[0].projectid;
 
-    await pool.query('DELETE FROM ai_analyses WHERE projectid = $1', [realProjectId]);
+    await pool.query('DELETE FROM ai_analyses WHERE projectid = $1 AND user_id = $2', [realProjectId, userId]);
     await pool.query('DELETE FROM project_data WHERE id = $1', [id]);
 
     routeLogger.info({ id, realProjectId }, 'Project deleted');
@@ -169,11 +169,11 @@ router.get('/projects/history/latest', async (req: Request, res: Response) => {
     const query = `
       SELECT pd.*, aa.output
       FROM project_data pd
-      INNER JOIN ai_analyses aa ON pd.projectid = aa.projectid
+      INNER JOIN ai_analyses aa ON pd.projectid = aa.projectid AND aa.user_id = pd.user_id
       WHERE aa.agenttype != 'normalization'
         AND pd.user_id = $1
         AND aa.id IN (
-          SELECT MAX(id) FROM ai_analyses WHERE agenttype != 'normalization' GROUP BY projectid
+          SELECT MAX(id) FROM ai_analyses WHERE agenttype != 'normalization' AND user_id = $1 GROUP BY projectid
         )
       ORDER BY aa.id DESC
       LIMIT 10
@@ -224,11 +224,11 @@ router.get('/analysis/:projectId/latest', async (req: Request, res: Response) =>
     const realProjectId = projectResult.rows[0].projectid;
  
     const result = await pool.query(
-      `SELECT output FROM ai_analyses 
-       WHERE projectid = $1 AND agenttype = 'combined'
+      `SELECT output FROM ai_analyses
+       WHERE projectid = $1 AND user_id = $2 AND agenttype = 'combined'
        ORDER BY generatedat DESC
        LIMIT 1`,
-      [realProjectId]
+      [realProjectId, userId]
     );
  
     if (result.rows.length === 0) {
@@ -285,9 +285,9 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
 
     const result = await pool.query(
       `SELECT output FROM ai_analyses
-       WHERE projectid = $1 AND agenttype = 'normalization'
+       WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization'
        ORDER BY generatedat DESC LIMIT 1`,
-      [realProjectId]
+      [realProjectId, userId]
     );
 
     const tasks: any[] = result.rows[0]?.output?.projects || [];

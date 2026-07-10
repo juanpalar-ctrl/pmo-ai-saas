@@ -73,6 +73,26 @@ describe('POST /api/analysis/:projectId', () => {
     expect(mockAnalyzeProject).not.toHaveBeenCalled();
   });
 
+  it('persists mock data as an append INSERT scoped to the owner (regression: no ON CONFLICT crash)', async () => {
+    process.env.USE_MOCK_DATA = 'true';
+    mockQuery.mockResolvedValueOnce(OWNS);       // ownership gate
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // mock insert
+
+    await request(app).post('/api/analysis/1').send({ framework: 'scrum' });
+
+    // ai_analyses has no unique index on projectid (append-only history), so the
+    // old ON CONFLICT (projectid) upsert threw at runtime. Must be a plain INSERT
+    // that carries the owner's user_id.
+    const insertCall = mockQuery.mock.calls.find(
+      (call) => String(call[0]).includes('INSERT INTO ai_analyses'),
+    );
+    expect(insertCall).toBeDefined();
+    expect(String(insertCall![0])).not.toMatch(/ON CONFLICT/i);
+    expect(String(insertCall![0])).toContain('user_id');
+    expect(insertCall![1][0]).toBe(1);    // projectid
+    expect(insertCall![1][1]).toBe('u1'); // user_id (owner)
+  });
+
   it('returns cached analysis when a recent one exists and forceRefresh is not set', async () => {
     mockQuery.mockResolvedValueOnce(OWNS); // ownership gate
     mockQuery.mockResolvedValueOnce({ rows: [{ output: { some: 'data' }, generatedat: '2026-01-01' }] });
@@ -94,7 +114,7 @@ describe('POST /api/analysis/:projectId', () => {
     expect(res.status).toBe(200);
     expect(res.body.cached).toBe(false);
     expect(res.body.usedMock).toBe(false);
-    expect(mockAnalyzeProject).toHaveBeenCalledWith(1, 'scrum', undefined, 'es');
+    expect(mockAnalyzeProject).toHaveBeenCalledWith(1, 'scrum', 'u1', undefined, 'es');
   });
 
   it('forces a fresh analysis even when a cache entry exists, when forceRefresh=true', async () => {

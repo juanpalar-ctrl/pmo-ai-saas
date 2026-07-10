@@ -190,9 +190,9 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
     };
 
     await pool.query(
-      `INSERT INTO ai_analyses (projectid, agenttype, output, generatedat) 
-       VALUES ($1, $2, $3, $4)`,
-      [projectId, 'normalization', JSON.stringify(analysisOutput), now]
+      `INSERT INTO ai_analyses (projectid, user_id, agenttype, output, generatedat)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [projectId, userId, 'normalization', JSON.stringify(analysisOutput), now]
     );
 
     routeLogger.info(`[save-mapping] ✅ Analysis data stored`);
@@ -217,7 +217,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
       const { orchestrator } = await import('../services/multiAgentOrchestrator');
 
       routeLogger.info(`[save-mapping] 🔄 Executing analysis orchestration...`);
-      const analysisResult = await orchestrator.analyzeProject(projectId, framework, org, lang);
+      const analysisResult = await orchestrator.analyzeProject(projectId, framework, userId, org, lang);
 
       routeLogger.info(`[save-mapping] ✅ Analysis complete and stored`);
     } catch (err) {
