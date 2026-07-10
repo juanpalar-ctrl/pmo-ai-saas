@@ -84,8 +84,13 @@ describe('getTeamBoard', () => {
       { project_name: 'X', assignee: 'Ana', status: 'in progress' },
     ];
 
-    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(1, taskRows);
+    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(1, 'user-1', taskRows);
 
+    // Scoped by user_id, not just project_id (cross-tenant collision guard).
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE project_id = $1 AND user_id = $2'),
+      [1, 'user-1']
+    );
     expect(members).toHaveLength(2);
     expect(members[0]).toMatchObject({ id: 1, name: 'Ana', role: 'Dev' });
     expect(members[0].currentTasks).toEqual(['X']);
@@ -100,7 +105,7 @@ describe('getTeamBoard', () => {
     mockQuery.mockResolvedValueOnce({
       rows: [{ id: 1, name: 'Ana', role: null, last_feedback_at: null, latest_wellbeing_score: null }],
     });
-    const { groupSatisfactionScore } = await teamService.getTeamBoard(1, []);
+    const { groupSatisfactionScore } = await teamService.getTeamBoard(1, 'user-1', []);
     expect(groupSatisfactionScore).toBeNull();
   });
 });
@@ -174,6 +179,52 @@ describe('addFeedbackNote', () => {
   });
 });
 
+describe('createMember', () => {
+  it('inserts a member and returns the new row', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 9, name: 'Ana', role: 'QA' }] });
+
+    const result = await teamService.createMember(5, 'user-1', 'Ana', 'QA');
+
+    expect(result).toEqual({ id: 9, name: 'Ana', role: 'QA' });
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO team_members'),
+      [5, 'user-1', 'Ana', 'QA']
+    );
+  });
+
+  it('normalizes an empty role to null', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 9, name: 'Ana', role: null }] });
+
+    await teamService.createMember(5, 'user-1', 'Ana', '   ');
+
+    expect(mockQuery).toHaveBeenCalledWith(expect.any(String), [5, 'user-1', 'Ana', null]);
+  });
+
+  it('throws a friendly error on a duplicate name (unique violation)', async () => {
+    mockQuery.mockRejectedValueOnce({ code: '23505' });
+
+    await expect(teamService.createMember(5, 'user-1', 'Ana')).rejects.toThrow(
+      'Ya existe un recurso con ese nombre en el proyecto'
+    );
+  });
+});
+
+describe('deleteMember', () => {
+  it('deletes when the member belongs to the project/user', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 1 });
+    await expect(teamService.deleteMember(1, 10, 'user-1')).resolves.toBeUndefined();
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('DELETE FROM team_members'),
+      [1, 10, 'user-1']
+    );
+  });
+
+  it('throws when no row matched (wrong owner/project)', async () => {
+    mockQuery.mockResolvedValueOnce({ rowCount: 0 });
+    await expect(teamService.deleteMember(1, 10, 'user-1')).rejects.toThrow('Miembro de equipo no encontrado');
+  });
+});
+
 describe('updateMemberRole', () => {
   it('updates the role when the member belongs to the project/user', async () => {
     mockQuery.mockResolvedValueOnce({ rowCount: 1 });
@@ -203,7 +254,7 @@ describe('getDisconnectionAlertsForRiskAgent', () => {
       end_date: daysAgo(3).toISOString(),
     }));
 
-    const alerts = await teamService.getDisconnectionAlertsForRiskAgent(1, criticalRows);
+    const alerts = await teamService.getDisconnectionAlertsForRiskAgent(1, 'user-1', criticalRows);
 
     expect(alerts).toEqual([
       { name: 'Beto', level: 'red', daysSinceContact: 50, criticalDelayedCount: 4 },

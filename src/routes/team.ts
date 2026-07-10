@@ -2,8 +2,10 @@ import express, { Request, Response } from 'express';
 import { pool } from '../db';
 import { routeLogger } from '../core/logger';
 import { AuthRequest } from '../middleware/requireAuth';
-import { ProjectIdParamSchema, TeamFeedbackSchema, TeamRoleSchema } from '../config/validation';
+import { ProjectIdParamSchema, TeamFeedbackSchema, TeamRoleSchema, TeamMemberCreateSchema } from '../config/validation';
 import { teamService } from '../services/teamService';
+import { errorMessage } from '../core/errors';
+import { TransformedRow } from '../services/frameworkMetrics';
 
 const router = express.Router();
 
@@ -26,7 +28,7 @@ async function resolveProject(projectId: number, userId: string): Promise<{ real
   return { realProjectId: result.rows[0].projectid, projectName: result.rows[0].projectname };
 }
 
-async function fetchTaskRows(realProjectId: number, userId: string): Promise<any[]> {
+async function fetchTaskRows(realProjectId: number, userId: string): Promise<TransformedRow[]> {
   const result = await pool.query(
     `SELECT output FROM ai_analyses
      WHERE projectid = $1 AND user_id = $2 AND agenttype = 'normalization'
@@ -41,8 +43,8 @@ router.get('/', async (req: Request, res: Response) => {
     const userId = (req as AuthRequest).user!.id;
     const data = await teamService.getTeamBoardsForUser(userId);
     res.json({ success: true, data });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'GET /api/team error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'GET /api/team error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -62,11 +64,68 @@ router.get('/:projectId', async (req: Request, res: Response) => {
     }
 
     const taskRows = await fetchTaskRows(project.realProjectId, userId);
-    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(project.realProjectId, taskRows);
+    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(project.realProjectId, userId, taskRows);
 
     res.json({ success: true, data: { members, groupSatisfactionScore, projectName: project.projectName } });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'GET /api/team/:projectId error');
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'GET /api/team/:projectId error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Manual create — add a resource that wasn't in the uploaded file.
+router.post('/:projectId/members', async (req: Request, res: Response) => {
+  try {
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ success: false, error: 'projectId inválido' });
+    }
+    const body = TeamMemberCreateSchema.safeParse(req.body);
+    if (!body.success) {
+      return res.status(400).json({ success: false, error: body.error.flatten() });
+    }
+    const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
+
+    const realProjectId = await resolveRealProjectId(projectId, userId);
+    if (realProjectId === null) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+
+    const member = await teamService.createMember(realProjectId, userId, body.data.name, body.data.role);
+    res.status(201).json({ success: true, data: member });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'POST /api/team/:projectId/members error');
+    if (errorMessage(error) === 'Ya existe un recurso con ese nombre en el proyecto') {
+      return res.status(409).json({ success: false, error: errorMessage(error) });
+    }
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Manual delete — removes a resource (and cascades its feedback notes).
+router.delete('/:projectId/members/:memberId', async (req: Request, res: Response) => {
+  try {
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    const memberId = Number(req.params.memberId);
+    if (!params.success || !Number.isInteger(memberId) || memberId <= 0) {
+      return res.status(400).json({ success: false, error: 'Parámetros inválidos' });
+    }
+    const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
+
+    const realProjectId = await resolveRealProjectId(projectId, userId);
+    if (realProjectId === null) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+
+    await teamService.deleteMember(memberId, realProjectId, userId);
+    res.json({ success: true });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'DELETE /api/team/:projectId/members/:memberId error');
+    if (errorMessage(error) === 'Miembro de equipo no encontrado') {
+      return res.status(404).json({ success: false, error: errorMessage(error) });
+    }
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -99,10 +158,10 @@ router.post('/:projectId/members/:memberId/feedback', async (req: Request, res: 
     );
 
     res.json({ success: true, data: result });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'POST /api/team/:projectId/members/:memberId/feedback error');
-    if (error.message === 'Miembro de equipo no encontrado') {
-      return res.status(404).json({ success: false, error: error.message });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'POST /api/team/:projectId/members/:memberId/feedback error');
+    if (errorMessage(error) === 'Miembro de equipo no encontrado') {
+      return res.status(404).json({ success: false, error: errorMessage(error) });
     }
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
@@ -130,10 +189,10 @@ router.patch('/:projectId/members/:memberId', async (req: Request, res: Response
     await teamService.updateMemberRole(memberId, realProjectId, userId, body.data.role);
 
     res.json({ success: true });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'PATCH /api/team/:projectId/members/:memberId error');
-    if (error.message === 'Miembro de equipo no encontrado') {
-      return res.status(404).json({ success: false, error: error.message });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'PATCH /api/team/:projectId/members/:memberId error');
+    if (errorMessage(error) === 'Miembro de equipo no encontrado') {
+      return res.status(404).json({ success: false, error: errorMessage(error) });
     }
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
@@ -156,10 +215,10 @@ router.get('/:projectId/members/:memberId/notes', async (req: Request, res: Resp
 
     const notes = await teamService.getFeedbackNotes(memberId, realProjectId, userId);
     res.json({ success: true, data: notes });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'GET /api/team/:projectId/members/:memberId/notes error');
-    if (error.message === 'Miembro de equipo no encontrado') {
-      return res.status(404).json({ success: false, error: error.message });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'GET /api/team/:projectId/members/:memberId/notes error');
+    if (errorMessage(error) === 'Miembro de equipo no encontrado') {
+      return res.status(404).json({ success: false, error: errorMessage(error) });
     }
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }

@@ -3,6 +3,15 @@
 // Para uso futuro en refactorización
 // ============================================
 
+/**
+ * Narrows an unknown caught value to a message string. Centralizes the
+ * `err instanceof Error ? err.message : String(err)` idiom repeated across
+ * the codebase so catch blocks can stay `unknown`-typed instead of `any`.
+ */
+export function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export class AppError extends Error {
   constructor(
     public code: string,

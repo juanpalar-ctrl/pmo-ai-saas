@@ -11,6 +11,8 @@ jest.mock('../../services/teamService', () => ({
     addFeedbackNote: jest.fn(),
     updateMemberRole: jest.fn(),
     getFeedbackNotes: jest.fn(),
+    createMember: jest.fn(),
+    deleteMember: jest.fn(),
   },
 }));
 jest.mock('../../core/logger', () => ({
@@ -26,6 +28,8 @@ const mockGetTeamBoardsForUser = teamService.getTeamBoardsForUser as jest.Mock;
 const mockAddFeedbackNote = teamService.addFeedbackNote as jest.Mock;
 const mockUpdateMemberRole = teamService.updateMemberRole as jest.Mock;
 const mockGetFeedbackNotes = teamService.getFeedbackNotes as jest.Mock;
+const mockCreateMember = teamService.createMember as jest.Mock;
+const mockDeleteMember = teamService.deleteMember as jest.Mock;
 
 const app = express();
 app.use(express.json());
@@ -42,6 +46,8 @@ beforeEach(() => {
   mockAddFeedbackNote.mockReset();
   mockUpdateMemberRole.mockReset();
   mockGetFeedbackNotes.mockReset();
+  mockCreateMember.mockReset();
+  mockDeleteMember.mockReset();
 });
 
 // ─── GET / (aggregate) ────────────────────────────────────────────────────────
@@ -95,7 +101,72 @@ describe('GET /api/team/:projectId', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.groupSatisfactionScore).toBe(80);
     expect(res.body.data.projectName).toBe('Proyecto X');
-    expect(mockGetTeamBoard).toHaveBeenCalledWith(5, [{ project_name: 'X', assignee: 'Ana' }]);
+    expect(mockGetTeamBoard).toHaveBeenCalledWith(5, 'user-1', [{ project_name: 'X', assignee: 'Ana' }]);
+  });
+});
+
+// ─── POST /:projectId/members (manual create) ────────────────────────────────
+
+describe('POST /api/team/:projectId/members', () => {
+  it('returns 400 when name is missing', async () => {
+    const res = await request(app).post('/api/team/1/members').send({ role: 'QA' });
+    expect(res.status).toBe(400);
+    expect(mockCreateMember).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the project is not owned by the user', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).post('/api/team/1/members').send({ name: 'Ana' });
+    expect(res.status).toBe(404);
+  });
+
+  it('creates the member and returns 201 on success', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ projectid: 5 }] });
+    mockCreateMember.mockResolvedValueOnce({ id: 9, name: 'Ana', role: 'QA' });
+
+    const res = await request(app).post('/api/team/1/members').send({ name: 'Ana', role: 'QA' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data).toMatchObject({ id: 9, name: 'Ana' });
+    expect(mockCreateMember).toHaveBeenCalledWith(5, 'user-1', 'Ana', 'QA');
+  });
+
+  it('returns 409 when the name already exists', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ projectid: 5 }] });
+    mockCreateMember.mockRejectedValueOnce(new Error('Ya existe un recurso con ese nombre en el proyecto'));
+
+    const res = await request(app).post('/api/team/1/members').send({ name: 'Ana' });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+// ─── DELETE /:projectId/members/:memberId ─────────────────────────────────────
+
+describe('DELETE /api/team/:projectId/members/:memberId', () => {
+  it('returns 404 when the project is not owned by the user', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).delete('/api/team/1/members/2');
+    expect(res.status).toBe(404);
+  });
+
+  it('deletes the member on success', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ projectid: 5 }] });
+    mockDeleteMember.mockResolvedValueOnce(undefined);
+
+    const res = await request(app).delete('/api/team/1/members/2');
+
+    expect(res.status).toBe(200);
+    expect(mockDeleteMember).toHaveBeenCalledWith(2, 5, 'user-1');
+  });
+
+  it('returns 404 when the member does not belong to the project', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ projectid: 5 }] });
+    mockDeleteMember.mockRejectedValueOnce(new Error('Miembro de equipo no encontrado'));
+
+    const res = await request(app).delete('/api/team/1/members/2');
+
+    expect(res.status).toBe(404);
   });
 });
 

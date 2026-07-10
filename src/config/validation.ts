@@ -160,6 +160,13 @@ export const TeamRoleSchema = z.object({
   role: z.string().min(1).max(200),
 });
 
+// Manual resource creation — for people who weren't in the uploaded file.
+// name mirrors the team_members.name length (VARCHAR(255)); role is optional.
+export const TeamMemberCreateSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  role: z.string().trim().max(200).optional().nullable(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ColumnSuggestion = z.infer<typeof ColumnSuggestionSchema>;

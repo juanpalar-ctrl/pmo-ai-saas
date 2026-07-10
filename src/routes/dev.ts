@@ -1,5 +1,6 @@
 import { routeLogger } from '../core/logger';
-import express from 'express';
+import { errorMessage } from '../core/errors';
+import express, { Request, Response } from 'express';
 import { pool } from '../db';
 import path from 'path';
 import fs from 'fs';
@@ -7,7 +8,7 @@ import fs from 'fs';
 const router = express.Router();
 
 // GET /api/dev/init-database - Crear tablas
-router.get('/init-database', async (_req: any, res: any) => {
+router.get('/init-database', async (_req: Request, res: Response) => {
   try {
     // Tabla de usuarios — debe coincidir con db-migrate.ts (fuente de verdad):
     // id VARCHAR (no SERIAL) + role/status. Antes creaba un esquema divergente
@@ -59,27 +60,27 @@ router.get('/init-database', async (_req: any, res: any) => {
       message: 'Database initialized',
       tables: ['users', 'project_data', 'ai_analyses']
     });
-  } catch (error: any) {
-    routeLogger.error({ err: error.message }, 'Init DB error');
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    routeLogger.error({ err: errorMessage(error) }, 'Init DB error');
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
 // GET /api/dev/check-database
-router.get('/check-database', async (_req: any, res: any) => {
+router.get('/check-database', async (_req: Request, res: Response) => {
   try {
     const tables = await pool.query(`
       SELECT table_name FROM information_schema.tables 
       WHERE table_schema = 'public'
     `);
-    res.json({ tables: tables.rows.map((t: any) => t.table_name) });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.json({ tables: tables.rows.map((t: { table_name: string }) => t.table_name) });
+  } catch (error) {
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
 // GET /api/dev/generate-dummy-excel
-router.get('/generate-dummy-excel', async (_req: any, res: any) => {
+router.get('/generate-dummy-excel', async (_req: Request, res: Response) => {
   try {
     const xlsxPath = path.join(__dirname, '../../uploads/test-projects.xlsx');
     if (fs.existsSync(xlsxPath)) {
@@ -87,8 +88,8 @@ router.get('/generate-dummy-excel', async (_req: any, res: any) => {
     } else {
       res.status(404).json({ error: 'File not found' });
     }
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: errorMessage(error) });
   }
 });
 
