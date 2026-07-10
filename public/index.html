@@ -276,8 +276,13 @@
           <input type="text" id="org" placeholder="Acme Corp" required>
         </div>
         <div class="form-group">
-          <label for="file">Archivo Excel con Proyectos</label>
-          <input type="file" id="file" accept=".xlsx" required>
+          <label for="file">Archivo con Proyectos (Excel .xlsx o CSV)</label>
+          <input type="file" id="file" accept=".xlsx,.csv">
+        </div>
+        <div class="form-group">
+          <label for="gsheet-url">…o importa desde Google Sheets</label>
+          <input type="text" id="gsheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+          <small style="display:block; color:#0B7B8C; font-size:0.8em; margin-top:4px;">La hoja debe estar compartida como "Cualquiera con el enlace puede ver".</small>
         </div>
         <div class="form-group">
           <label for="fw">Metodología</label>
@@ -455,16 +460,55 @@
     document.getElementById('form').onsubmit = async (e) => {
       e.preventDefault();
       const file = document.getElementById('file').files[0];
-      if (!file) { showAlert('Selecciona archivo', true); return; }
-      
+      const gsheetUrl = document.getElementById('gsheet-url').value.trim();
+      if (!file && !gsheetUrl) { showAlert('Selecciona un archivo (Excel/CSV) o pega una URL de Google Sheets', true); return; }
+
       document.getElementById('btn').disabled = true;
       document.getElementById('loading').style.display = 'block';
-      
-      await uploadAndDetectColumns(file);
-      
+
+      // A pasted Google Sheets URL takes precedence over a chosen file.
+      if (gsheetUrl) {
+        await importGSheetAndDetectColumns(gsheetUrl);
+      } else {
+        await uploadAndDetectColumns(file);
+      }
+
       document.getElementById('btn').disabled = false;
       document.getElementById('loading').style.display = 'none';
     };
+
+    async function importGSheetAndDetectColumns(url) {
+      const spinner = document.getElementById('detectingSpinner');
+      spinner.style.display = 'flex';
+
+      try {
+        const response = await fetch('/api/data/mapping/detect-columns-gsheet', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error);
+        }
+
+        const result = await response.json();
+        currentDetectionState = {
+          headers: result.data.headers,
+          sampleRows: result.data.sampleRows,
+          suggestions: result.data.suggestions,
+          tempFilename: result.data.tempFilename,
+        };
+
+        showMappingModal();
+      } catch (error) {
+        showAlert('Error: ' + error.message, true);
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
 
     async function uploadAndDetectColumns(file) {
       const formData = new FormData();
