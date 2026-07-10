@@ -176,8 +176,10 @@ export class ProjectRepository {
 
       const result = await pool.query(
         `SELECT
+          id as "id",
          projectId as "projectId",
           projectName as "projectName",
+          updatedat as "updatedAt",
           status,
           timelineData as "timelineData",
           velocityData as "velocityData",
@@ -194,8 +196,10 @@ export class ProjectRepository {
       
       // Parsear cada fila (igual que getProjectForAnalysis)
       const parsed = result.rows.map(row => ({
+        id: row.id,
         projectId: row.projectId,
         projectName: row.projectName,
+        updatedAt: row.updatedAt,
         status: row.status,
         timeline: typeof row.timelineData === 'string' 
           ? JSON.parse(row.timelineData) 

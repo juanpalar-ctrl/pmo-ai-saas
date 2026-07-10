@@ -265,6 +265,13 @@
       <h2 style="font-size: 1.3em; color: #333; margin-bottom: 20px;">Start Analysis</h2>
       <form id="form">
         <div class="form-group">
+          <label for="existing-project">Proyecto</label>
+          <select id="existing-project" onchange="onExistingProjectChange()">
+            <option value="">➕ Crear proyecto nuevo</option>
+          </select>
+          <small id="existing-hint" style="display:none; color:#0B7B8C; font-size:0.8em; margin-top:4px;">Se agregará como una nueva carga del proyecto seleccionado, bajo el mismo histórico.</small>
+        </div>
+        <div class="form-group">
           <label for="org">Nombre Organización</label>
           <input type="text" id="org" placeholder="Acme Corp" required>
         </div>
@@ -325,6 +332,8 @@
       tempFilename: '',
     };
 
+    let existingProjects = [];
+
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
       if (!res.ok) { window.location = '/login'; return; }
@@ -333,7 +342,38 @@
       document.getElementById('welcomeHeading').textContent = `¡Bienvenido de nuevo, ${data.user.email}!`;
       document.getElementById('dashboardPanel').style.display = 'block';
       loadDashboardStats();
+      loadExistingProjects();
     };
+
+    async function loadExistingProjects() {
+      try {
+        const res = await fetch('/api/data/projects', { credentials: 'include' });
+        if (!res.ok) return;
+        const { data } = await res.json();
+        existingProjects = (data || []).filter(p => p.id != null);
+        const select = document.getElementById('existing-project');
+        select.innerHTML = '<option value="">➕ Crear proyecto nuevo</option>' +
+          existingProjects.map(p => {
+            const when = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '';
+            return `<option value="${p.id}">${p.projectName}${when ? ` — ${when}` : ''}</option>`;
+          }).join('');
+      } catch (_) {}
+    }
+
+    function onExistingProjectChange() {
+      const select = document.getElementById('existing-project');
+      const org = document.getElementById('org');
+      const hint = document.getElementById('existing-hint');
+      const selected = existingProjects.find(p => String(p.id) === select.value);
+      if (selected) {
+        org.value = selected.projectName;
+        org.readOnly = true;
+        hint.style.display = 'block';
+      } else {
+        org.readOnly = false;
+        hint.style.display = 'none';
+      }
+    }
 
     async function loadDashboardStats() {
       const statCards = document.getElementById('statCards');
@@ -561,6 +601,11 @@
         org: document.getElementById('org').value.trim() || 'Sin especificar',
         // Idioma del contenido IA (es/en) según el navegador/SO. Default es.
         lang: (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es',
+        // Fase 2: si el usuario eligió un proyecto existente, esta carga se
+        // agrega como nuevo snapshot bajo su mismo projectid.
+        targetProjectId: document.getElementById('existing-project').value
+          ? Number(document.getElementById('existing-project').value)
+          : null,
       }),
     });
 

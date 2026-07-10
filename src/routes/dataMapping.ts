@@ -119,8 +119,8 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
   try {
     const validatedRequest = SaveMappingRequestSchema.parse(req.body);
-    const { tempFilename, confirmedMapping, framework, org, lang } = validatedRequest;
-    routeLogger.info({ framework, lang }, '[save-mapping] Received framework');
+    const { tempFilename, confirmedMapping, framework, org, lang, targetProjectId } = validatedRequest;
+    routeLogger.info({ framework, lang, targetProjectId }, '[save-mapping] Received framework');
 
     routeLogger.info(`[save-mapping] 💾 Processing mapping for: ${tempFilename}`);
 
@@ -169,24 +169,48 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
 
     routeLogger.info(`[save-mapping] 💾 Inserting ${validatedRows.length} projects into database...`);
 
-    const projectId = Math.floor(Date.now() / 1000);
     const now = new Date().toISOString();
 
-    const projectResult = await pool.query(
-      `INSERT INTO project_data (projectid, projectname, status, uploadedat, updatedat, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [projectId, org || `imported-${projectId}`, 'Not Started', now, now, userId]
-    );
+    let projectId: number; // business projectid (shared across snapshots)
+    let id: number;        // project_data.id (used by the UI to navigate)
+    let effectiveOrg = org;
 
-    const id = projectResult.rows[0].id;
-    routeLogger.info(`[save-mapping] ✅ Project created with ID: ${id} (projectid: ${projectId})`);
+    if (targetProjectId != null) {
+      // Fase 2: append this upload as a new snapshot of an existing project.
+      // Reuse its projectid so ai_analyses / team_members accumulate under one
+      // project instead of minting a disconnected one. No new project_data row.
+      const existing = await pool.query(
+        `SELECT id, projectid, projectname FROM project_data WHERE id = $1 AND user_id = $2`,
+        [targetProjectId, userId]
+      );
+      if (existing.rows.length === 0) {
+        throw new Error('Proyecto destino no encontrado');
+      }
+      id = existing.rows[0].id;
+      projectId = existing.rows[0].projectid;
+      effectiveOrg = existing.rows[0].projectname || org;
+      await pool.query(`UPDATE project_data SET updatedat = $1 WHERE id = $2`, [now, id]);
+      routeLogger.info(`[save-mapping] 📎 Appending snapshot to existing project ${id} (projectid: ${projectId})`);
+    } else {
+      projectId = Math.floor(Date.now() / 1000);
+      const projectResult = await pool.query(
+        `INSERT INTO project_data (projectid, projectname, status, uploadedat, updatedat, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        [projectId, org || `imported-${projectId}`, 'Not Started', now, now, userId]
+      );
+      id = projectResult.rows[0].id;
+      routeLogger.info(`[save-mapping] ✅ Project created with ID: ${id} (projectid: ${projectId})`);
+    }
 
     const analysisOutput = {
       projects: validatedRows,
       sourceFilename: 'imported',
       normalizedAt: now,
-      org,
+      org: effectiveOrg,
       dis,
+      // Distinguishes this snapshot from earlier ones under the same projectid
+      // (Fase 3 will read multiple snapshots to compute historical workload).
+      snapshotLabel: now.slice(0, 10),
     };
 
     await pool.query(
@@ -217,7 +241,7 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
       const { orchestrator } = await import('../services/multiAgentOrchestrator');
 
       routeLogger.info(`[save-mapping] 🔄 Executing analysis orchestration...`);
-      const analysisResult = await orchestrator.analyzeProject(projectId, framework, userId, org, lang);
+      const analysisResult = await orchestrator.analyzeProject(projectId, framework, userId, effectiveOrg, lang);
 
       routeLogger.info(`[save-mapping] ✅ Analysis complete and stored`);
     } catch (err) {

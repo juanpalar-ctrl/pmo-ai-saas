@@ -237,4 +237,55 @@ describe('POST /api/data/mapping/save-mapping', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
+
+  it('appends a snapshot to an existing project when targetProjectId is set (Fase 2)', async () => {
+    mockIsValidTempMappingFilename.mockReturnValueOnce(true);
+    mockValidateUploadPath.mockReturnValueOnce('/tmp/uploads/temp_mapping_abc.xlsx');
+    mockParseExcelComplete.mockResolvedValueOnce([{ Nombre: 'Proyecto A' }]);
+    mockTransformDataset.mockReturnValueOnce([{
+      project_name: 'Proyecto A', estimated_cost: 1000, actual_cost: 0, progress_percent: 0,
+    }]);
+    mockCalculateDIS.mockReturnValueOnce({ score: 80, grade: 'B', label: 'Buena', fieldCoverage: {}, totalRows: 1, mappedFields: 1 });
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 99, projectid: 12345, projectname: 'Proyecto Alfa' }] }) // SELECT existing
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE project_data updatedat
+      .mockResolvedValueOnce({ rows: [] }); // INSERT ai_analyses (normalization)
+    mockAnalyzeProject.mockResolvedValueOnce({ combined: true });
+
+    const res = await request(app).post('/api/data/mapping/save-mapping').send({
+      tempFilename: 'temp_mapping_abc.xlsx',
+      confirmedMapping: { Nombre: 'project_name' },
+      framework: 'scrum',
+      org: 'ignorado',
+      targetProjectId: 99,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.projectId).toBe(99); // returns the existing project_data.id
+    // No new project row is created; the existing projectid is reused for analysis.
+    const insertedProject = mockQuery.mock.calls.some(c => /INSERT INTO project_data/.test(c[0]));
+    expect(insertedProject).toBe(false);
+    expect(mockAnalyzeProject).toHaveBeenCalledWith(12345, 'scrum', 'user-1', 'Proyecto Alfa', 'es');
+  });
+
+  it('returns 400 when targetProjectId does not belong to the user', async () => {
+    mockIsValidTempMappingFilename.mockReturnValueOnce(true);
+    mockValidateUploadPath.mockReturnValueOnce('/tmp/uploads/temp_mapping_abc.xlsx');
+    mockParseExcelComplete.mockResolvedValueOnce([{ Nombre: 'Proyecto A' }]);
+    mockTransformDataset.mockReturnValueOnce([{
+      project_name: 'Proyecto A', estimated_cost: 0, actual_cost: 0, progress_percent: 0,
+    }]);
+    mockCalculateDIS.mockReturnValueOnce({ score: 10, grade: 'F', label: 'Crítica', fieldCoverage: {}, totalRows: 1, mappedFields: 0 });
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // SELECT existing -> not found
+
+    const res = await request(app).post('/api/data/mapping/save-mapping').send({
+      tempFilename: 'temp_mapping_abc.xlsx',
+      confirmedMapping: { Nombre: 'project_name' },
+      framework: 'scrum',
+      targetProjectId: 999,
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/destino no encontrado/);
+  });
 });

@@ -82,7 +82,11 @@ export const SaveMappingRequestSchema = z.object({
   ),
   framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),
   org: z.string().optional().default('Sin especificar'),
-  lang: z.enum(['es', 'en']).optional().default('es')
+  lang: z.enum(['es', 'en']).optional().default('es'),
+  // Fase 2: when set, this upload is appended as a new snapshot of an existing
+  // project (project_data.id) — reusing its projectid — instead of creating a
+  // new project. Null/absent = create a new project (legacy behavior).
+  targetProjectId: z.number().int().positive().nullable().optional(),
 });
 
 /**
