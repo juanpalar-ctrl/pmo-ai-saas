@@ -17,23 +17,90 @@
             --color-accent: #9ED900;
         }
 
+        html, body {
+            height: 100%;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
             min-height: 100vh;
+            display: flex;
+            color: #1a2b32;
+        }
+
+        /* ===== PANEL IZQUIERDO (marca) ===== */
+        .brand-panel {
+            position: relative;
+            flex: 1 1 55%;
+            background: linear-gradient(150deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            color: white;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 64px 72px;
+        }
+
+        /* Ilustración de red (nodos) de fondo */
+        .brand-panel .network-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 1;
+            max-width: 520px;
+        }
+
+        .brand-content h1 {
+            font-size: 52px;
+            line-height: 1.08;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            margin-bottom: 28px;
+        }
+
+        .brand-content p.lead {
+            font-size: 22px;
+            line-height: 1.5;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.92);
+            max-width: 460px;
+        }
+
+        .brand-content p.footnote {
+            margin-top: 64px;
+            font-size: 13px;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.78);
+            max-width: 420px;
+            line-height: 1.5;
+        }
+
+        /* ===== PANEL DERECHO (login) ===== */
+        .form-panel {
+            flex: 1 1 45%;
+            background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 40px;
         }
 
-        .login-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            max-width: 450px;
+        .login-card {
             width: 100%;
-            padding: 40px;
+            max-width: 400px;
+            padding: 44px 40px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 24px 60px rgba(11, 123, 140, 0.12);
+            border: 1px solid #eef1f2;
         }
 
         .logo-section {
@@ -44,11 +111,11 @@
         }
 
         .logo-section img {
-            height: 40px;
+            height: 52px;
             width: auto;
         }
 
-        .logo-text h1 {
+        .logo-text h2.brand-name {
             color: var(--color-secondary);
             font-size: 18px;
             font-weight: 700;
@@ -65,18 +132,18 @@
             text-transform: uppercase;
         }
 
-        h2 {
-            color: var(--color-primary);
+        h3.title {
+            color: #1a2b32;
             font-size: 28px;
             font-weight: 700;
-            margin: 0 0 12px 0;
+            margin: 0 0 8px 0;
             letter-spacing: -0.5px;
         }
 
         .subtitle {
-            color: #666;
+            color: #6b7c83;
             font-size: 14px;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .form-group {
@@ -85,7 +152,7 @@
 
         label {
             display: block;
-            color: #333;
+            color: #33474e;
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 6px;
@@ -96,12 +163,13 @@
         input[type="email"],
         input[type="password"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            padding: 13px 14px;
+            border: 2px solid #e2e8ea;
+            border-radius: 10px;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             font-family: inherit;
+            background-color: #fafbfb;
         }
 
         input[type="email"]:focus,
@@ -113,16 +181,16 @@
 
         button {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             background-color: var(--color-primary);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 24px;
+            transition: all 0.25s ease;
+            margin-top: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -132,7 +200,7 @@
         button:hover {
             background-color: var(--color-secondary);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 24px rgba(11, 123, 140, 0.22);
         }
 
         button:active {
@@ -142,13 +210,14 @@
         button:disabled {
             opacity: 0.7;
             cursor: not-allowed;
+            transform: none;
         }
 
         .signup-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 22px;
             font-size: 13px;
-            color: #666;
+            color: #6b7c83;
         }
 
         .signup-link a {
@@ -165,7 +234,7 @@
             background-color: #fee;
             color: #c33;
             padding: 12px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 13px;
             margin-bottom: 16px;
             display: none;
@@ -189,49 +258,143 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+            }
+
+            .brand-panel {
+                flex: none;
+                padding: 48px 32px;
+                min-height: auto;
+            }
+
+            .brand-content h1 {
+                font-size: 34px;
+                margin-bottom: 18px;
+            }
+
+            .brand-content p.lead {
+                font-size: 17px;
+            }
+
+            .brand-content p.footnote {
+                margin-top: 32px;
+            }
+
+            .form-panel {
+                flex: 1;
+                padding: 32px 20px;
+            }
+
+            .login-card {
+                box-shadow: 0 12px 32px rgba(11, 123, 140, 0.10);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .brand-content p.footnote {
+                display: none;
+            }
+
+            .login-card {
+                padding: 32px 24px;
+                border: none;
+                box-shadow: none;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <!-- Logo -->
-        <div class="logo-section">
-            <img id="logo" data-logo src="/uploads/logos/lara-logo.png" alt="LARA Logo">
-            <div class="logo-text">
-                <h1>LARA</h1>
-                <p>Intelligence Accelerated</p>
+    <!-- ===== PANEL IZQUIERDO: MARCA ===== -->
+    <section class="brand-panel">
+        <!-- Ilustración de red neuronal de fondo -->
+        <svg class="network-bg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g stroke="rgba(255,255,255,0.45)" stroke-width="1.2" fill="none">
+                <line x1="90" y1="120" x2="220" y2="200"/>
+                <line x1="220" y1="200" x2="140" y2="340"/>
+                <line x1="220" y1="200" x2="360" y2="260"/>
+                <line x1="140" y1="340" x2="60" y2="470"/>
+                <line x1="140" y1="340" x2="260" y2="440"/>
+                <line x1="360" y1="260" x2="260" y2="440"/>
+                <line x1="360" y1="260" x2="470" y2="180"/>
+                <line x1="260" y1="440" x2="180" y2="580"/>
+                <line x1="260" y1="440" x2="400" y2="520"/>
+                <line x1="60" y1="470" x2="180" y2="580"/>
+                <line x1="180" y1="580" x2="120" y2="700"/>
+                <line x1="180" y1="580" x2="300" y2="660"/>
+                <line x1="400" y1="520" x2="300" y2="660"/>
+                <line x1="400" y1="520" x2="500" y2="600"/>
+                <line x1="300" y1="660" x2="380" y2="760"/>
+                <line x1="470" y1="180" x2="520" y2="320"/>
+                <line x1="520" y1="320" x2="400" y2="520"/>
+            </g>
+            <g fill="rgba(255,255,255,0.85)">
+                <circle cx="90" cy="120" r="5"/>
+                <circle cx="220" cy="200" r="8"/>
+                <circle cx="140" cy="340" r="6"/>
+                <circle cx="360" cy="260" r="7"/>
+                <circle cx="470" cy="180" r="5"/>
+                <circle cx="60" cy="470" r="5"/>
+                <circle cx="260" cy="440" r="9"/>
+                <circle cx="520" cy="320" r="6"/>
+                <circle cx="180" cy="580" r="7"/>
+                <circle cx="400" cy="520" r="6"/>
+                <circle cx="120" cy="700" r="5"/>
+                <circle cx="300" cy="660" r="8"/>
+                <circle cx="500" cy="600" r="5"/>
+                <circle cx="380" cy="760" r="6"/>
+            </g>
+        </svg>
+
+        <div class="brand-content">
+            <h1>Predice el Futuro de tus Proyectos.</h1>
+            <p class="lead">No esperes a que los problemas ocurran. Anticípate y optimiza tu gobernanza con LARA Multi-Agent AI.</p>
+            <p class="footnote">LARA: Gobernanza Predictiva y Control Total. Análisis Multi-Agente Avanzado.</p>
+        </div>
+    </section>
+
+    <!-- ===== PANEL DERECHO: LOGIN ===== -->
+    <section class="form-panel">
+        <div class="login-card">
+            <!-- Logo -->
+            <div class="logo-section">
+                <img id="logo" data-logo src="/uploads/logos/lara-logo.png" alt="LARA — Intelligence Accelerated">
+            </div>
+
+            <!-- Título -->
+            <h3 class="title">Inicia Sesión</h3>
+            <p class="subtitle">Análisis Multi-Agente IA para tus Proyectos</p>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message"></div>
+
+            <!-- Formulario -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" id="submitButton">
+                    <span id="buttonText">Iniciar Sesión</span>
+                    <span id="spinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <!-- Link de registro -->
+            <div class="signup-link">
+                ¿No tienes cuenta? <a href="/signup.html">Regístrate aquí</a>
             </div>
         </div>
-
-        <!-- Título -->
-        <h2>Inicia Sesión</h2>
-        <p class="subtitle">Análisis Multi-Agente IA para tus Proyectos</p>
-
-        <!-- Error Message -->
-        <div id="errorMessage" class="error-message"></div>
-
-        <!-- Formulario -->
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="tu@email.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" placeholder="••••••••" required>
-            </div>
-
-            <button type="submit" id="submitButton">
-                <span id="buttonText">Iniciar Sesión</span>
-                <span id="spinner" class="spinner" style="display: none;"></span>
-            </button>
-        </form>
-
-        <!-- Link de registro -->
-        <div class="signup-link">
-            ¿No tienes cuenta? <a href="/signup.html">Regístrate aquí</a>
-        </div>
-    </div>
+    </section>
 
     <!-- ===== SCRIPT DE BRANDING ===== -->
     <script src="/js/branding.js"></script>
