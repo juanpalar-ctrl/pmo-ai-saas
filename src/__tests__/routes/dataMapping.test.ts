@@ -24,6 +24,9 @@ jest.mock('../../utils/pathValidator', () => ({
 jest.mock('../../services/multiAgentOrchestrator', () => ({
   orchestrator: { analyzeProject: jest.fn() },
 }));
+jest.mock('../../services/googleSheetsImporter', () => ({
+  fetchGoogleSheetCsv: jest.fn(),
+}));
 jest.mock('../../core/logger', () => ({
   routeLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
@@ -37,6 +40,7 @@ import { parseExcelSample, parseExcelComplete } from '../../services/excelParser
 import { transformDataset, calculateDIS } from '../../services/dataTransformer';
 import { validateUploadPath, isValidTempMappingFilename } from '../../utils/pathValidator';
 import { orchestrator } from '../../services/multiAgentOrchestrator';
+import { fetchGoogleSheetCsv } from '../../services/googleSheetsImporter';
 
 const mockQuery = pool.query as jest.Mock;
 const mockDetectColumns = detectColumns as jest.Mock;
@@ -47,6 +51,7 @@ const mockCalculateDIS = calculateDIS as jest.Mock;
 const mockValidateUploadPath = validateUploadPath as jest.Mock;
 const mockIsValidTempMappingFilename = isValidTempMappingFilename as jest.Mock;
 const mockAnalyzeProject = orchestrator.analyzeProject as jest.Mock;
+const mockFetchGoogleSheetCsv = fetchGoogleSheetCsv as jest.Mock;
 
 const app = express();
 app.use(express.json());
@@ -66,6 +71,7 @@ beforeEach(() => {
   mockValidateUploadPath.mockReset();
   mockIsValidTempMappingFilename.mockReset();
   mockAnalyzeProject.mockReset();
+  mockFetchGoogleSheetCsv.mockReset();
 });
 
 afterAll(() => {
@@ -111,6 +117,25 @@ describe('POST /api/data/mapping/detect-columns', () => {
     expect(res.body.data.tempFilename).toMatch(/^temp_mapping_.*\.xlsx$/);
   });
 
+  it('accepts a .csv upload (text/csv)', async () => {
+    mockParseExcelSample.mockResolvedValueOnce({
+      headers: ['Nombre'],
+      sampleRows: [{ Nombre: 'P1' }],
+      totalRows: 1,
+    });
+    mockDetectColumns.mockResolvedValueOnce({
+      suggestions: [{ originalHeader: 'Nombre', suggestedField: 'project_name', confidence: 0.9, reasoning: 'x' }],
+      rawResponse: '{}',
+    });
+
+    const res = await request(app)
+      .post('/api/data/mapping/detect-columns')
+      .attach('file', Buffer.from('Nombre\nP1'), { filename: 'projects.csv', contentType: 'text/csv' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.headers).toEqual(['Nombre']);
+  });
+
   it('returns 400 and cleans up the temp file when parsing fails', async () => {
     mockParseExcelSample.mockRejectedValueOnce(new Error('Excel parsing error: too many columns'));
 
@@ -127,6 +152,47 @@ describe('POST /api/data/mapping/detect-columns', () => {
     expect(res.body.error).toMatch(/too many columns/);
     // temp file that multer wrote should have been cleaned up on failure
     expect(fs.readdirSync(tmpUploadsDir).length).toBe(filesBefore);
+  });
+});
+
+describe('POST /api/data/mapping/detect-columns-gsheet', () => {
+  it('returns 400 when no url is provided', async () => {
+    const res = await request(app).post('/api/data/mapping/detect-columns-gsheet').send({});
+    expect(res.status).toBe(400);
+    expect(mockFetchGoogleSheetCsv).not.toHaveBeenCalled();
+  });
+
+  it('imports the sheet and returns header suggestions', async () => {
+    mockFetchGoogleSheetCsv.mockResolvedValueOnce(Buffer.from('Nombre,Costo\nP1,100'));
+    mockParseExcelSample.mockResolvedValueOnce({
+      headers: ['Nombre', 'Costo'],
+      sampleRows: [{ Nombre: 'P1', Costo: 100 }],
+      totalRows: 1,
+    });
+    mockDetectColumns.mockResolvedValueOnce({
+      suggestions: [{ originalHeader: 'Nombre', suggestedField: 'project_name', confidence: 0.9, reasoning: 'x' }],
+      rawResponse: '{}',
+    });
+
+    const res = await request(app)
+      .post('/api/data/mapping/detect-columns-gsheet')
+      .send({ url: 'https://docs.google.com/spreadsheets/d/XYZ/edit#gid=0' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.headers).toEqual(['Nombre', 'Costo']);
+    expect(res.body.data.tempFilename).toMatch(/^temp_mapping_.*\.xlsx$/);
+    expect(mockFetchGoogleSheetCsv).toHaveBeenCalledWith('https://docs.google.com/spreadsheets/d/XYZ/edit#gid=0');
+  });
+
+  it('returns 400 with the importer message when the sheet is not accessible', async () => {
+    mockFetchGoogleSheetCsv.mockRejectedValueOnce(new Error('La hoja no es accesible.'));
+
+    const res = await request(app)
+      .post('/api/data/mapping/detect-columns-gsheet')
+      .send({ url: 'https://docs.google.com/spreadsheets/d/XYZ/edit' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/no es accesible/);
   });
 });
 

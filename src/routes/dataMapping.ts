@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import { detectColumns } from '../agents/normalizationAgent';
 import { parseExcelSample, parseExcelComplete } from '../services/excelParser';
+import { fetchGoogleSheetCsv } from '../services/googleSheetsImporter';
 import { transformDataset, calculateDIS } from '../services/dataTransformer';
 import { validateUploadPath, isValidTempMappingFilename, getUploadsDir } from '../utils/pathValidator';
 import { AuthRequest } from '../middleware/requireAuth';
@@ -33,12 +34,18 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: (error: Error | null, accept?: boolean) => void) => {
-  const allowedMimes = [
+  // Excel is accepted by mimetype (original behavior). CSV mimetypes are
+  // unreliable across browsers (text/csv, text/plain, ms-excel, octet-stream),
+  // so CSV is accepted by the .csv extension paired with a plausible mimetype.
+  const xlsxMimes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/vnd.ms-excel',
   ];
+  const csvMimes = ['text/csv', 'application/csv', 'text/plain', 'application/vnd.ms-excel', 'application/octet-stream'];
+  const ext = path.extname(file.originalname).toLowerCase();
 
-  if (allowedMimes.includes(file.mimetype)) {
+  const accepted = xlsxMimes.includes(file.mimetype) || (ext === '.csv' && csvMimes.includes(file.mimetype));
+  if (accepted) {
     cb(null, true);
   } else {
     cb(new Error(`Invalid file type: ${file.mimetype}`));
@@ -114,6 +121,60 @@ router.post(
     }
   }
 );
+
+// Google Sheets import — fetches the CSV export of a public sheet, writes it to
+// the same kind of temp file as an upload, and returns the same detect-columns
+// payload so the rest of the flow (mapping modal → save-mapping) is unchanged.
+router.post('/detect-columns-gsheet', async (req: Request, res: Response): Promise<void> => {
+  let tempFilePath: string | null = null;
+
+  try {
+    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
+    if (!url) {
+      res.status(400).json({ error: 'Falta la URL de Google Sheets' });
+      return;
+    }
+
+    const csvBuffer = await fetchGoogleSheetCsv(url);
+
+    // Reuse the temp_mapping_<uuid>.xlsx naming so save-mapping's filename
+    // validation and XLSX.read (which sniffs CSV by content) work unchanged.
+    const tempFilename = `temp_mapping_${uuidv4()}.xlsx`;
+    tempFilePath = path.join(uploadsDir, tempFilename);
+    fs.writeFileSync(tempFilePath, csvBuffer);
+
+    routeLogger.info(`[detect-columns-gsheet] 📥 Imported Google Sheet → ${tempFilename}`);
+
+    const parseResult = await parseExcelSample(tempFilePath);
+    const normalizationResult = await detectColumns({
+      headers: parseResult.headers,
+      sampleRows: parseResult.sampleRows,
+    });
+
+    const response = {
+      headers: parseResult.headers,
+      sampleRows: parseResult.sampleRows,
+      suggestions: normalizationResult.suggestions,
+      tempFilename,
+    };
+    const validatedResponse = DetectColumnsResponseSchema.parse(response);
+
+    res.status(200).json({ success: true, data: validatedResponse });
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    routeLogger.error(`[detect-columns-gsheet] ❌ Error: ${errMsg}`);
+
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (unlinkErr) {
+        routeLogger.warn(`[detect-columns-gsheet] Failed to clean up: ${unlinkErr}`);
+      }
+    }
+
+    res.status(400).json({ error: errMsg, details: 'Failed to import Google Sheet' });
+  }
+});
 
 router.post('/save-mapping', async (req: Request, res: Response): Promise<void> => {
   let tempFilePath: string | null = null;
