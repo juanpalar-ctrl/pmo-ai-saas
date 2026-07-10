@@ -101,7 +101,7 @@ describe('GET /api/team/:projectId', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.groupSatisfactionScore).toBe(80);
     expect(res.body.data.projectName).toBe('Proyecto X');
-    expect(mockGetTeamBoard).toHaveBeenCalledWith(5, [{ project_name: 'X', assignee: 'Ana' }]);
+    expect(mockGetTeamBoard).toHaveBeenCalledWith(5, 'user-1', [{ project_name: 'X', assignee: 'Ana' }]);
   });
 });
 

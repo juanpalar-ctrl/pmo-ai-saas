@@ -84,8 +84,13 @@ describe('getTeamBoard', () => {
       { project_name: 'X', assignee: 'Ana', status: 'in progress' },
     ];
 
-    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(1, taskRows);
+    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(1, 'user-1', taskRows);
 
+    // Scoped by user_id, not just project_id (cross-tenant collision guard).
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE project_id = $1 AND user_id = $2'),
+      [1, 'user-1']
+    );
     expect(members).toHaveLength(2);
     expect(members[0]).toMatchObject({ id: 1, name: 'Ana', role: 'Dev' });
     expect(members[0].currentTasks).toEqual(['X']);
@@ -100,7 +105,7 @@ describe('getTeamBoard', () => {
     mockQuery.mockResolvedValueOnce({
       rows: [{ id: 1, name: 'Ana', role: null, last_feedback_at: null, latest_wellbeing_score: null }],
     });
-    const { groupSatisfactionScore } = await teamService.getTeamBoard(1, []);
+    const { groupSatisfactionScore } = await teamService.getTeamBoard(1, 'user-1', []);
     expect(groupSatisfactionScore).toBeNull();
   });
 });
@@ -249,7 +254,7 @@ describe('getDisconnectionAlertsForRiskAgent', () => {
       end_date: daysAgo(3).toISOString(),
     }));
 
-    const alerts = await teamService.getDisconnectionAlertsForRiskAgent(1, criticalRows);
+    const alerts = await teamService.getDisconnectionAlertsForRiskAgent(1, 'user-1', criticalRows);
 
     expect(alerts).toEqual([
       { name: 'Beto', level: 'red', daysSinceContact: 50, criticalDelayedCount: 4 },

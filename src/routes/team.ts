@@ -62,7 +62,7 @@ router.get('/:projectId', async (req: Request, res: Response) => {
     }
 
     const taskRows = await fetchTaskRows(project.realProjectId, userId);
-    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(project.realProjectId, taskRows);
+    const { members, groupSatisfactionScore } = await teamService.getTeamBoard(project.realProjectId, userId, taskRows);
 
     res.json({ success: true, data: { members, groupSatisfactionScore, projectName: project.projectName } });
   } catch (error: any) {

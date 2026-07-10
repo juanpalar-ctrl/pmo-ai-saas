@@ -225,7 +225,7 @@ describe('orchestrator.analyzeProject', () => {
 
     await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Org');
 
-    expect(mockGetDisconnectionAlerts).toHaveBeenCalledWith(1, [{ project_name: 'Fase 1', assignee: 'Beto' }]);
+    expect(mockGetDisconnectionAlerts).toHaveBeenCalledWith(1, 'user_1', [{ project_name: 'Fase 1', assignee: 'Beto' }]);
     expect(mockRiskAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: alerts }));
     expect(mockEconomicAnalyze).toHaveBeenCalledWith(expect.objectContaining({ moraleAlerts: alerts }));
   });

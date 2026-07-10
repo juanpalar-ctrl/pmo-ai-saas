@@ -45,7 +45,7 @@ export const orchestrator = {
 
     let moraleAlerts: any[] = [];
     try {
-      moraleAlerts = await teamService.getDisconnectionAlertsForRiskAgent(projectId, taskRows);
+      moraleAlerts = await teamService.getDisconnectionAlertsForRiskAgent(projectId, userId, taskRows);
     } catch (err) {
       routeLogger.error({ err }, 'Failed to compute team disconnection alerts');
     }

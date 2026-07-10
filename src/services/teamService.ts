@@ -111,12 +111,17 @@ async function autoPopulateTeam(projectId: number, userId: string, taskRows: Tra
  */
 async function getTeamBoard(
   projectId: number,
+  userId: string,
   taskRows: TransformedRow[]
 ): Promise<{ members: TeamMemberCard[]; groupSatisfactionScore: number | null }> {
+  // Scoped by user_id as well as project_id: the business projectid is not
+  // globally unique across tenants (append-only history, same collision class
+  // that was closed on ai_analyses), so filtering by project_id alone could
+  // surface another user's team members.
   const result = await pool.query(
     `SELECT id, name, role, last_feedback_at, latest_wellbeing_score, latest_sentiment
-     FROM team_members WHERE project_id = $1 ORDER BY name ASC`,
-    [projectId]
+     FROM team_members WHERE project_id = $1 AND user_id = $2 ORDER BY name ASC`,
+    [projectId, userId]
   );
 
   // First pass: raw per-member counts. We need the team-wide average active
@@ -213,7 +218,7 @@ async function getTeamBoardsForUser(
   const projects: TeamProjectGroup[] = [];
   for (const row of projectRows.rows) {
     const taskRows = await fetchTaskRowsForProject(row.projectid, userId);
-    const { members, groupSatisfactionScore } = await getTeamBoard(row.projectid, taskRows);
+    const { members, groupSatisfactionScore } = await getTeamBoard(row.projectid, userId, taskRows);
     if (members.length === 0) continue;
     projects.push({
       projectId: row.project_data_id,
@@ -360,9 +365,10 @@ async function updateMemberRole(teamMemberId: number, projectId: number, userId:
  */
 async function getDisconnectionAlertsForRiskAgent(
   projectId: number,
+  userId: string,
   taskRows: TransformedRow[]
 ): Promise<DisconnectionAlert[]> {
-  const { members } = await getTeamBoard(projectId, taskRows);
+  const { members } = await getTeamBoard(projectId, userId, taskRows);
   return members
     .filter((m) => m.overallLevel !== 'green')
     .map((m) => ({
