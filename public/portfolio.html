@@ -173,6 +173,13 @@
   </div>
 
   <script>
+    // Escapa datos no confiables (nombre/org del proyecto, del Excel del usuario)
+    // antes de interpolarlos en innerHTML → evita XSS almacenado.
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
     let allProjects = [];
     let activeFilter = 'all';
 
@@ -299,8 +306,8 @@
                     <span class="text-xs font-bold uppercase ${cfg.badge.split(' ')[1]}">${cfg.label}</span>
                     <span class="text-xs text-gray-400">${fwIcon[p.framework] || '📁'} ${p.framework.toUpperCase()}</span>
                   </div>
-                  <h3 class="font-bold text-gray-800 text-sm leading-tight truncate" title="${p.name}">${p.name}</h3>
-                  <p class="text-xs text-gray-400 mt-0.5">🏢 ${p.org}</p>
+                  <h3 class="font-bold text-gray-800 text-sm leading-tight truncate" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</h3>
+                  <p class="text-xs text-gray-400 mt-0.5">🏢 ${escapeHtml(p.org)}</p>
                 </div>
                 <div class="shrink-0 flex items-center gap-2">
                   <span class="text-lg font-black text-gray-700">${p.healthScore}</span>
@@ -359,8 +366,8 @@
       document.getElementById('revenue-list').innerHTML = atRisk.map(p => `
         <div class="flex items-center justify-between bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           <div>
-            <p class="font-semibold text-gray-800 text-sm">${p.name}</p>
-            <p class="text-xs text-gray-500">🏢 ${p.org} · ${p.framework.toUpperCase()} · EAC: ${fmt(p.eac)}</p>
+            <p class="font-semibold text-gray-800 text-sm">${escapeHtml(p.name)}</p>
+            <p class="text-xs text-gray-500">🏢 ${escapeHtml(p.org)} · ${p.framework.toUpperCase()} · EAC: ${fmt(p.eac)}</p>
           </div>
           <div class="text-right">
             <p class="font-black text-red-700 text-lg">${fmt(p.revenueAtStake)}</p>

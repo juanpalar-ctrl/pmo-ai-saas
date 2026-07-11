@@ -12,6 +12,7 @@ import { pool } from '../db';
 import { createPasswordResetToken, resetPasswordWithToken } from '../services/passwordResetService';
 import { signToken, verifyToken } from '../services/jwtService';
 import { AUTH_MESSAGES } from '../config/messages';
+import { z } from 'zod';
 
 const router = express.Router();
 
@@ -25,6 +26,12 @@ router.post('/signup', async (req: Request, res: Response) => {
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email y contraseña requeridos' });
+    }
+
+    // Validar formato de email (defensa del lado de entrada, además del escape de
+    // salida en el panel admin). Rechaza también valores no-string (p.ej. objetos).
+    if (!z.email().safeParse(email).success) {
+      return res.status(400).json({ error: 'Email inválido' });
     }
 
     if (password.length < 8) {

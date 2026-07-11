@@ -360,7 +360,7 @@
         select.innerHTML = '<option value="">➕ Crear proyecto nuevo</option>' +
           existingProjects.map(p => {
             const when = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '';
-            return `<option value="${p.id}">${p.projectName}${when ? ` — ${when}` : ''}</option>`;
+            return `<option value="${p.id}">${escapeHtml(p.projectName)}${when ? ` — ${when}` : ''}</option>`;
           }).join('');
       } catch (_) {}
     }

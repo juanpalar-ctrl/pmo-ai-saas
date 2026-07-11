@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Sanitiza el HTML que marked.parse genera del reporte IA antes de inyectarlo (innerHTML) → evita XSS si el modelo emite HTML. -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); min-height: 100vh; }
 
@@ -551,6 +553,17 @@
   </div>
 
   <script>
+    // Escapa datos no confiables (email del signup, nombre de proyecto/org/tarea/
+    // assignee del Excel del usuario) antes de interpolarlos en innerHTML.
+    // Sin esto, un valor como `<img src=x onerror=...>` se ejecuta (XSS almacenado).
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
     let activeFramework = 'scrum';
     let myChart = null;
     let analysisData = null;
@@ -600,7 +613,7 @@
         const html = data.users.map(user => `
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
             <div>
-              <p class="font-semibold text-gray-800">${user.email}</p>
+              <p class="font-semibold text-gray-800">${escapeHtml(user.email)}</p>
               <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString('es-MX')}</p>
             </div>
             <div class="flex gap-2">
@@ -699,9 +712,9 @@
                       onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#ccc'" title="Eliminar proyecto">
                 <i class="fa-solid fa-trash-can" style="font-size:0.8em;"></i>
               </button>
-              <div class="history-card-title" style="padding-right:20px;">${project.projectName}</div>
+              <div class="history-card-title" style="padding-right:20px;">${escapeHtml(project.projectName)}</div>
               <div class="history-card-meta">
-                <div>🏢 ${project.org}</div>
+                <div>🏢 ${escapeHtml(project.org)}</div>
                 <div>📅 ${new Date(project.timestamp).toLocaleDateString('es-MX')}</div>
                 <div>🎯 ${project.framework.toUpperCase()}</div>
                 <div>💰 $${(project.totalBudget || 0).toLocaleString('es-MX')}</div>
@@ -780,7 +793,7 @@
         container.innerHTML = `<p class="text-gray-500">Reporte no disponible</p>`;
         return;
       }
-      container.innerHTML = `<div class="markdown-report">${marked.parse(text)}</div>`;
+      container.innerHTML = `<div class="markdown-report">${DOMPurify.sanitize(marked.parse(text))}</div>`;
     }
 
     function showReport(type) {
@@ -845,7 +858,7 @@
             ${ew.warnings.map(w => {
               const cfg = severityConfig[w.severity] || severityConfig.LOW;
               const tasks = w.affectedTasks?.length > 0
-                ? `<div class="mt-2 flex flex-wrap gap-1">${w.affectedTasks.map(t => `<span class="text-xs bg-white/60 border rounded px-2 py-0.5 text-gray-600 truncate max-w-[160px]" title="${t}">${t}</span>`).join('')}</div>`
+                ? `<div class="mt-2 flex flex-wrap gap-1">${w.affectedTasks.map(t => `<span class="text-xs bg-white/60 border rounded px-2 py-0.5 text-gray-600 truncate max-w-[160px]" title="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
                 : '';
               return `
                 <div class="${cfg.bg} border-l-4 ${cfg.border} rounded-lg p-4">
@@ -1151,7 +1164,7 @@
         return `
           <tr class="gantt-row transition" style="${rowBg}" data-task="${encodeURIComponent(t.name)}" data-progress="${Math.round(t.progress)}">
             <td class="p-4 font-semibold text-gray-800">
-              ${t.name}
+              ${escapeHtml(t.name)}
               ${dateLabel ? `<div style="font-size:10px;color:#9ca3af;font-weight:400;margin-top:2px">${dateLabel}</div>` : ''}
             </td>
             <td class="p-4 font-mono text-gray-700">$${Math.round(t.plan).toLocaleString('es-MX')}</td>
@@ -1226,7 +1239,7 @@
         if (counts.red > 0) {
           const atRisk = members.find(m => toRag(m.disconnectionLevel) === 'red');
           const scoreLabel = atRisk.latestWellbeingScore !== null ? ` (${(atRisk.latestWellbeingScore * 100).toFixed(0)}% bienestar)` : '';
-          insight.innerHTML = `<div class="rag-bg-red border rounded-lg px-3 py-2 text-sm rag-red">${atRisk.name} muestra señales de burnout${scoreLabel}</div>`;
+          insight.innerHTML = `<div class="rag-bg-red border rounded-lg px-3 py-2 text-sm rag-red">${escapeHtml(atRisk.name)} muestra señales de burnout${scoreLabel}</div>`;
         } else if (counts.yellow > 0) {
           insight.innerHTML = `<div class="rag-bg-yellow border rounded-lg px-3 py-2 text-sm rag-yellow">${counts.yellow} persona(s) necesitan reconectar — revisa el detalle</div>`;
         } else {
@@ -1397,7 +1410,9 @@
       }
 
       function formatMarkdown(text) {
-        return text
+        // Escapar primero: neutraliza HTML crudo del texto (p.ej. <img onerror=...>)
+        // antes de aplicar el mini-markdown, que solo introduce tags controlados.
+        return escapeHtml(text)
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
           .replace(/`(.*?)`/g, '<code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:0.9em">$1</code>')
