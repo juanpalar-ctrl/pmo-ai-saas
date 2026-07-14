@@ -215,6 +215,23 @@ describe('POST /api/auth/forgot-password', () => {
     expect(res.body.resetLink).toBe('https://app.example.com/reset-password?token=abc');
   });
 
+  it('never returns the reset link in production, even when the account exists (no account takeover)', async () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    mockCreateReset.mockResolvedValueOnce({
+      token: 'abc',
+      resetLink: 'https://app.example.com/reset-password?token=abc',
+    });
+    try {
+      const res = await request(app).post('/api/auth/forgot-password').send({ email: 'me@b.com' });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.resetLink).toBeNull();
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
   it('returns 200 with a generic message and null link when the email is unknown (no enumeration)', async () => {
     mockCreateReset.mockResolvedValueOnce(null);
     const res = await request(app).post('/api/auth/forgot-password').send({ email: 'nobody@b.com' });

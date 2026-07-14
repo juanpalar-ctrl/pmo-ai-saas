@@ -359,7 +359,7 @@
         const select = document.getElementById('existing-project');
         select.innerHTML = '<option value="">➕ Crear proyecto nuevo</option>' +
           existingProjects.map(p => {
-            const when = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '';
+            const when = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('es-MX') : '';
             return `<option value="${p.id}">${escapeHtml(p.projectName)}${when ? ` — ${when}` : ''}</option>`;
           }).join('');
       } catch (_) {}

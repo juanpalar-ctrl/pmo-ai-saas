@@ -701,15 +701,11 @@
    async function loadAnalysis() {
   try {
     const projectId = new URLSearchParams(location.search).get('id');
-    const token = localStorage.getItem('token');
-    
-    const res = await fetch(`/api/data/analysis/${projectId}/latest`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    // La sesión va por cookie httpOnly (auth_token); requireAuth la lee de ahí.
+    // El fetch es mismo-origen, así que la cookie viaja sola con credentials.
+    const res = await fetch(`/api/data/analysis/${projectId}/latest`, { credentials: 'include' });
     const data = await res.json();
-    
+
     if (data.success && data.data) {
       analysisData = data.data;
       const framework = data.data?.metrics?.framework || 'scrum';
@@ -794,12 +790,8 @@
    async function loadReports() {
   try {
     const projectId = new URLSearchParams(location.search).get('id');
-    const token = localStorage.getItem('token');
-    const res = await fetch(`/api/data/analysis/${projectId}/latest`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    // Sesión por cookie httpOnly (auth_token); fetch mismo-origen la envía sola.
+    const res = await fetch(`/api/data/analysis/${projectId}/latest`, { credentials: 'include' });
     const data = await res.json();
     const reports = data.data?.reports;
     if (reports) {

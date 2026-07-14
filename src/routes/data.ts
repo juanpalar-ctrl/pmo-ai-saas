@@ -22,7 +22,11 @@ const storage = multer.diskStorage({
   
   filename: (req, file, cb) => {
     const timestamp = Date.now();
-    const filename = `${timestamp}-${file.originalname}`;
+    // path.basename descarta cualquier componente de ruta ("../../x.xlsx") que
+    // venga en originalname: sin esto, un nombre con traversal podía escribir el
+    // archivo fuera de ./uploads al unirse con el destino.
+    const safeName = path.basename(file.originalname).replace(/[^\w.\-]/g, '_');
+    const filename = `${timestamp}-${safeName}`;
     cb(null, filename);
   },
 });

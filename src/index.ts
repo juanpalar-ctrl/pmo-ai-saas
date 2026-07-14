@@ -37,9 +37,30 @@ const PORT = process.env.PORT || 3001;
 // Render (and most cloud providers) sit behind a reverse proxy
 app.set('trust proxy', 1);
 
-// Security headers
+// Security headers + Content-Security-Policy.
+// Las páginas usan ~60 handlers on* inline y bloques <script> inline, así que
+// 'unsafe-inline' es necesario (migrarlo todo a addEventListener sería un
+// refactor grande y arriesgado). Aun con 'unsafe-inline', el allowlist de hosts
+// bloquea el vector real de la mayoría de los XSS: cargar <script src> de un
+// dominio atacante o exfiltrar datos vía fetch/img a un host externo
+// (connect-src 'self'). object-src 'none' + base-uri/frame-ancestors 'self'
+// cierran otros vectores. Hosts permitidos = los CDNs que ya usa el front.
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled: app uses inline scripts/styles and CDN resources
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdn.tailwindcss.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
+      fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 

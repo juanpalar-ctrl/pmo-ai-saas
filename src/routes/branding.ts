@@ -10,6 +10,7 @@ import { routeLogger } from '../core/logger';
 import { errorMessage } from '../core/errors';
 import express, { Request, Response } from 'express';
 import { pool } from '../db';
+import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware';
 
 const router = express.Router();
 
@@ -94,7 +95,7 @@ router.get('/', async (req: Request, res: Response) => {
  *   "data": { ... branding actualizado ... }
  * }
  */
-router.post('/:organizationId', async (req: Request, res: Response) => {
+router.post('/:organizationId', adminAuthMiddleware, async (req: Request, res: Response) => {
   try {
     const { organizationId } = req.params;
     const { primaryColor, secondaryColor, accentColor, logoUrl } = req.body;

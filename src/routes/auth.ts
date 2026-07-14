@@ -206,10 +206,15 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const result = await createPasswordResetToken(email);
 
     // Retornar éxito sin importar si el email existe (por seguridad)
+    // SEGURIDAD: el resetLink NUNCA debe volver en la respuesta en producción.
+    // Sin transporte de email real, devolverlo permitía que cualquiera pidiera el
+    // reset de un email ajeno, leyera el enlace de la respuesta y secuestrara la
+    // cuenta (account takeover). Solo se expone fuera de producción (dev/mock).
+    const isProd = process.env.NODE_ENV === 'production';
     res.json({
       success: true,
       message: 'Si la cuenta existe, recibirás un email con instrucciones de reset',
-      resetLink: result?.resetLink || null, // Solo en development/mock
+      resetLink: isProd ? null : (result?.resetLink || null),
     });
   } catch (error) {
     authLogger.error({ err: errorMessage(error) }, 'Forgot password error');
