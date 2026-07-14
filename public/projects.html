@@ -56,7 +56,7 @@
       body { background: white !important; }
       #pdf-header { display: flex !important; }
       .no-print, #chat-fab, #chat-panel, nav, header,
-      .gantt-whatif-btns, #chat-suggestions, #health-banner { display: none !important; }
+      .gantt-whatif-btns, #gantt-filters, #chat-suggestions, #health-banner { display: none !important; }
       .pdf-only { display: block !important; }
       #report-senior, #report-technical {
         max-height: none !important; overflow: visible !important;
@@ -103,6 +103,22 @@
     .gantt-whatif-btn:hover { border-color: #0B7B8C; color: #0B7B8C; background: #f0fdfa; }
     .gantt-whatif-btn.accent { border-color: #17B8A0; color: #17B8A0; }
     .gantt-whatif-btn.accent:hover { background: #17B8A0; color: white; }
+
+    /* ── Gantt filters (excepción primero + chips) ── */
+    #gantt-filters { display: flex; }
+    .gantt-chip {
+      font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 9999px;
+      border: 1px solid #e5e7eb; background: #fff; color: #6b7280;
+      cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    }
+    .gantt-chip:hover { border-color: #cbd5e1; color: #374151; }
+    .gantt-chip.active { background: #0B7B8C; border-color: #0B7B8C; color: #fff; }
+    .gantt-chip .chip-count { opacity: 0.7; font-weight: 700; margin-left: 5px; }
+    #gantt-search {
+      font-size: 13px; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 6px 12px 6px 30px; width: 200px; transition: border-color 0.15s;
+    }
+    #gantt-search:focus { outline: none; border-color: #17B8A0; }
 
     /* ── Chat Widget ── */
     #chat-fab {
@@ -432,6 +448,15 @@
                 <h3 class="font-bold text-lg text-gray-800">Cronograma Gantt Interactivo</h3>
                 <p class="text-xs text-gray-500 mt-1">Datos del análisis importado</p>
               </div>
+            </div>
+          </div>
+
+          <div id="gantt-filters" class="flex-wrap items-center gap-2">
+            <div id="gantt-chips" class="flex flex-wrap gap-1.5"></div>
+            <div class="relative ml-auto">
+              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+              <input id="gantt-search" type="text" placeholder="Buscar entregable…"
+                     oninput="onGanttSearch(this.value)" autocomplete="off" />
             </div>
           </div>
 
@@ -1154,8 +1179,9 @@
         } catch (_) {}
       }
 
-      // Fallback: single summary row
-      if (tasks.length === 0) {
+      // Real = we got per-task rows; false = fallback single summary row (no filtering UI).
+      _ganttReal = tasks.length > 0;
+      if (!_ganttReal) {
         tasks = [{ name: 'Resumen del proyecto', plan: totalBudget, actual: totalSpent, progress: avgProgress }];
       }
 
@@ -1167,7 +1193,100 @@
       const spanEnd   = timestamps.length ? Math.max(...timestamps) : null;
       const spanMs    = spanStart !== null && spanEnd !== null && spanEnd > spanStart ? spanEnd - spanStart : null;
 
-      body.innerHTML = tasks.map(t => {
+      // Store state so chip/search re-renders don't re-fetch. Each task gets its
+      // RAG-based bucket (rojo/amarillo/verde/completado) computed once here.
+      _ganttPlanPct = planPct;
+      _ganttSpan = { start: spanStart, ms: spanMs };
+      _ganttTasks = tasks.map(t => ({ ...t, _bucket: classifyGanttBucket(t, planPct) }));
+
+      // Fallback row has no meaningful buckets → show everything, hide chips.
+      if (!_ganttReal) _ganttFilter = 'todos';
+
+      renderGanttChips();
+      renderGanttRows();
+    }
+
+    // ── Gantt filtering: "excepción primero" default + status chips + búsqueda ──
+    let _ganttTasks   = [];
+    let _ganttPlanPct = 0;
+    let _ganttSpan    = { start: null, ms: null };
+    let _ganttFilter  = 'atencion';   // default view = only red + yellow
+    let _ganttSearch  = '';
+    let _ganttReal    = false;
+
+    // Chip definitions. `test` receives a task's bucket ('red'|'yellow'|'green'|'done').
+    const GANTT_BUCKETS = {
+      atencion: { label: 'Atención',    emoji: '🔔', test: b => b === 'red' || b === 'yellow' },
+      todos:    { label: 'Todos',       emoji: '',   test: () => true },
+      red:      { label: 'En riesgo',   emoji: '🔴', test: b => b === 'red' },
+      yellow:   { label: 'Atrasados',   emoji: '🟡', test: b => b === 'yellow' },
+      green:    { label: 'Al día',      emoji: '🟢', test: b => b === 'green' },
+      done:     { label: 'Completados', emoji: '✅', test: b => b === 'done' },
+    };
+
+    function classifyGanttBucket(t, planPct) {
+      if (t.progress >= 100 || /complet/i.test(t.status || '')) return 'done';
+      return ragProgress(t.progress, planPct); // 'red' | 'yellow' | 'green'
+    }
+
+    function renderGanttChips() {
+      const wrap    = document.getElementById('gantt-chips');
+      const filters = document.getElementById('gantt-filters');
+      if (!_ganttReal) { filters.style.display = 'none'; return; }
+      filters.style.display = 'flex';
+
+      const counts = { atencion: 0, todos: _ganttTasks.length, red: 0, yellow: 0, green: 0, done: 0 };
+      _ganttTasks.forEach(t => {
+        if (counts[t._bucket] !== undefined) counts[t._bucket]++;
+        if (t._bucket === 'red' || t._bucket === 'yellow') counts.atencion++;
+      });
+
+      // Keep Atención + Todos always visible; hide empty color/done chips to reduce clutter.
+      const order = ['atencion', 'todos', 'red', 'yellow', 'green', 'done'];
+      wrap.innerHTML = order.map(key => {
+        const b = GANTT_BUCKETS[key];
+        const n = counts[key];
+        if (n === 0 && key !== 'atencion' && key !== 'todos') return '';
+        const active = _ganttFilter === key ? ' active' : '';
+        return `<button class="gantt-chip${active}" onclick="setGanttFilter('${key}')">${b.emoji ? b.emoji + ' ' : ''}${b.label}<span class="chip-count">${n}</span></button>`;
+      }).join('');
+    }
+
+    function setGanttFilter(key) {
+      _ganttFilter = key;
+      renderGanttChips();
+      renderGanttRows();
+    }
+
+    function onGanttSearch(v) {
+      _ganttSearch = v.trim().toLowerCase();
+      renderGanttRows();
+    }
+
+    function renderGanttRows() {
+      const body      = document.getElementById('gantt-body');
+      const spanStart = _ganttSpan.start;
+      const spanMs    = _ganttSpan.ms;
+      const planPct   = _ganttPlanPct;
+
+      const bucket = GANTT_BUCKETS[_ganttFilter] || GANTT_BUCKETS.todos;
+      let rows = _ganttTasks.filter(t => bucket.test(t._bucket));
+      if (_ganttSearch) rows = rows.filter(t => (t.name || '').toLowerCase().includes(_ganttSearch));
+
+      if (rows.length === 0) {
+        let msg;
+        if (_ganttSearch) {
+          msg = `Ningún entregable coincide con "<strong>${escapeHtml(_ganttSearch)}</strong>".`;
+        } else if (_ganttFilter === 'atencion') {
+          msg = `🎉 Todo en orden — ningún entregable requiere atención. <button class="text-teal-600 font-semibold underline" onclick="setGanttFilter('todos')">Ver todos</button>`;
+        } else {
+          msg = 'Sin entregables en esta vista.';
+        }
+        body.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500">${msg}</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = rows.map(t => {
         const rowRag = ragProgress(t.progress, planPct);
         const barCol = rowRag === 'green' ? '#16a34a' : rowRag === 'yellow' ? '#d97706' : '#dc2626';
         const rowBg  = rowRag === 'red' ? 'background:#fff1f2' : rowRag === 'yellow' ? 'background:#fffbeb' : '';
@@ -1299,7 +1418,27 @@
       document.getElementById('pdf-project-name').textContent = window.projectContext?.projectName || 'Proyecto';
       document.getElementById('pdf-date').textContent = 'Generado: ' + new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
       document.getElementById('pdf-report-type').textContent = isSenior ? 'Reporte Ejecutivo' : 'Reporte Técnico';
+
+      // The PDF should carry the FULL cronograma, not the current filtered view.
+      // Temporarily expand to "Todos" + clear search, print, then restore.
+      const prevFilter = _ganttFilter, prevSearch = _ganttSearch;
+      const searchEl = document.getElementById('gantt-search');
+      if (_ganttReal && (prevFilter !== 'todos' || prevSearch)) {
+        _ganttFilter = 'todos';
+        _ganttSearch = '';
+        if (searchEl) searchEl.value = '';
+        renderGanttRows();
+      }
+
       window.print();
+
+      if (_ganttReal && (prevFilter !== 'todos' || prevSearch)) {
+        _ganttFilter = prevFilter;
+        _ganttSearch = prevSearch;
+        if (searchEl) searchEl.value = prevSearch;
+        renderGanttChips();
+        renderGanttRows();
+      }
     }
 
     function ganttWhatIf(btn, delta) {
