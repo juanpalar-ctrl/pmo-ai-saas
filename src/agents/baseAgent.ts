@@ -37,7 +37,6 @@ export abstract class BaseAgent implements IAgent {
       const response = await anthropicClient.messages.create({
         model: aiConfig.model,
         max_tokens: this.maxTokens,
-        temperature: aiConfig.temperature,
         messages: [
           {
             role: 'user',

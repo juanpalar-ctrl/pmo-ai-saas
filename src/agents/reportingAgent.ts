@@ -274,13 +274,11 @@ Revisar análisis completo de riesgos y económico para detalles adicionales.`;
         anthropicClient.messages.create({
           model: aiConfig.model,
           max_tokens: this.maxTokens,
-          temperature: aiConfig.temperature,
           messages: [{ role: 'user', content: this.buildSeniorPrompt(input) }],
         }),
         anthropicClient.messages.create({
           model: aiConfig.model,
           max_tokens: this.maxTokens,
-          temperature: aiConfig.temperature,
           messages: [{ role: 'user', content: this.buildTechnicalPrompt(input) }],
         }),
       ]);

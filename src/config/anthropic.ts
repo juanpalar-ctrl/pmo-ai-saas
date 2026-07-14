@@ -14,8 +14,10 @@ export const aiConfig = {
   // Máximo de tokens en la respuesta
   maxTokens: parseInt(process.env.AI_MAX_TOKENS || '2000', 10),
 
-  // Creatividad (0 = determinístico, 1 = creativo)
-  temperature: parseFloat(process.env.AI_TEMPERATURE || '0.7'),
+  // NOTA: NO enviar `temperature` a la API. El modelo Opus vigente
+  // (claude-opus-4-8) lo rechaza con 400 "temperature is deprecated for this
+  // model", lo que rompía todos los agentes (risk/economic/reporting) y dejaba
+  // el análisis sin registro 'combined'. Las llamadas omiten el parámetro.
 
   // Timeout en milisegundos
   timeout: 60000,
