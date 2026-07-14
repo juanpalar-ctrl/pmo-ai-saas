@@ -1111,12 +1111,23 @@
       const vac         = parseFloat(metrics.vac) || (totalBudget - eac);
 
       // ── KPI cards (always from aggregate metrics) ──
-      document.getElementById('kpi-budget').textContent   = `$${Math.round(totalBudget).toLocaleString('es-MX')}`;
-      document.getElementById('kpi-spent').textContent    = `$${Math.round(totalSpent).toLocaleString('es-MX')}`;
+      // Mismo formato compacto que el Resumen Ejecutivo del portafolio ($51.0 M en
+      // vez de $51,027,000): las 6 tarjetas van en una fila estrecha y la cifra
+      // completa desbordaba. El valor exacto queda en el title (tooltip al pasar
+      // el mouse). Debe coincidir con setMoney() en public/portfolio.html.
+      const fmtMoney   = n => `$${Math.round(n).toLocaleString('es-MX')}`;
+      const fmtCompact = n => '$' + new Intl.NumberFormat('es-MX', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.round(n));
+      const setMoney = (id, n) => {
+        const el = document.getElementById(id);
+        el.textContent = fmtCompact(n);
+        el.title = fmtMoney(n);
+      };
+      setMoney('kpi-budget', totalBudget);
+      setMoney('kpi-spent',  totalSpent);
       document.getElementById('kpi-progress').textContent = `${Math.round(avgProgress)}%`;
-      document.getElementById('kpi-cv').textContent       = `$${Math.round(cv).toLocaleString('es-MX')}`;
-      document.getElementById('kpi-eac').textContent      = `$${Math.round(eac).toLocaleString('es-MX')}`;
-      document.getElementById('kpi-saldo').textContent    = `$${Math.round(vac).toLocaleString('es-MX')}`;
+      setMoney('kpi-cv',    cv);
+      setMoney('kpi-eac',   eac);
+      setMoney('kpi-saldo', vac);
 
       // Real plan% from elapsed-time (metrics.pv = planPercent/100 * bac, computed
       // server-side in metricsCalculator.ts) — deriving this from SPI instead used
