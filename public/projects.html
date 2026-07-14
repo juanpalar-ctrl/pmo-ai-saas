@@ -582,6 +582,16 @@
         loadPendingUsers();
       }
 
+      // Si se llegó sin ?id (p.ej. desde "Vista Proyecto" en portafolio/equipo),
+      // abrir el último proyecto visto o, en su defecto, el más reciente.
+      const urlId = new URLSearchParams(location.search).get('id');
+      if (!urlId) {
+        const fallbackId = await resolveFallbackProjectId();
+        if (fallbackId) { location.replace('/projects?id=' + fallbackId); return; }
+      } else {
+        localStorage.setItem('lastProjectId', urlId);
+      }
+
       await loadAnalysis();
       await loadHistory();
       switchFramework(activeFramework);
@@ -672,6 +682,21 @@
         console.error('Error rejecting user:', error);
       }
     }
+
+   // Resuelve a qué proyecto ir cuando la URL no trae ?id: prioriza el último
+   // visto (si sigue existiendo) y si no, el más reciente del historial.
+   async function resolveFallbackProjectId() {
+     let ids = [];
+     try {
+       const res = await fetch('/api/data/projects/history/latest', { credentials: 'include' });
+       const data = await res.json();
+       if (data.success && Array.isArray(data.data)) ids = data.data.map(p => String(p.projectId));
+     } catch (e) { /* sin historial disponible */ }
+     const last = localStorage.getItem('lastProjectId');
+     if (last && ids.includes(last)) return last; // último visto, si aún existe
+     if (ids.length) return ids[0];               // más reciente (history/latest va ordenado desc)
+     return null;                                 // el usuario no tiene proyectos analizados
+   }
 
    async function loadAnalysis() {
   try {

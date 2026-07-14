@@ -14,10 +14,10 @@
     @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.4; } }
     .project-card { transition: transform 0.15s, box-shadow 0.15s; }
     .project-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-    .kpi-number { font-size: 1.8rem; font-weight: 800; line-height: 1.05; overflow-wrap: break-word; word-break: break-word; }
-    @media (min-width: 1536px) { .kpi-number { font-size: 2.2rem; } }
-    @media (max-width: 767px) { .kpi-number { font-size: 1.6rem; } }
-    @media (max-width: 639px) { .kpi-number { font-size: 1.4rem; } }
+    /* Fuente fluida que escala con el ancho y NUNCA parte una cifra a la mitad.
+       Combinado con formato compacto ($57.2M) mantiene los valores en una línea. */
+    .kpi-number { font-size: clamp(1.2rem, 1.4vw + 0.6rem, 2rem); font-weight: 800; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    @media (max-width: 639px) { .kpi-number { white-space: normal; } }
   </style>
 </head>
 <body>
@@ -218,9 +218,18 @@
 
     function renderSummary(s) {
       const fmt = n => `$${Math.round(n).toLocaleString('es-MX')}`;
+      // Formato compacto para los montos grandes de los KPI ($57.2M en vez de
+      // $57,165,000): cabe en una línea y no desborda la tarjeta. El valor
+      // completo queda en el title (tooltip al pasar el mouse).
+      const fmtCompact = n => '$' + new Intl.NumberFormat('es-MX', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.round(n));
+      const setMoney = (id, n) => {
+        const el = document.getElementById(id);
+        el.textContent = fmtCompact(n);
+        el.title = fmt(n);
+      };
       document.getElementById('kpi-total').textContent = s.totalProjects;
-      document.getElementById('kpi-revenue-risk').textContent = fmt(s.totalRevenueAtStake);
-      document.getElementById('kpi-bac').textContent = fmt(s.totalBAC);
+      setMoney('kpi-revenue-risk', s.totalRevenueAtStake);
+      setMoney('kpi-bac', s.totalBAC);
       document.getElementById('kpi-cpi').textContent = s.avgCPI;
       document.getElementById('kpi-spi').textContent = s.avgSPI;
       document.getElementById('kpi-alerts').textContent = s.totalCriticalAlerts;
