@@ -24,29 +24,7 @@ LARA is a SaaS platform that turns a spreadsheet of project tasks into **real-ti
 
 ---
 
-## Live Demo
-
-**→ [Try LARA now](https://pmo-ai-saas.onrender.com)**
-
-### Test User
-
-To try the demo, you can either:
-
-**A) Use a pre-created test account** (if available)
-```
-Email:    test@lara.com
-Password: test123456
-```
-
-**B) Sign up with your email**
-- Create account at https://pmo-ai-saas.onrender.com/signup
-- Admin approval required (immediate in demo)
-
-**C) Seed test user** (for developers)
-```bash
-export DATABASE_URL=your-render-postgres-url
-node scripts/create-test-user.js
-```
+## Features
 
 Upload any Excel file with tasks (name, dates, status, cost), and LARA generates:
 - ✅ EVM metrics (CPI, SPI, EAC, VAC, ROI)
