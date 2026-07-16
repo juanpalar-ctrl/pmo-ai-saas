@@ -97,136 +97,7 @@ Upload any Excel file with tasks (name, dates, status, cost), and LARA generates
 
 ---
 
-## Quick Start
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 13+
-- An Anthropic API key ([get one free](https://console.anthropic.com))
-
-### Local Development
-
-```bash
-# Clone
-git clone https://github.com/juanpalar-ctrl/pmo-ai-saas.git
-cd pmo-ai-saas
-
-# Install
-npm install
-
-# Configure
-cp .env.example .env
-# Edit .env with your DATABASE_URL, JWT_SECRET, ANTHROPIC_API_KEY, etc.
-
-# Migrate + seed
-npm run migrate
-npm run seed:test-user
-
-# Run
-npm run dev
-# → http://localhost:3001
-```
-
-### Environment Variables
-```
-DATABASE_URL=postgresql://user:pass@localhost/lara
-JWT_SECRET=your-secret-key
-ANTHROPIC_API_KEY=sk-ant-...
-AI_MODEL=claude-opus-4-8
-APP_BASE_URL=http://localhost:3001
-ALLOWED_ORIGINS=http://localhost:3001
-```
-
-### First Steps
-1. Sign up at http://localhost:3001
-2. Admin approves your account at `/api/admin/pending-users`
-3. Upload an Excel file with columns: `project_name`, `status`, `estimated_cost`, `actual_cost`, `progress_percent`, `start_date`, `end_date`, `risks`, `assignee`
-4. LARA analyzes in ~5 seconds
-5. View dashboard at `/projects` → select your project
-
----
-
-## Project Structure
-
-```
-src/
-├── agents/              # IA agents (5 types: normalization, risk, economic, reporting, wellbeing)
-├── services/            # Business logic (metrics, EVM, early warnings, team health)
-├── routes/              # Express endpoints
-├── middleware/          # Auth, logging
-├── config/              # Validation schemas, IA config, i18n
-├── repositories/        # Data access layer
-└── db-migrate.ts        # Idempotent migrations
-
-public/                  # Static HTML (no build step)
-├── index.html
-├── projects.html        # Project detail + dashboard
-├── portfolio.html       # Multi-project view
-├── team-morale.html     # Team health
-└── login.html, signup.html, etc.
-
-tests/                   # Jest test suite (~333 tests)
-```
-
----
-
-## Known Limitations (Roadmap)
-
-### Immediate (Phase 2)
-- [ ] Frontend: Migrate from HTML/JS to React for better UX scaling
-- [ ] Analysis: Make async (queue + polling) instead of synchronous
-- [ ] IA cost: Add prompt caching to reduce token spend at scale
-
-### Medium (Phase 3)
-- [ ] Team Health: Historical carga trends (currently only latest snapshot)
-- [ ] What-if: Persist & apply scenarios as baseline
-- [ ] i18n: Complete UI translation (Fase 2 is content-only)
-
-### Known Issues
-- CSP disabled (uses inline scripts)
-- `projectid` collision possible if 2 users upload in same second (mitigated by `user_id` scoping)
-- Gantt lacks zoom, filtering, phase collapse
-
----
-
-## Architecture Decisions
-
-### AI + Determinism Principle
-**IA interprets, classifies, communicates. Code calculates.**
-- Numbers (EVM, health scores) come from pure, testable code
-- IA handles semantic mapping, risk evaluation, narrative drafting
-- Each agent has defensive parsing + deterministic fallbacks
-- Results are reproducible; reruns on same data yield same metrics
-
-### Why No ORM?
-Direct SQL with `pg` keeps every query visible and testeable. Easier to debug performance and understand data flow.
-
-### Why HTML Frontend (for now)?
-Speed to market. Zero build step. Works immediately. Tradeoff: UX scales poorly. Will migrate to React.
-
----
-
-## Testing
-
-```bash
-# Run test suite
-npm test
-
-# With coverage
-npm test -- --coverage
-
-# Watch mode
-npm test -- --watch
-```
-
-Current coverage: **81% (statements)** across 37 test files.
-
-Deliberately not tested:
-- DB bootstrap
-- Cron utilities
-- Static data fixtures
-
----
 
 ## Security
 
@@ -250,17 +121,6 @@ Deliberately not tested:
 - Env vars set via Render dashboard
 
 **Current:** https://pmo-ai-saas.onrender.com
-
-**Note:** Auto-deploy is off. Manual deploys via Render dashboard to prevent accidental production changes.
-
-### Deploy Locally
-
-```bash
-npm run build
-npm start
-# → http://localhost:3001
-```
-
 ---
 
 ## Contributing
@@ -290,7 +150,7 @@ MIT
 
 - 📧 Email: juanpalar@gmail.com
 - 🐙 GitHub: [@juanpalar-ctrl](https://github.com/juanpalar-ctrl)
-- 🔗 LinkedIn: [juan-pablo-lara](https://linkedin.com/in/juan-pablo-lara)
+- 🔗 LinkedIn: [juan-pablo-lara]((https://www.linkedin.com/in/juanpablolarafigueroa-projectmanagement/?locale=en))
 
 ---
 
