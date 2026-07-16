@@ -2,6 +2,7 @@
 
 > Your project diagnosis in minutes, not hours.
 
+[![GitHub](https://img.shields.io/badge/github-juanpalar--ctrl-181717?style=flat&logo=github)](https://github.com/juanpalar-ctrl/pmo-ai-saas)
 [![Deployed on Render](https://img.shields.io/badge/deployed-Render-46E3B7?style=flat)](https://pmo-ai-saas.onrender.com)
 [![Node.js + TypeScript](https://img.shields.io/badge/stack-Node.js%20%2B%20TypeScript-339933?style=flat)](https://nodejs.org)
 [![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL-316192?style=flat)](https://www.postgresql.org)
@@ -28,9 +29,23 @@ LARA is a SaaS platform that turns a spreadsheet of project tasks into **real-ti
 **→ [Try LARA now](https://pmo-ai-saas.onrender.com)**
 
 ### Test User
+
+To try the demo, you can either:
+
+**A) Use a pre-created test account** (if available)
 ```
-Email:    test@example.com
-Password: TestPass123
+Email:    test@lara.com
+Password: test123456
+```
+
+**B) Sign up with your email**
+- Create account at https://pmo-ai-saas.onrender.com/signup
+- Admin approval required (immediate in demo)
+
+**C) Seed test user** (for developers)
+```bash
+export DATABASE_URL=your-render-postgres-url
+node scripts/create-test-user.js
 ```
 
 Upload any Excel file with tasks (name, dates, status, cost), and LARA generates:
