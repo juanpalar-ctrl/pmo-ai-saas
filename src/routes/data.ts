@@ -424,6 +424,8 @@ router.get('/export/report', async (req: Request, res: Response) => {
             height: 60px;
             width: auto;
             object-fit: contain;
+            mix-blend-mode: multiply;
+            filter: contrast(1.1) brightness(1.05);
           }
           .header-content {
             flex: 1;
