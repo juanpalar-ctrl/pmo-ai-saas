@@ -39,6 +39,7 @@
     .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin: 2rem 0; }
     .feature-card { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
     .feature-card img { width: 100%; height: 220px; object-fit: contain; margin: 1rem 0; border-radius: 0.5rem; background: #f3f4f6; }
+    .feature-benefit { color: var(--color-primary); font-weight: 700; margin-top: 0.6rem; font-size: 0.95rem; line-height: 1.4; }
     /* Interactive feature tabs */
     .tabs { margin: 2rem 0; }
     .tab-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-bottom: 2rem; }
@@ -135,6 +136,7 @@
     <div class="feature">
       <h3 data-i18n="feat_risk_h">🎯 Análisis de Riesgo con IA</h3>
       <p data-i18n="feat_risk_p">Identifica y mitigua riesgos automáticamente en tus proyectos</p>
+      <p class="feature-benefit" data-i18n="ben_risk">⭐ Anticipa desviaciones de presupuesto antes de que se conviertan en crisis</p>
       <img src="/pagina/vista-portafolio.png" alt="Risk Analysis">
     </div>
 
@@ -155,6 +157,7 @@
           <div class="tab-text">
             <h3 data-i18n="tab_evm">📊 Métricas EVM</h3>
             <p data-i18n="tab_evm_p">Earned Value Management con análisis determinístico</p>
+            <p class="feature-benefit" data-i18n="ben_evm">⭐ Sabe exactamente dónde estás vs presupuesto, en tiempo real</p>
           </div>
           <img src="/pagina/metricas.png" alt="Métricas EVM">
         </div>
@@ -162,6 +165,7 @@
           <div class="tab-text">
             <h3 data-i18n="tab_people">👥 Vista de Personas</h3>
             <p data-i18n="tab_people_p">Gestión integrada del equipo y recursos</p>
+            <p class="feature-benefit" data-i18n="ben_people">⭐ Evita burnout del equipo y optimiza la carga de trabajo</p>
           </div>
           <img src="/pagina/vista-personas.png" alt="Vista de Personas">
         </div>
@@ -169,6 +173,7 @@
           <div class="tab-text">
             <h3 data-i18n="tab_chat">💬 Chat IA</h3>
             <p data-i18n="tab_chat_p">Análisis conversacional en tiempo real</p>
+            <p class="feature-benefit" data-i18n="ben_chat">⭐ Obtén respuestas sobre tu proyecto al instante, sin esperar reportes</p>
           </div>
           <img src="/pagina/lara-chatbot.png" alt="Chat IA">
         </div>
@@ -176,6 +181,7 @@
           <div class="tab-text">
             <h3 data-i18n="tab_tech">📋 Reportes Técnicos</h3>
             <p data-i18n="tab_tech_p">Reportes detallados y análisis profundo</p>
+            <p class="feature-benefit" data-i18n="ben_tech">⭐ Documenta cada detalle técnico para que nada se pierda o malintienda</p>
           </div>
           <img src="/pagina/reporte-tecnico.png" alt="Reportes Técnicos">
         </div>
@@ -183,6 +189,7 @@
           <div class="tab-text">
             <h3 data-i18n="tab_exec">📊 Reportes Ejecutivos</h3>
             <p data-i18n="tab_exec_p">Visualizaciones de alto nivel para stakeholders</p>
+            <p class="feature-benefit" data-i18n="ben_exec">⭐ Comunica el estado del proyecto en segundos, no en horas de análisis</p>
           </div>
           <img src="/pagina/reportes.png" alt="Reportes Ejecutivos">
         </div>
@@ -190,6 +197,7 @@
           <div class="tab-text">
             <h3 data-i18n="tab_project">🎯 Vista de Proyecto</h3>
             <p data-i18n="tab_project_p">Panel integral de control de proyectos</p>
+            <p class="feature-benefit" data-i18n="ben_project">⭐ Una sola pantalla con todo lo que necesitas para tomar decisiones</p>
           </div>
           <img src="/pagina/vista-proyecto.png" alt="Vista de Proyecto">
         </div>
@@ -389,6 +397,13 @@
         opt_other: "Other",
         ph_email: "Your email",
         ph_message: "What specific budget challenge are you facing?",
+        ben_risk: "⭐ Spot budget risks before they become crises",
+        ben_evm: "⭐ Know exactly where you stand vs budget, in real time",
+        ben_people: "⭐ Prevent team burnout and optimize workload",
+        ben_chat: "⭐ Get project answers instantly—no waiting for reports",
+        ben_tech: "⭐ Document every technical detail so nothing gets lost",
+        ben_exec: "⭐ Communicate project status in seconds, not hours",
+        ben_project: "⭐ One screen with everything you need to decide",
         cta_request: "Request Demo"
       };
       document.querySelectorAll('[data-i18n]').forEach(function (el) {
