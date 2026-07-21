@@ -1420,6 +1420,14 @@
       document.getElementById('pdf-date').textContent = 'Generado: ' + new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
       document.getElementById('pdf-report-type').textContent = isSenior ? 'Reporte Ejecutivo' : 'Reporte Técnico';
 
+      // Temporarily remove .hidden class so report is visible in print preview
+      const seniorReport = document.getElementById('report-senior');
+      const techReport = document.getElementById('report-technical');
+      const seniorWasHidden = seniorReport.classList.contains('hidden');
+      const techWasHidden = techReport.classList.contains('hidden');
+      seniorReport.classList.remove('hidden');
+      techReport.classList.remove('hidden');
+
       // The PDF should carry the FULL cronograma, not the current filtered view.
       // Temporarily expand to "Todos" + clear search, print, then restore.
       const prevFilter = _ganttFilter, prevSearch = _ganttSearch;
@@ -1432,6 +1440,10 @@
       }
 
       window.print();
+
+      // Restore .hidden class to original state
+      if (seniorWasHidden) seniorReport.classList.add('hidden');
+      if (techWasHidden) techReport.classList.add('hidden');
 
       if (_ganttReal && (prevFilter !== 'todos' || prevSearch)) {
         _ganttFilter = prevFilter;
