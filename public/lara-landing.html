@@ -1001,5 +1001,49 @@
       e.target.reset();
     }
   </script>
+  <script>
+    
+    let currentSlide = 0;
+    const totalSlides = 3;
+    const slideWidth = 50; // 50% en desktop
+
+    function updateCarousel() {
+      const track = document.getElementById('carouselTrack');
+      const offset = -currentSlide * slideWidth;
+      track.style.transform = `translateX(${offset}%)`;
+
+      // Actualizar dots
+      document.querySelectorAll('.carousel-dot').forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+      });
+
+      // Actualizar botones
+      document.getElementById('prevBtn').disabled = currentSlide === 0;
+      document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateCarousel();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateCarousel();
+      }
+    }
+
+    function goToSlide(index) {
+      currentSlide = index;
+      updateCarousel();
+    }
+
+    // Inicializar
+    updateCarousel();
+  
+  </script>
 </body>
 </html>
