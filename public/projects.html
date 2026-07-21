@@ -10,6 +10,8 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- Sanitiza el HTML que marked.parse genera del reporte IA antes de inyectarlo (innerHTML) → evita XSS si el modelo emite HTML. -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <!-- PDF export library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); min-height: 100vh; }
 
@@ -51,28 +53,10 @@
     .health-score-num.yellow { color: #b45309; }
     .health-score-num.red    { color: #dc2626; }
 
-    /* ── PDF Export ── */
+    /* ── Print Support (for window.print only) ── */
     @media print {
       body { background: white !important; }
-      #pdf-header { display: flex !important; }
-      .no-print, #chat-fab, #chat-panel, nav, header,
-      .gantt-whatif-btns, #gantt-filters, #chat-suggestions, #health-banner { display: none !important; }
-      .pdf-only { display: block !important; }
-      #report-senior:not(.hidden), #report-technical:not(.hidden) {
-        display: block !important; max-height: none !important; overflow: visible !important;
-      }
-      #report-senior.hidden, #report-technical.hidden {
-        display: none !important;
-      }
-      .bg-white.rounded-xl.shadow-lg:not(.pdf-report-section) { display: none !important; }
-      .pdf-report-section { display: block !important; box-shadow: none !important; border: none !important; }
-      .markdown-report { font-size: 12px; line-height: 1.6; }
-
-      /* App shell uses h-screen + overflow-y-auto for on-screen scrolling,
-         which clips content to one viewport when printed. Reset to normal
-         block flow so the report/metrics reflow across pages. */
-      .flex.h-screen, .flex.h-screen > div:not(.no-print) { display: block !important; height: auto !important; overflow: visible !important; }
-      #metrics-panel { display: grid !important; }
+      .no-print { display: none !important; }
     }
     #pdf-header {
       display: none;
@@ -1417,69 +1401,50 @@
         alert('Primero selecciona un reporte (Ejecutivo o Técnico) para exportar.');
         return;
       }
+
       const isSenior = activeReport.id === 'report-senior';
-      document.getElementById('pdf-project-name').textContent = window.projectContext?.projectName || 'Proyecto';
-      document.getElementById('pdf-date').textContent = 'Generado: ' + new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
-      document.getElementById('pdf-report-type').textContent = isSenior ? 'Reporte Ejecutivo' : 'Reporte Técnico';
+      const projectName = window.projectContext?.projectName || 'Proyecto';
+      const reportType = isSenior ? 'Ejecutivo' : 'Técnico';
+      const fileName = `LARA_${projectName}_${reportType}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Temporarily remove .hidden class and force display so report is visible in print preview
-      const seniorReport = document.getElementById('report-senior');
-      const techReport = document.getElementById('report-technical');
-      const seniorWasHidden = seniorReport.classList.contains('hidden');
-      const techWasHidden = techReport.classList.contains('hidden');
-      const seniorOrigDisplay = seniorReport.style.display;
-      const techOrigDisplay = techReport.style.display;
-      const seniorOrigMaxHeight = seniorReport.style.maxHeight;
-      const techOrigMaxHeight = techReport.style.maxHeight;
-      const seniorOrigOverflowY = seniorReport.style.overflowY;
-      const techOrigOverflowY = techReport.style.overflowY;
+      // Create container with header and content
+      const container = document.createElement('div');
+      container.style.padding = '20px';
+      container.style.backgroundColor = 'white';
 
-      // Show active report, hide the other one
-      if (isSenior) {
-        seniorReport.classList.remove('hidden');
-        techReport.classList.add('hidden');
-      } else {
-        techReport.classList.remove('hidden');
-        seniorReport.classList.add('hidden');
-      }
+      const header = document.createElement('div');
+      header.style.marginBottom = '20px';
+      header.style.borderBottom = '2px solid #17B8A0';
+      header.style.paddingBottom = '15px';
+      header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 18px; font-weight: bold; color: #0B7B8C;">⬡ LARA</div>
+          <div style="text-align: right; font-size: 12px; color: #666;">
+            <div style="font-weight: bold; color: #0B7B8C;">${escapeHtml(projectName)}</div>
+            <div>Reporte ${reportType}</div>
+            <div>${new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' })}</div>
+          </div>
+        </div>
+      `;
 
-      seniorReport.style.display = 'block';
-      techReport.style.display = 'block';
-      seniorReport.style.maxHeight = 'none';
-      seniorReport.style.overflowY = 'visible';
-      techReport.style.maxHeight = 'none';
-      techReport.style.overflowY = 'visible';
+      const content = document.createElement('div');
+      content.innerHTML = activeReport.innerHTML;
+      content.style.fontSize = '12px';
+      content.style.lineHeight = '1.6';
 
-      // The PDF should carry the FULL cronograma, not the current filtered view.
-      // Temporarily expand to "Todos" + clear search, print, then restore.
-      const prevFilter = _ganttFilter, prevSearch = _ganttSearch;
-      const searchEl = document.getElementById('gantt-search');
-      if (_ganttReal && (prevFilter !== 'todos' || prevSearch)) {
-        _ganttFilter = 'todos';
-        _ganttSearch = '';
-        if (searchEl) searchEl.value = '';
-        renderGanttRows();
-      }
+      container.appendChild(header);
+      container.appendChild(content);
 
-      window.print();
+      // Generate PDF with html2pdf
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
 
-      // Restore original state
-      if (seniorWasHidden) seniorReport.classList.add('hidden');
-      if (techWasHidden) techReport.classList.add('hidden');
-      seniorReport.style.display = seniorOrigDisplay;
-      techReport.style.display = techOrigDisplay;
-      seniorReport.style.maxHeight = seniorOrigMaxHeight;
-      techReport.style.maxHeight = techOrigMaxHeight;
-      seniorReport.style.overflowY = seniorOrigOverflowY;
-      techReport.style.overflowY = techOrigOverflowY;
-
-      if (_ganttReal && (prevFilter !== 'todos' || prevSearch)) {
-        _ganttFilter = prevFilter;
-        _ganttSearch = prevSearch;
-        if (searchEl) searchEl.value = prevSearch;
-        renderGanttChips();
-        renderGanttRows();
-      }
+      html2pdf().set(opt).from(container).save();
     }
 
     function ganttWhatIf(btn, delta) {
