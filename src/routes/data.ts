@@ -415,6 +415,18 @@ router.get('/export/report', async (req: Request, res: Response) => {
             padding: 24px 0 20px 0;
             margin-bottom: 32px;
             page-break-after: avoid;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+          }
+          .header-logo img {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+          }
+          .header-content {
+            flex: 1;
           }
           .logo {
             font-size: 24px;
@@ -607,10 +619,15 @@ router.get('/export/report', async (req: Request, res: Response) => {
       </head>
       <body>
         <div class="header">
-          <div class="logo">⬡ LARA</div>
-          <div class="meta">
-            <strong>${projectname}</strong>
-            <span>Reporte ${reportType} — ${today}</span>
+          <div class="header-logo">
+            <img src="/logo.jpeg" alt="Logo">
+          </div>
+          <div class="header-content">
+            <div class="logo">⬡ LARA</div>
+            <div class="meta">
+              <strong>${projectname}</strong>
+              <span>Reporte ${reportType} — ${today}</span>
+            </div>
           </div>
         </div>
         <div class="screen-only">
