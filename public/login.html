@@ -25,7 +25,84 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             color: #1a2b32;
+        }
+
+        /* Header navegación */
+        header {
+            background: white;
+            padding: 0.9rem 2rem;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        nav {
+            display: flex;
+            gap: 1.6rem;
+            align-items: center;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover {
+            color: var(--color-primary);
+        }
+
+        .btn-header {
+            background: var(--color-primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.95rem;
+        }
+
+        .btn-header:hover {
+            opacity: 0.9;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+        }
+
+        @media (max-width: 720px) {
+            header { padding: 0.9rem 1rem; }
+            .header-content { flex-direction: column; gap: 0.7rem; }
+            nav { flex-wrap: wrap; justify-content: center; gap: 0.6rem 1.2rem; }
         }
 
         /* ===== PANEL IZQUIERDO (marca) ===== */
@@ -308,6 +385,23 @@
     </style>
 </head>
 <body>
+    <header>
+        <div class="header-content">
+            <a href="/lara-landing.html" class="logo">
+                <img src="/uploads/logos/lara-logo.png" alt="LARA Logo">
+                <span>LARA</span>
+            </a>
+            <nav>
+                <a href="/lara-landing.html#features">Características</a>
+                <a href="/lara-landing.html#comparison">Comparativa</a>
+                <a href="/lara-landing.html#contact">Contacto</a>
+                <span style="opacity: 0.5;">|</span>
+                <a href="#" onclick="return false">Ingresa</a>
+                <a href="/lara-landing.html#contact" class="btn-header">Agendar Demo Gratis</a>
+            </nav>
+        </div>
+    </header>
+    <div class="main-content">
     <!-- ===== PANEL IZQUIERDO: MARCA ===== -->
     <section class="brand-panel">
         <!-- Ilustración de red neuronal de fondo -->
@@ -468,5 +562,6 @@
             errorMessage.classList.remove('show');
         }
     </script>
+    </div>
 </body>
 </html>
