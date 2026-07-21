@@ -105,6 +105,83 @@
     }
     #gantt-search:focus { outline: none; border-color: #17B8A0; }
 
+    /* ── Cronograma Gantt Jerárquico (Acordeones) ── */
+    .gantt-alert {
+      display: flex; align-items: flex-start; gap: 12px; padding: 16px;
+      background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; margin-bottom: 16px;
+    }
+    .gantt-alert-icon {
+      width: 20px; height: 20px; color: #b45309; flex-shrink: 0; margin-top: 2px;
+    }
+    .gantt-alert-content h4 {
+      font-size: 14px; font-weight: 600; color: #92400e;
+    }
+    .gantt-alert-content p {
+      font-size: 14px; color: #78350f; margin-top: 4px;
+    }
+    .gantt-group {
+      border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; transition: all 0.2s ease;
+    }
+    .gantt-group.status-red { background: #fff1f2; border-color: #fca5a5; }
+    .gantt-group.status-yellow { background: #fffbeb; border-color: #fcd34d; }
+    .gantt-group.status-green { background: #f0fdf4; border-color: #86efac; }
+    .gantt-group.status-done { background: #f0fdf4; border-color: #6ee7b7; }
+    .gantt-group-header {
+      display: flex; align-items: center; justify-content: space-between; padding: 16px;
+      cursor: pointer; user-select: none; transition: all 0.2s ease;
+    }
+    .gantt-group-header:hover { opacity: 0.8; }
+    .gantt-group-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .gantt-group-emoji { font-size: 20px; }
+    .gantt-group-title { font-weight: 700; font-size: 15px; }
+    .gantt-group-count { margin-left: 8px; padding: 2px 10px; border-radius: 9999px; background: rgba(255,255,255,0.5); font-size: 11px; font-weight: 700; }
+    .gantt-group-kpis {
+      display: flex; align-items: center; gap: 24px; margin-left: auto; margin-right: 16px; font-size: 13px;
+    }
+    .gantt-group-kpi { text-align: right; }
+    .gantt-group-kpi-label { font-size: 11px; color: #6b7280; }
+    .gantt-group-kpi-value { font-weight: 700; margin-top: 2px; }
+    .gantt-group-progress { position: relative; height: 6px; background: rgba(255,255,255,0.4); border-radius: 999px; overflow: hidden; width: 60px; }
+    .gantt-group-progress-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease, background 0.3s ease; }
+    .gantt-group-chevron {
+      font-size: 18px; transition: transform 0.3s ease; flex-shrink: 0;
+    }
+    .gantt-group-chevron.open { transform: rotate(180deg); }
+    .gantt-group-tasks {
+      border-top: 1px solid rgba(255,255,255,0.5); padding: 12px 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; opacity: 0;
+    }
+    .gantt-group-tasks.open { max-height: 2000px; opacity: 1; }
+    .gantt-group-tasks { display: flex; flex-direction: column; gap: 8px; }
+    .gantt-task-item {
+      display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.6); border-radius: 6px; font-size: 13px; animation: slideDown 0.3s ease-out;
+    }
+    .gantt-task-name { flex: 1; font-weight: 500; }
+    .gantt-task-date { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .gantt-task-values { display: flex; align-items: center; gap: 12px; }
+    .gantt-task-budget { text-align: right; min-width: 70px; }
+    .gantt-task-budget-label { font-size: 11px; color: #6b7280; }
+    .gantt-task-budget-value { font-family: monospace; font-weight: 600; }
+    .gantt-task-progress-bar {
+      display: flex; align-items: center; gap: 8px; min-width: 140px;
+    }
+    .gantt-task-bar { flex: 1; height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .gantt-task-bar-fill { height: 100%; border-radius: 999px; }
+    .gantt-task-pct { font-size: 11px; font-weight: 700; min-width: 30px; text-align: right; }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .gantt-summary-global {
+      margin-top: 20px; padding: 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px;
+    }
+    .gantt-summary-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 12px; }
+    .gantt-summary-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px;
+    }
+    .gantt-summary-item { text-align: center; }
+    .gantt-summary-item-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+    .gantt-summary-item-value { font-size: 18px; font-weight: 900; color: #1f2937; }
+
     /* ── Chat Widget ── */
     #chat-fab {
       position: fixed; bottom: 28px; right: 28px; z-index: 1000;
@@ -1184,6 +1261,9 @@
       _ganttSpan = { start: spanStart, ms: spanMs };
       _ganttTasks = tasks.map(t => ({ ...t, _bucket: classifyGanttBucket(t, planPct) }));
 
+      // NUEVA LÓGICA: Organizar datos jerárquicamente
+      _ganttHierarchical = organizeGanttData(tasks);
+
       // Fallback row has no meaningful buckets → show everything, hide chips.
       if (!_ganttReal) _ganttFilter = 'todos';
 
@@ -1213,6 +1293,138 @@
       if (t.progress >= 100 || /complet/i.test(t.status || '')) return 'done';
       return ragProgress(t.progress, planPct); // 'red' | 'yellow' | 'green'
     }
+
+    // ── NUEVA FUNCIONALIDAD: Agrupación Jerárquica (Método Principal + Fallback) ──
+    let _ganttHierarchical = [];  // Grupos organizados
+    let _ganttAlert = '';         // Mensaje de alerta si se activa fallback
+    let _ganttMethod = 'plano';   // 'plano' | 'grupos'
+
+    const getGroupStatus = (tasks) => {
+      if (tasks.length === 0) return 'green';
+      const completed = tasks.filter(t => t.progress >= 100).length;
+      if (completed === tasks.length) return 'done';
+      const redCount = tasks.filter(t => ragProgress(t.progress, 100) === 'red').length;
+      const yellowCount = tasks.filter(t => ragProgress(t.progress, 100) === 'yellow').length;
+      if (redCount > 0) return 'red';
+      if (yellowCount > 0) return 'yellow';
+      return 'green';
+    };
+
+    const groupByPhases = (tasks) => {
+      const groups = new Map();
+      tasks.forEach(t => {
+        const phase = t.phase || 'Sin Fase';
+        if (!groups.has(phase)) groups.set(phase, []);
+        groups.get(phase).push(t);
+      });
+
+      return Array.from(groups.entries()).map(([phase, phaseTasks]) => {
+        const totalPlan = phaseTasks.reduce((s, t) => s + t.plan, 0);
+        const totalActual = phaseTasks.reduce((s, t) => s + t.actual, 0);
+        const avgProgress = phaseTasks.reduce((s, t) => s + t.progress, 0) / phaseTasks.length;
+
+        return {
+          id: `phase-${phase}`,
+          label: phase,
+          emoji: '📦',
+          tasks: phaseTasks,
+          totalPlan,
+          totalActual,
+          avgProgress,
+          status: getGroupStatus(phaseTasks),
+        };
+      });
+    };
+
+    const groupByEpics = (tasks) => {
+      const groups = new Map();
+      tasks.forEach(t => {
+        const epic = t.epic || 'Sin Épica';
+        if (!groups.has(epic)) groups.set(epic, []);
+        groups.get(epic).push(t);
+      });
+
+      return Array.from(groups.entries()).map(([epic, epicTasks]) => {
+        const totalPlan = epicTasks.reduce((s, t) => s + t.plan, 0);
+        const totalActual = epicTasks.reduce((s, t) => s + t.actual, 0);
+        const avgProgress = epicTasks.reduce((s, t) => s + t.progress, 0) / epicTasks.length;
+
+        return {
+          id: `epic-${epic}`,
+          label: epic,
+          emoji: '⭐',
+          tasks: epicTasks,
+          totalPlan,
+          totalActual,
+          avgProgress,
+          status: getGroupStatus(epicTasks),
+        };
+      });
+    };
+
+    const groupByMilestones = (tasks) => {
+      const groups = new Map();
+      tasks.forEach(t => {
+        const milestone = t.milestone || 'Sin Hito';
+        if (!groups.has(milestone)) groups.set(milestone, []);
+        groups.get(milestone).push(t);
+      });
+
+      return Array.from(groups.entries()).map(([milestone, milestoneTasks]) => {
+        const totalPlan = milestoneTasks.reduce((s, t) => s + t.plan, 0);
+        const totalActual = milestoneTasks.reduce((s, t) => s + t.actual, 0);
+        const avgProgress = milestoneTasks.reduce((s, t) => s + t.progress, 0) / milestoneTasks.length;
+
+        return {
+          id: `milestone-${milestone}`,
+          label: milestone,
+          emoji: '🎯',
+          tasks: milestoneTasks,
+          totalPlan,
+          totalActual,
+          avgProgress,
+          status: getGroupStatus(milestoneTasks),
+        };
+      });
+    };
+
+    const organizeGanttData = (tasks) => {
+      const hasPhases = tasks.some(t => t.phase);
+      const hasEpics = tasks.some(t => t.epic);
+      const hasMilestones = tasks.some(t => t.milestone);
+
+      if (hasPhases) {
+        _ganttMethod = 'grupos';
+        _ganttAlert = '';
+        return groupByPhases(tasks);
+      }
+      if (hasEpics) {
+        _ganttMethod = 'grupos';
+        _ganttAlert = '';
+        return groupByEpics(tasks);
+      }
+      if (hasMilestones) {
+        _ganttMethod = 'grupos';
+        _ganttAlert = '';
+        return groupByMilestones(tasks);
+      }
+
+      // Fallback: Mostrar como plano (mantener compatibilidad)
+      _ganttMethod = 'plano';
+      _ganttAlert = '';
+      return [];
+    };
+
+    const toggleGanttGroup = (groupId) => {
+      const elem = document.getElementById(`gantt-group-${groupId}`);
+      if (!elem) return;
+      const tasks = elem.querySelector('.gantt-group-tasks');
+      const chevron = elem.querySelector('.gantt-group-chevron');
+      if (tasks && chevron) {
+        tasks.classList.toggle('open');
+        chevron.classList.toggle('open');
+      }
+    };
 
     function renderGanttChips() {
       const wrap    = document.getElementById('gantt-chips');
@@ -1254,6 +1466,12 @@
       const spanMs    = _ganttSpan.ms;
       const planPct   = _ganttPlanPct;
 
+      // NUEVA LÓGICA: Si hay grupos jerárquicos, renderizar acordeones
+      if (_ganttMethod === 'grupos' && _ganttHierarchical.length > 0) {
+        return renderGanttHierarchical(body);
+      }
+
+      // FALLBACK: Vista tradicional (tabla plana)
       const bucket = GANTT_BUCKETS[_ganttFilter] || GANTT_BUCKETS.todos;
       let rows = _ganttTasks.filter(t => bucket.test(t._bucket));
       if (_ganttSearch) rows = rows.filter(t => (t.name || '').toLowerCase().includes(_ganttSearch));
@@ -1324,6 +1542,143 @@
             </td>
           </tr>`;
       }).join('');
+    }
+
+    function renderGanttHierarchical(body) {
+      const planPct = _ganttPlanPct;
+      const spanStart = _ganttSpan.start;
+      const spanMs = _ganttSpan.ms;
+      let html = '';
+
+      // Alerta si aplica
+      if (_ganttAlert) {
+        html += `
+          <tr><td colspan="5" style="padding:0;border:0;">
+            <div class="gantt-alert">
+              <svg class="gantt-alert-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <div class="gantt-alert-content">
+                <h4>Alerta de Datos</h4>
+                <p>${_ganttAlert}</p>
+              </div>
+            </div>
+          </td></tr>
+        `;
+      }
+
+      // Renderizar grupos
+      _ganttHierarchical.forEach(group => {
+        const barColor = group.status === 'green' ? '#16a34a' : group.status === 'yellow' ? '#d97706' : group.status === 'red' ? '#dc2626' : '#15803d';
+        const variance = group.totalActual - group.totalPlan;
+        const varianceColor = variance > 0 ? '#dc2626' : '#15803d';
+
+        html += `
+          <tr><td colspan="5" style="padding:0;border:0;">
+            <div class="gantt-group status-${group.status}" id="gantt-group-${group.id}">
+              <div class="gantt-group-header" onclick="toggleGanttGroup('${group.id}')">
+                <div class="gantt-group-left">
+                  <div class="gantt-group-emoji">${group.emoji}</div>
+                  <div class="gantt-group-title" style="color:${group.status === 'red' ? '#991b1b' : group.status === 'yellow' ? '#92400e' : group.status === 'green' ? '#15803d' : '#065f46'}">${escapeHtml(group.label)}</div>
+                  <div class="gantt-group-count" style="color:${group.status === 'red' ? '#991b1b' : group.status === 'yellow' ? '#92400e' : group.status === 'green' ? '#15803d' : '#065f46'}">${group.tasks.length}</div>
+                </div>
+                <div class="gantt-group-kpis">
+                  <div class="gantt-group-kpi">
+                    <div class="gantt-group-kpi-label">Presupuesto</div>
+                    <div class="gantt-group-kpi-value" style="color:${group.status === 'red' ? '#991b1b' : group.status === 'yellow' ? '#92400e' : group.status === 'green' ? '#15803d' : '#065f46'}">$${Math.round(group.totalPlan / 1000)}K</div>
+                  </div>
+                  <div class="gantt-group-kpi">
+                    <div class="gantt-group-kpi-label">Gastado</div>
+                    <div class="gantt-group-kpi-value" style="color:${varianceColor}">$${Math.round(group.totalActual / 1000)}K</div>
+                  </div>
+                  <div class="gantt-group-kpi">
+                    <div class="gantt-group-kpi-label">Progreso</div>
+                    <div class="gantt-group-kpi-value" style="color:${group.status === 'red' ? '#991b1b' : group.status === 'yellow' ? '#92400e' : group.status === 'green' ? '#15803d' : '#065f46'}">${Math.round(group.avgProgress)}%</div>
+                  </div>
+                </div>
+                <div class="gantt-group-progress">
+                  <div class="gantt-group-progress-fill" style="width:${Math.min(100, group.avgProgress)}%;background:${barColor}"></div>
+                </div>
+                <div class="gantt-group-chevron" style="color:${group.status === 'red' ? '#991b1b' : group.status === 'yellow' ? '#92400e' : group.status === 'green' ? '#15803d' : '#065f46'}">▼</div>
+              </div>
+              <div class="gantt-group-tasks">
+        `;
+
+        // Tareas dentro del grupo
+        group.tasks.forEach(t => {
+          const taskRag = ragProgress(t.progress, planPct);
+          const taskBarColor = taskRag === 'green' ? '#16a34a' : taskRag === 'yellow' ? '#d97706' : '#dc2626';
+          const taskActualColor = t.actual > t.plan && t.plan > 0 ? '#dc2626' : '#15803d';
+          const dateLabel = t.start && t.end
+            ? `${new Date(t.start).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })} – ${new Date(t.end).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' })}`
+            : '';
+
+          html += `
+            <div class="gantt-task-item">
+              <div>
+                <div class="gantt-task-name">${escapeHtml(t.name)}</div>
+                ${dateLabel ? `<div class="gantt-task-date">${dateLabel}</div>` : ''}
+              </div>
+              <div class="gantt-task-values">
+                <div class="gantt-task-budget">
+                  <div class="gantt-task-budget-label">Plan</div>
+                  <div class="gantt-task-budget-value">$${Math.round(t.plan / 1000)}K</div>
+                </div>
+                <div class="gantt-task-budget">
+                  <div class="gantt-task-budget-label">Real</div>
+                  <div class="gantt-task-budget-value" style="color:${taskActualColor}">$${Math.round(t.actual / 1000)}K</div>
+                </div>
+                <div class="gantt-task-progress-bar">
+                  <div class="gantt-task-bar">
+                    <div class="gantt-task-bar-fill" style="width:${t.progress}%;background:${taskBarColor}"></div>
+                  </div>
+                  <div class="gantt-task-pct" style="color:${taskBarColor}">${Math.round(t.progress)}%</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        html += `
+              </div>
+            </div>
+          </td></tr>
+        `;
+      });
+
+      // Resumen global
+      const totalPlan = _ganttTasks.reduce((s, t) => s + t.plan, 0);
+      const totalActual = _ganttTasks.reduce((s, t) => s + t.actual, 0);
+      const avgProgress = _ganttTasks.length ? _ganttTasks.reduce((s, t) => s + t.progress, 0) / _ganttTasks.length : 0;
+      const variance = totalActual - totalPlan;
+
+      html += `
+        <tr><td colspan="5" style="padding:0;border:0;">
+          <div class="gantt-summary-global">
+            <div class="gantt-summary-label">📊 Resumen Global</div>
+            <div class="gantt-summary-grid">
+              <div class="gantt-summary-item">
+                <div class="gantt-summary-item-label">Presupuesto Total</div>
+                <div class="gantt-summary-item-value">$${Math.round(totalPlan / 1000)}K</div>
+              </div>
+              <div class="gantt-summary-item">
+                <div class="gantt-summary-item-label">Gastado Total</div>
+                <div class="gantt-summary-item-value">$${Math.round(totalActual / 1000)}K</div>
+              </div>
+              <div class="gantt-summary-item">
+                <div class="gantt-summary-item-label">Avance Promedio</div>
+                <div class="gantt-summary-item-value">${Math.round(avgProgress)}%</div>
+              </div>
+              <div class="gantt-summary-item">
+                <div class="gantt-summary-item-label">Varianza</div>
+                <div class="gantt-summary-item-value" style="color:${variance > 0 ? '#dc2626' : '#15803d'}">$${Math.round(variance / 1000)}K</div>
+              </div>
+            </div>
+          </div>
+        </td></tr>
+      `;
+
+      body.innerHTML = html;
     }
 
     // ── Resumen de Equipo (global, no per-member cards — those live on Team Morale) ──
