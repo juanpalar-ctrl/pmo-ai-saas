@@ -376,34 +376,221 @@ router.get('/export/report', async (req: Request, res: Response) => {
         <title>LARA - ${projectname} - ${reportType}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; background: white; padding: 40px; max-width: 800px; margin: 0 auto; }
-          .header { border-bottom: 3px solid #17B8A0; padding: 20px 0 15px 0; margin-bottom: 30px; }
-          .logo { font-size: 20px; font-weight: 900; color: #0B7B8C; }
-          .meta { font-size: 12px; color: #666; margin-top: 8px; }
-          .meta strong { color: #0B7B8C; }
-          .content { font-size: 13px; line-height: 1.8; }
-          h1 { color: #0B7B8C; font-size: 1.8em; margin: 25px 0 15px 0; }
-          h2 { color: #0B7B8C; font-size: 1.4em; margin: 22px 0 12px 0; border-bottom: 2px solid #e6f4f5; padding-bottom: 8px; }
-          h3 { color: #0B7B8C; font-size: 1.15em; margin: 18px 0 10px 0; }
-          p { margin-bottom: 12px; }
-          ul, ol { margin: 12px 0 12px 25px; }
-          li { margin-bottom: 6px; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #d6e9eb; padding: 10px; text-align: left; font-size: 12px; }
-          th { background: #e6f4f5; color: #0B7B8C; font-weight: bold; }
-          tr:nth-child(even) td { background: #f7fcfc; }
-          blockquote { border-left: 4px solid #17B8A0; background: #f0f9fa; padding: 12px 15px; margin: 15px 0; color: #0B7B8C; font-style: italic; }
-          code { background: #f3f4f6; padding: 3px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 0.9em; }
-          pre { background: #f3f4f6; padding: 12px; border-radius: 4px; overflow-x: auto; margin: 15px 0; font-size: 0.9em; line-height: 1.4; }
-          hr { border: none; border-top: 1px solid #d6e9eb; margin: 25px 0; }
-          strong { color: #0B7B8C; font-weight: 600; }
-          em { font-style: italic; }
-          .print-only { display: none; }
+          html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            color: #1f2937;
+            line-height: 1.7;
+            background: white;
+          }
+          body {
+            padding: 20px;
+          }
+
+          /* Screen-only styles */
+          .screen-only {
+            display: block;
+            background: #f0fdfb;
+            border: 1px solid #86efac;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            color: #047857;
+            font-weight: 500;
+          }
+
+          /* Header */
+          .header {
+            border-bottom: 3px solid #17B8A0;
+            padding: 24px 0 20px 0;
+            margin-bottom: 32px;
+            page-break-after: avoid;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #0B7B8C;
+            margin-bottom: 8px;
+          }
+          .meta {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.5;
+          }
+          .meta strong {
+            color: #0B7B8C;
+            display: block;
+            margin-bottom: 4px;
+          }
+
+          /* Content */
+          .content {
+            font-size: 14px;
+            line-height: 1.8;
+          }
+
+          /* Headings */
+          h1 {
+            color: #0B7B8C;
+            font-size: 2em;
+            margin: 32px 0 16px 0;
+            page-break-after: avoid;
+            font-weight: 700;
+          }
+          h2 {
+            color: #0B7B8C;
+            font-size: 1.5em;
+            margin: 28px 0 14px 0;
+            border-bottom: 2px solid #d6e9eb;
+            padding-bottom: 10px;
+            page-break-after: avoid;
+            font-weight: 700;
+          }
+          h3 {
+            color: #0B7B8C;
+            font-size: 1.2em;
+            margin: 20px 0 10px 0;
+            page-break-after: avoid;
+            font-weight: 600;
+          }
+          h4 {
+            color: #1f2937;
+            font-size: 1.05em;
+            margin: 16px 0 8px 0;
+            font-weight: 600;
+          }
+
+          /* Paragraphs and spacing */
+          p {
+            margin-bottom: 14px;
+            widows: 2;
+            orphans: 2;
+          }
+
+          /* Lists */
+          ul, ol {
+            margin: 16px 0 16px 32px;
+          }
+          li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+          }
+
+          /* Tables */
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            page-break-inside: avoid;
+            font-size: 13px;
+          }
+          th, td {
+            border: 1px solid #d6e9eb;
+            padding: 12px;
+            text-align: left;
+          }
+          th {
+            background: #e6f4f5;
+            color: #0B7B8C;
+            font-weight: 600;
+          }
+          tr:nth-child(even) td {
+            background: #f9fcfd;
+          }
+
+          /* Code and blocks */
+          code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #0B7B8C;
+          }
+          pre {
+            background: #f3f4f6;
+            padding: 14px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-size: 0.9em;
+            line-height: 1.5;
+            border-left: 3px solid #17B8A0;
+            page-break-inside: avoid;
+          }
+          pre code {
+            background: none;
+            padding: 0;
+            color: #1f2937;
+          }
+
+          /* Blockquotes */
+          blockquote {
+            border-left: 4px solid #17B8A0;
+            background: #f0f9fa;
+            padding: 14px 16px;
+            margin: 18px 0;
+            color: #0B7B8C;
+            font-style: italic;
+            page-break-inside: avoid;
+          }
+
+          /* Horizontal rule */
+          hr {
+            border: none;
+            border-top: 1px solid #d6e9eb;
+            margin: 28px 0;
+            page-break-after: avoid;
+          }
+
+          /* Emphasis */
+          strong {
+            color: #0B7B8C;
+            font-weight: 600;
+          }
+          em {
+            font-style: italic;
+            color: #374151;
+          }
+
+          /* Links */
+          a {
+            color: #17B8A0;
+            text-decoration: none;
+            border-bottom: 1px dotted #17B8A0;
+          }
+
+          /* Print styles */
           @media print {
-            body { padding: 0; }
-            .no-print { display: none; }
-            .print-only { display: block; }
-            a { color: #0B7B8C; text-decoration: none; }
+            html, body {
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              padding: 0;
+            }
+            body {
+              padding: 0.5in;
+              font-size: 11pt;
+            }
+            .screen-only {
+              display: none;
+            }
+            .content {
+              font-size: 11pt;
+            }
+            h1 { font-size: 18pt; margin: 20pt 0 10pt 0; }
+            h2 { font-size: 14pt; margin: 18pt 0 10pt 0; }
+            h3 { font-size: 12pt; margin: 14pt 0 8pt 0; }
+            p { margin-bottom: 10pt; }
+            table { font-size: 10pt; }
+            th, td { padding: 8pt; }
+            pre { font-size: 9pt; }
+            a {
+              color: #0B7B8C;
+              text-decoration: none;
+            }
+            a[href]::after {
+              content: "";
+            }
           }
         </style>
       </head>
@@ -411,11 +598,12 @@ router.get('/export/report', async (req: Request, res: Response) => {
         <div class="header">
           <div class="logo">⬡ LARA</div>
           <div class="meta">
-            <strong>${projectname}</strong> | Reporte ${reportType} | ${today}
+            <strong>${projectname}</strong>
+            <span>Reporte ${reportType} — ${today}</span>
           </div>
         </div>
-        <div class="no-print" style="background: #f0fdfb; border: 1px solid #86efac; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          <strong>📄 Para guardar como PDF:</strong> Presiona Ctrl+P (Windows/Linux) o Cmd+P (Mac) y selecciona "Guardar como PDF"
+        <div class="screen-only">
+          📄 <strong>Para guardar como PDF:</strong> Presiona Ctrl+P (Cmd+P en Mac) → "Guardar como PDF"
         </div>
         <div class="content">
           ${reportContent}
