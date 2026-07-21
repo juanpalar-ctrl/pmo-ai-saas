@@ -108,11 +108,11 @@
         <span>LARA</span>
       </div>
       <nav>
-        <a href="#features">Features</a>
-        <a href="#comparison">Compare</a>
-        <a href="#contact">Contact</a>
-        <a href="/login">Ingresa</a>
-        <a href="#contact" class="btn">Agendar Demo Gratis</a>
+        <a href="#features" data-i18n="nav_features">Características</a>
+        <a href="#comparison" data-i18n="nav_compare">Comparativa</a>
+        <a href="#contact" data-i18n="nav_contact">Contacto</a>
+        <a href="/login" data-i18n="nav_login">Ingresa</a>
+        <a href="#contact" class="btn" data-i18n="cta_demo">Agendar Demo Gratis</a>
       </nav>
     </div>
   </header>
@@ -120,76 +120,76 @@
   <section class="hero">
     <div class="container">
       <h1>LARA</h1>
-      <p>La herramienta que Monday, Asana y Smartsheet debería tener. Análisis automático de presupuestos + AI que identifica riesgos <span class="highlight">ANTES</span> de que se conviertan en problemas.</p>
+      <p data-i18n-html="hero_sub">La herramienta que Monday, Asana y Smartsheet debería tener. Análisis automático de presupuestos + AI que identifica riesgos <span class="highlight">ANTES</span> de que se conviertan en problemas.</p>
       <div class="hero-ctas">
-        <a href="#contact" class="btn-primary">Agendar Demo Gratis</a>
-        <a href="/login" class="btn-outline">Prueba 30 Días</a>
+        <a href="#contact" class="btn-primary" data-i18n="cta_demo">Agendar Demo Gratis</a>
+        <a href="/login" class="btn-outline" data-i18n="cta_trial">Prueba 30 Días</a>
       </div>
     </div>
   </section>
 
   <section id="features" class="container">
-    <h2>Características Principales</h2>
+    <h2 data-i18n="feat_title">Características Principales</h2>
 
     <!-- Risk Analysis - MAIN FEATURE -->
     <div class="feature">
-      <h3>🎯 Análisis de Riesgo con IA</h3>
-      <p>Identifica y mitigua riesgos automáticamente en tus proyectos</p>
+      <h3 data-i18n="feat_risk_h">🎯 Análisis de Riesgo con IA</h3>
+      <p data-i18n="feat_risk_p">Identifica y mitigua riesgos automáticamente en tus proyectos</p>
       <img src="/pagina/vista-portafolio.png" alt="Risk Analysis">
     </div>
 
     <!-- Interactive Feature Tabs -->
-    <h3 style="margin-top: 3rem;">Más Características</h3>
+    <h3 style="margin-top: 3rem;" data-i18n="feat_more">Más Características</h3>
     <div class="tabs" id="feature-tabs">
       <div class="tab-buttons" role="tablist">
-        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="0">📊 Métricas EVM</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="1">👥 Vista de Personas</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="2">💬 Chat IA</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="3">📋 Reportes Técnicos</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="4">📊 Reportes Ejecutivos</button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="5">🎯 Vista de Proyecto</button>
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="0" data-i18n="tab_evm">📊 Métricas EVM</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="1" data-i18n="tab_people">👥 Vista de Personas</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="2" data-i18n="tab_chat">💬 Chat IA</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="3" data-i18n="tab_tech">📋 Reportes Técnicos</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="4" data-i18n="tab_exec">📊 Reportes Ejecutivos</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="5" data-i18n="tab_project">🎯 Vista de Proyecto</button>
       </div>
 
       <div class="tab-panels">
         <div class="tab-panel active" role="tabpanel" data-panel="0">
           <div class="tab-text">
-            <h3>📊 Métricas EVM</h3>
-            <p>Earned Value Management con análisis determinístico</p>
+            <h3 data-i18n="tab_evm">📊 Métricas EVM</h3>
+            <p data-i18n="tab_evm_p">Earned Value Management con análisis determinístico</p>
           </div>
           <img src="/pagina/metricas.png" alt="Métricas EVM">
         </div>
         <div class="tab-panel" role="tabpanel" data-panel="1">
           <div class="tab-text">
-            <h3>👥 Vista de Personas</h3>
-            <p>Gestión integrada del equipo y recursos</p>
+            <h3 data-i18n="tab_people">👥 Vista de Personas</h3>
+            <p data-i18n="tab_people_p">Gestión integrada del equipo y recursos</p>
           </div>
           <img src="/pagina/vista-personas.png" alt="Vista de Personas">
         </div>
         <div class="tab-panel" role="tabpanel" data-panel="2">
           <div class="tab-text">
-            <h3>💬 Chat IA</h3>
-            <p>Análisis conversacional en tiempo real</p>
+            <h3 data-i18n="tab_chat">💬 Chat IA</h3>
+            <p data-i18n="tab_chat_p">Análisis conversacional en tiempo real</p>
           </div>
           <img src="/pagina/lara-chatbot.png" alt="Chat IA">
         </div>
         <div class="tab-panel" role="tabpanel" data-panel="3">
           <div class="tab-text">
-            <h3>📋 Reportes Técnicos</h3>
-            <p>Reportes detallados y análisis profundo</p>
+            <h3 data-i18n="tab_tech">📋 Reportes Técnicos</h3>
+            <p data-i18n="tab_tech_p">Reportes detallados y análisis profundo</p>
           </div>
           <img src="/pagina/reporte-tecnico.png" alt="Reportes Técnicos">
         </div>
         <div class="tab-panel" role="tabpanel" data-panel="4">
           <div class="tab-text">
-            <h3>📊 Reportes Ejecutivos</h3>
-            <p>Visualizaciones de alto nivel para stakeholders</p>
+            <h3 data-i18n="tab_exec">📊 Reportes Ejecutivos</h3>
+            <p data-i18n="tab_exec_p">Visualizaciones de alto nivel para stakeholders</p>
           </div>
           <img src="/pagina/reportes.png" alt="Reportes Ejecutivos">
         </div>
         <div class="tab-panel" role="tabpanel" data-panel="5">
           <div class="tab-text">
-            <h3>🎯 Vista de Proyecto</h3>
-            <p>Panel integral de control de proyectos</p>
+            <h3 data-i18n="tab_project">🎯 Vista de Proyecto</h3>
+            <p data-i18n="tab_project_p">Panel integral de control de proyectos</p>
           </div>
           <img src="/pagina/vista-proyecto.png" alt="Vista de Proyecto">
         </div>
@@ -198,11 +198,11 @@
   </section>
 
   <section id="comparison" class="container comparison">
-    <h2>Comparativa de Mercado</h2>
+    <h2 data-i18n="cmp_title">Comparativa de Mercado</h2>
     <table>
       <thead>
         <tr>
-          <th>Característica</th>
+          <th data-i18n="cmp_feature">Característica</th>
           <th>LARA</th>
           <th>Monday.com</th>
           <th>Asana</th>
@@ -212,7 +212,7 @@
       </thead>
       <tbody>
         <tr>
-          <td>Análisis EVM Automático</td>
+          <td data-i18n="cmp_r1">Análisis EVM Automático</td>
           <td>✅</td>
           <td>—</td>
           <td>—</td>
@@ -220,7 +220,7 @@
           <td>—</td>
         </tr>
         <tr>
-          <td>Análisis de Riesgos con IA</td>
+          <td data-i18n="cmp_r2">Análisis de Riesgos con IA</td>
           <td>✅</td>
           <td>—</td>
           <td>—</td>
@@ -228,7 +228,7 @@
           <td>—</td>
         </tr>
         <tr>
-          <td>Pronóstico Económico/Budget</td>
+          <td data-i18n="cmp_r3">Pronóstico Económico/Budget</td>
           <td>✅</td>
           <td>✅</td>
           <td>—</td>
@@ -236,7 +236,7 @@
           <td>—</td>
         </tr>
         <tr>
-          <td>Monitoreo de Salud del Equipo</td>
+          <td data-i18n="cmp_r4">Monitoreo de Salud del Equipo</td>
           <td>✅</td>
           <td>—</td>
           <td>✅</td>
@@ -244,7 +244,7 @@
           <td>—</td>
         </tr>
         <tr>
-          <td>Asistente IA Conversacional</td>
+          <td data-i18n="cmp_r5">Asistente IA Conversacional</td>
           <td>✅</td>
           <td>—</td>
           <td>—</td>
@@ -252,7 +252,7 @@
           <td>—</td>
         </tr>
         <tr>
-          <td>Reportes Automáticos de IA</td>
+          <td data-i18n="cmp_r6">Reportes Automáticos de IA</td>
           <td>✅</td>
           <td>✅</td>
           <td>✅</td>
@@ -260,7 +260,7 @@
           <td>—</td>
         </tr>
         <tr>
-          <td>Métricas Específicas por Framework</td>
+          <td data-i18n="cmp_r7">Métricas Específicas por Framework</td>
           <td>✅</td>
           <td>—</td>
           <td>✅</td>
@@ -268,7 +268,7 @@
           <td>✅</td>
         </tr>
         <tr>
-          <td>Setup en Minutos (Excel/CSV)</td>
+          <td data-i18n="cmp_r8">Setup en Minutos (Excel/CSV)</td>
           <td>✅</td>
           <td>—</td>
           <td>—</td>
@@ -281,17 +281,17 @@
 
   <section class="value-prop">
     <div class="accent-rule"></div>
-    <p class="value-statement">
+    <p class="value-statement" data-i18n-html="value_stmt">
       Mientras Monday, Asana y Smartsheet te dejan persiguiendo números en hojas de cálculo, <span class="hl">LARA ya identificó los riesgos</span>. Análisis automático que tarda <span class="hl">5 minutos</span> (no 5 días). IA que ve lo que otros tools pierden. Presupuestos con <span class="hl">visibilidad en tiempo real</span>. Eso no es una mejora. <span class="hl-strong">Es un cambio de juego.</span>
     </p>
   </section>
 
   <section id="testimonials" class="testimonials">
     <div class="container">
-      <h2>Testimonios</h2>
+      <h2 data-i18n="testi_title">Testimonios</h2>
       <div class="testimonial-grid">
         <div class="testimonial-card">
-          <blockquote>"Reduce desviaciones de presupuesto e identifica riesgos a tiempo."</blockquote>
+          <blockquote data-i18n="testi_1">"Reduce desviaciones de presupuesto e identifica riesgos a tiempo."</blockquote>
           <div class="testimonial-author">
             <div class="testimonial-avatar">WM</div>
             <div>
@@ -301,7 +301,7 @@
           </div>
         </div>
         <div class="testimonial-card">
-          <blockquote>"Excelente plataforma. Debería tenerla todo Project Manager."</blockquote>
+          <blockquote data-i18n="testi_2">"Excelente plataforma. Debería tenerla todo Project Manager."</blockquote>
           <div class="testimonial-author">
             <div class="testimonial-avatar">JP</div>
             <div>
@@ -316,20 +316,20 @@
 
   <section id="contact" class="contact">
     <div class="container">
-      <h2 style="color: white;">Reserva Tu Demo de 15 Minutos</h2>
-      <p class="form-subtitle">Sin compromiso. Descubre cómo LARA identifica riesgos que otros tools pierden.</p>
+      <h2 style="color: white;" data-i18n="contact_title">Reserva Tu Demo de 15 Minutos</h2>
+      <p class="form-subtitle" data-i18n="contact_sub">Sin compromiso. Descubre cómo LARA identifica riesgos que otros tools pierden.</p>
       <form>
-        <input type="text" placeholder="Empresa" required>
+        <input type="text" placeholder="Empresa" data-i18n-ph="ph_company" required>
         <select required>
-          <option value="" disabled selected>Rol</option>
+          <option value="" disabled selected data-i18n="opt_role">Rol</option>
           <option>PMO Director</option>
           <option>Project Manager</option>
           <option>Consulting Firm</option>
-          <option>Otro</option>
+          <option data-i18n="opt_other">Otro</option>
         </select>
-        <input type="email" placeholder="Tu email" required>
-        <textarea placeholder="¿Qué desafío específico tienes con presupuestos?" required></textarea>
-        <button type="submit" class="btn">Solicitar Demo</button>
+        <input type="email" placeholder="Tu email" data-i18n-ph="ph_email" required>
+        <textarea placeholder="¿Qué desafío específico tienes con presupuestos?" data-i18n-ph="ph_message" required></textarea>
+        <button type="submit" class="btn" data-i18n="cta_request">Solicitar Demo</button>
       </form>
     </div>
   </section>
@@ -339,6 +339,72 @@
   </footer>
 
   <script>
+    /* i18n: español por defecto; cambia a inglés si el idioma del equipo (navigator.language) es inglés — mismo criterio que el resto de la app */
+    (function () {
+      var lang = (navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es';
+      document.documentElement.lang = lang;
+      if (lang === 'es') return;
+      var t = {
+        nav_features: "Features",
+        nav_compare: "Compare",
+        nav_contact: "Contact",
+        nav_login: "Log in",
+        cta_demo: "Book a Free Demo",
+        cta_trial: "30-Day Trial",
+        hero_sub: 'The tool Monday, Asana and Smartsheet should have. Automatic budget analysis + AI that spots risks <span class="highlight">BEFORE</span> they turn into problems.',
+        feat_title: "Key Features",
+        feat_risk_h: "🎯 AI Risk Analysis",
+        feat_risk_p: "Automatically identify and mitigate risks across your projects",
+        feat_more: "More Features",
+        tab_evm: "📊 EVM Metrics",
+        tab_people: "👥 People View",
+        tab_chat: "💬 AI Chat",
+        tab_tech: "📋 Technical Reports",
+        tab_exec: "📊 Executive Reports",
+        tab_project: "🎯 Project View",
+        tab_evm_p: "Earned Value Management with deterministic analysis",
+        tab_people_p: "Integrated team and resource management",
+        tab_chat_p: "Real-time conversational analysis",
+        tab_tech_p: "Detailed reports and in-depth analysis",
+        tab_exec_p: "High-level visualizations for stakeholders",
+        tab_project_p: "Comprehensive project control panel",
+        cmp_title: "Market Comparison",
+        cmp_feature: "Feature",
+        cmp_r1: "Automatic EVM Analysis",
+        cmp_r2: "AI Risk Analysis",
+        cmp_r3: "Economic/Budget Forecasting",
+        cmp_r4: "Team Health Monitoring",
+        cmp_r5: "Conversational AI Assistant",
+        cmp_r6: "Automatic AI Reports",
+        cmp_r7: "Framework-Specific Metrics",
+        cmp_r8: "Setup in Minutes (Excel/CSV)",
+        value_stmt: 'While Monday, Asana and Smartsheet leave you chasing numbers in spreadsheets, <span class="hl">LARA has already identified the risks</span>. Automatic analysis that takes <span class="hl">5 minutes</span> (not 5 days). AI that sees what other tools miss. Budgets with <span class="hl">real-time visibility</span>. That\'s not an improvement. <span class="hl-strong">It\'s a game changer.</span>',
+        testi_title: "Testimonials",
+        testi_1: '"It reduces budget overruns and flags risks in time."',
+        testi_2: '"Excellent platform. Every Project Manager should have it."',
+        contact_title: "Book Your 15-Minute Demo",
+        contact_sub: "No commitment. Discover how LARA spots risks that other tools miss.",
+        ph_company: "Company",
+        opt_role: "Role",
+        opt_other: "Other",
+        ph_email: "Your email",
+        ph_message: "What specific budget challenge are you facing?",
+        cta_request: "Request Demo"
+      };
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n');
+        if (t[k] != null) el.textContent = t[k];
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n-html');
+        if (t[k] != null) el.innerHTML = t[k];
+      });
+      document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
+        var k = el.getAttribute('data-i18n-ph');
+        if (t[k] != null) el.setAttribute('placeholder', t[k]);
+      });
+    })();
+
     (function () {
       var tabs = document.getElementById('feature-tabs');
       if (!tabs) return;
