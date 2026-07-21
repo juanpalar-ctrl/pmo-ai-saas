@@ -58,9 +58,11 @@
       .no-print, #chat-fab, #chat-panel, nav, header,
       .gantt-whatif-btns, #gantt-filters, #chat-suggestions, #health-banner { display: none !important; }
       .pdf-only { display: block !important; }
-      #report-senior:not(.hidden), #report-technical:not(.hidden),
-      #report-senior.hidden, #report-technical.hidden {
+      #report-senior:not(.hidden), #report-technical:not(.hidden) {
         display: block !important; max-height: none !important; overflow: visible !important;
+      }
+      #report-senior.hidden, #report-technical.hidden {
+        display: none !important;
       }
       .bg-white.rounded-xl.shadow-lg:not(.pdf-report-section) { display: none !important; }
       .pdf-report-section { display: block !important; box-shadow: none !important; border: none !important; }
@@ -1427,14 +1429,25 @@
       const techWasHidden = techReport.classList.contains('hidden');
       const seniorOrigDisplay = seniorReport.style.display;
       const techOrigDisplay = techReport.style.display;
+      const seniorOrigMaxHeight = seniorReport.style.maxHeight;
+      const techOrigMaxHeight = techReport.style.maxHeight;
+      const seniorOrigOverflowY = seniorReport.style.overflowY;
+      const techOrigOverflowY = techReport.style.overflowY;
 
-      seniorReport.classList.remove('hidden');
-      techReport.classList.remove('hidden');
+      // Show active report, hide the other one
+      if (isSenior) {
+        seniorReport.classList.remove('hidden');
+        techReport.classList.add('hidden');
+      } else {
+        techReport.classList.remove('hidden');
+        seniorReport.classList.add('hidden');
+      }
+
       seniorReport.style.display = 'block';
       techReport.style.display = 'block';
-      seniorReport.style.maxHeight = '';  // remove inline max-height
+      seniorReport.style.maxHeight = 'none';
       seniorReport.style.overflowY = 'visible';
-      techReport.style.maxHeight = '';  // remove inline max-height
+      techReport.style.maxHeight = 'none';
       techReport.style.overflowY = 'visible';
 
       // The PDF should carry the FULL cronograma, not the current filtered view.
@@ -1455,6 +1468,10 @@
       if (techWasHidden) techReport.classList.add('hidden');
       seniorReport.style.display = seniorOrigDisplay;
       techReport.style.display = techOrigDisplay;
+      seniorReport.style.maxHeight = seniorOrigMaxHeight;
+      techReport.style.maxHeight = techOrigMaxHeight;
+      seniorReport.style.overflowY = seniorOrigOverflowY;
+      techReport.style.overflowY = techOrigOverflowY;
 
       if (_ganttReal && (prevFilter !== 'todos' || prevSearch)) {
         _ganttFilter = prevFilter;
