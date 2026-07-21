@@ -33,6 +33,23 @@
     .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin: 2rem 0; }
     .feature-card { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
     .feature-card img { width: 100%; height: 220px; object-fit: contain; margin: 1rem 0; border-radius: 0.5rem; background: #f3f4f6; }
+    /* Interactive feature tabs */
+    .tabs { margin: 2rem 0; }
+    .tab-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin-bottom: 2rem; }
+    .tab-btn { background: white; color: var(--color-secondary); border: 1px solid #e5e7eb; padding: 0.7rem 1.2rem; border-radius: 2rem; cursor: pointer; font-weight: 600; font-size: 0.95rem; font-family: inherit; transition: all 0.25s ease; white-space: nowrap; }
+    .tab-btn:hover { border-color: var(--color-primary); color: var(--color-primary); transform: translateY(-2px); }
+    .tab-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(23,184,160,0.35); }
+    .tab-panels { position: relative; }
+    .tab-panel { display: none; grid-template-columns: 1fr 1.4fr; gap: 2.5rem; align-items: center; background: white; padding: 2.5rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.07); text-align: left; }
+    .tab-panel.active { display: grid; animation: fadeInUp 0.4s ease; }
+    .tab-panel .tab-text h3 { color: var(--color-secondary); margin: 0 0 0.8rem 0; font-size: 1.5rem; }
+    .tab-panel .tab-text p { color: #4b5563; font-size: 1.05rem; line-height: 1.6; }
+    .tab-panel img { width: 100%; height: 340px; object-fit: contain; border-radius: 0.5rem; background: #f3f4f6; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) {
+      .tab-panel { grid-template-columns: 1fr; gap: 1.2rem; padding: 1.5rem; text-align: center; }
+      .tab-panel img { height: 240px; }
+    }
     .comparison { margin: 3rem auto; text-align: center; }
     .comparison h2 { text-align: center; }
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07); margin-top: 2rem; }
@@ -84,42 +101,61 @@
       <img src="/pagina/vista-portafolio.png" alt="Risk Analysis">
     </div>
 
-    <!-- 3 Features Carousel -->
+    <!-- Interactive Feature Tabs -->
     <h3 style="margin-top: 3rem;">Más Características</h3>
-    <div class="features-grid">
-      <div class="feature-card">
-        <h3>📊 Métricas EVM</h3>
-        <p>Earned Value Management con análisis determinístico</p>
-        <img src="/pagina/metricas.png" alt="Métricas">
+    <div class="tabs" id="feature-tabs">
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="0">📊 Métricas EVM</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="1">👥 Vista de Personas</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="2">💬 Chat IA</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="3">📋 Reportes Técnicos</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="4">📊 Reportes Ejecutivos</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="5">🎯 Vista de Proyecto</button>
       </div>
-      <div class="feature-card">
-        <h3>👥 Vista de Personas</h3>
-        <p>Gestión integrada del equipo y recursos</p>
-        <img src="/pagina/vista-personas.png" alt="Personas">
-      </div>
-      <div class="feature-card">
-        <h3>💬 Chat IA</h3>
-        <p>Análisis conversacional en tiempo real</p>
-        <img src="/pagina/lara-chatbot.png" alt="Chatbot">
-      </div>
-    </div>
 
-    <!-- Additional Features -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin: 2rem 0;">
-      <div class="feature-card">
-        <h3>📋 Reportes Técnicos</h3>
-        <p>Reportes detallados y análisis profundo</p>
-        <img src="/pagina/reporte-tecnico.png" alt="Reporte Técnico">
-      </div>
-      <div class="feature-card">
-        <h3>📊 Reportes Ejecutivos</h3>
-        <p>Visualizaciones de alto nivel para stakeholders</p>
-        <img src="/pagina/reportes.png" alt="Reportes">
-      </div>
-      <div class="feature-card">
-        <h3>🎯 Vista de Proyecto</h3>
-        <p>Panel integral de control de proyectos</p>
-        <img src="/pagina/vista-proyecto.png" alt="Proyecto">
+      <div class="tab-panels">
+        <div class="tab-panel active" role="tabpanel" data-panel="0">
+          <div class="tab-text">
+            <h3>📊 Métricas EVM</h3>
+            <p>Earned Value Management con análisis determinístico</p>
+          </div>
+          <img src="/pagina/metricas.png" alt="Métricas EVM">
+        </div>
+        <div class="tab-panel" role="tabpanel" data-panel="1">
+          <div class="tab-text">
+            <h3>👥 Vista de Personas</h3>
+            <p>Gestión integrada del equipo y recursos</p>
+          </div>
+          <img src="/pagina/vista-personas.png" alt="Vista de Personas">
+        </div>
+        <div class="tab-panel" role="tabpanel" data-panel="2">
+          <div class="tab-text">
+            <h3>💬 Chat IA</h3>
+            <p>Análisis conversacional en tiempo real</p>
+          </div>
+          <img src="/pagina/lara-chatbot.png" alt="Chat IA">
+        </div>
+        <div class="tab-panel" role="tabpanel" data-panel="3">
+          <div class="tab-text">
+            <h3>📋 Reportes Técnicos</h3>
+            <p>Reportes detallados y análisis profundo</p>
+          </div>
+          <img src="/pagina/reporte-tecnico.png" alt="Reportes Técnicos">
+        </div>
+        <div class="tab-panel" role="tabpanel" data-panel="4">
+          <div class="tab-text">
+            <h3>📊 Reportes Ejecutivos</h3>
+            <p>Visualizaciones de alto nivel para stakeholders</p>
+          </div>
+          <img src="/pagina/reportes.png" alt="Reportes Ejecutivos">
+        </div>
+        <div class="tab-panel" role="tabpanel" data-panel="5">
+          <div class="tab-text">
+            <h3>🎯 Vista de Proyecto</h3>
+            <p>Panel integral de control de proyectos</p>
+          </div>
+          <img src="/pagina/vista-proyecto.png" alt="Vista de Proyecto">
+        </div>
       </div>
     </div>
   </section>
@@ -221,5 +257,29 @@
   <footer>
     <p>© 2026 LARA. All rights reserved.</p>
   </footer>
+
+  <script>
+    (function () {
+      var tabs = document.getElementById('feature-tabs');
+      if (!tabs) return;
+      var btns = tabs.querySelectorAll('.tab-btn');
+      var panels = tabs.querySelectorAll('.tab-panel');
+      function activate(i) {
+        btns.forEach(function (b, idx) {
+          var on = idx === i;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        panels.forEach(function (p, idx) {
+          p.classList.toggle('active', idx === i);
+        });
+      }
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          activate(parseInt(b.getAttribute('data-tab'), 10));
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
