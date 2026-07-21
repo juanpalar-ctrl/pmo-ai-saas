@@ -366,10 +366,10 @@ router.get('/export/report', async (req: Request, res: Response) => {
     }
 
     // Parse markdown to HTML
-    const htmlContent = await marked(reportContent);
+    const parsedHtml = await marked(reportContent);
 
     // Sanitize HTML to prevent XSS
-    const sanitizedContent = sanitizeHtml(htmlContent, {
+    const sanitizedContent = sanitizeHtml(parsedHtml, {
       allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'blockquote', 'code', 'pre', 'hr', 'a'],
       allowedAttributes: { 'a': ['href'] }
     });
