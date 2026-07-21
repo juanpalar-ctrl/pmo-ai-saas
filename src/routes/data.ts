@@ -418,12 +418,12 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
 
     // Launch Puppeteer
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await page.setContent(htmlContent, { waitUntil: 'load' });
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
