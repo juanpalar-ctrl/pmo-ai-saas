@@ -36,10 +36,83 @@ LARA is a SaaS platform that converts a spreadsheet of project tasks into **real
 
 ---
 
-## Tech Stack
-
 Built with Node.js, TypeScript, PostgreSQL, and Anthropic Claude.
 
 ---
 
+## Security
+
+- ✅ JWT in httpOnly cookies (httpOnly, sameSite=strict, secure in prod)
+- ✅ Bcrypt (cost 12), minimum 8-char passwords
+- ✅ Rate limiting (auth: 20 req/15min, chat: 60 req/min)
+- ✅ All reads scoped by `user_id` (closes IDOR)
+- ✅ Zod validation at API boundaries
+- ✅ Helmet for HTTP headers
+- ⚠️ CSP disabled (uses inline styles/scripts)
+- ⚠️ SSL verification disabled on Render-managed PG (acceptable for managed service)
+
+---
+
+## Deployment
+
+### On Render (Production)
+- Environment: Node.js web service
+- Build: `npm install && npm run build`
+- Start: `npm start`
+- Env vars set via Render dashboard
+
+**Current:** https://pmo-ai-saas.onrender.com
+
+---
+
+## Landing Page
+
+A modern, fully responsive landing page is available at `/public/lara-landing.html` with:
+- Real app screenshots embedded (Portfolio, Risk Analysis, Team Health, Metrics, Chatbot)
+- LARA branding with cyan, lime, and yellow palette
+- Market comparison table
+- Contact form
+- Direct "Ingresa" link to app login
+
+---
+
+## Contributing
+
+This is a solo project (for now), but if you'd like to contribute:
+
+1. Fork & create a branch
+2. Make changes (keep determinism principle in mind)
+3. Write tests
+4. Submit PR
+
+---
+
+## What's Next?
+
+See [DESCRIPCION_LARA.md](./docs/DESCRIPCION_LARA.md) for a deep technical audit, roadmap prioritization, and debt analysis.
+
+---
+
+## License
+
+MIT
+
+---
+
+## Questions?
+
+- 📧 Email: juanpalar@gmail.com
+- 🐙 GitHub: [@juanpalar-ctrl](https://github.com/juanpalar-ctrl)
+- 🔗 LinkedIn: [juan-pablo-lara](https://www.linkedin.com/in/juanpablolarafigueroa-projectmanagement/?locale=en)
+
+---
+
+**Built with:**
+- [Anthropic Claude](https://www.anthropic.com) for intelligence
+- [Express.js](https://expressjs.com) for the API
+- [PostgreSQL](https://www.postgresql.org) for persistence
+- [Render](https://render.com) for hosting
+
 **© 2026 Juan Pablo Lara**
+
+**Last updated:** July 2026
