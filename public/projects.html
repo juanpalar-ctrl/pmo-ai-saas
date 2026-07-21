@@ -1432,9 +1432,9 @@
       techReport.classList.remove('hidden');
       seniorReport.style.display = 'block';
       techReport.style.display = 'block';
-      seniorReport.style.maxHeight = 'none';
+      seniorReport.style.maxHeight = '';  // remove inline max-height
       seniorReport.style.overflow = 'visible';
-      techReport.style.maxHeight = 'none';
+      techReport.style.maxHeight = '';  // remove inline max-height
       techReport.style.overflow = 'visible';
 
       // The PDF should carry the FULL cronograma, not the current filtered view.
