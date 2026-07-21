@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import { errorMessage } from '../core/errors';
 import multer from 'multer';
 import * as path from 'path';
-import PDFDocument from 'pdfkit';
+import puppeteer from 'puppeteer';
 import { ExcelAdapter } from '../services/adapters/ExcelAdapter';
 import { dataIngestService } from '../services/dataIngestService';
 import { projectRepository } from '../repositories/projectRepository';
@@ -320,6 +320,7 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
 // GET /api/data/export/pdf
 // Generate and download PDF report
 router.get('/export/pdf', async (req: Request, res: Response) => {
+  let browser;
   try {
     const { projectId, type } = req.query;
     const userId = (req as AuthRequest).user!.id;
@@ -368,47 +369,91 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
     const today = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
     const fileName = `LARA_${projectname.replace(/[^\w]/g, '_')}_${type}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-    // Generate PDF using pdfkit
-    const doc = new PDFDocument({ margin: 40 });
+    // Generate HTML
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; background: white; }
+          .header { border-bottom: 3px solid #17B8A0; padding: 20px 0 15px 0; margin-bottom: 30px; }
+          .logo { font-size: 20px; font-weight: 900; color: #0B7B8C; }
+          .meta { font-size: 12px; color: #666; margin-top: 8px; }
+          .meta strong { color: #0B7B8C; }
+          .content { font-size: 13px; line-height: 1.8; }
+          h1 { color: #0B7B8C; font-size: 1.8em; margin: 25px 0 15px 0; }
+          h2 { color: #0B7B8C; font-size: 1.4em; margin: 22px 0 12px 0; border-bottom: 2px solid #e6f4f5; padding-bottom: 8px; }
+          h3 { color: #0B7B8C; font-size: 1.15em; margin: 18px 0 10px 0; }
+          p { margin-bottom: 12px; }
+          ul, ol { margin: 12px 0 12px 25px; }
+          li { margin-bottom: 6px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { border: 1px solid #d6e9eb; padding: 10px; text-align: left; }
+          th { background: #e6f4f5; color: #0B7B8C; font-weight: bold; }
+          tr:nth-child(even) td { background: #f7fcfc; }
+          blockquote { border-left: 4px solid #17B8A0; background: #f0f9fa; padding: 12px 15px; margin: 15px 0; color: #0B7B8C; font-style: italic; }
+          code { background: #f3f4f6; padding: 3px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+          pre { background: #f3f4f6; padding: 12px; border-radius: 4px; overflow-x: auto; margin: 15px 0; font-size: 0.9em; line-height: 1.4; }
+          hr { border: none; border-top: 1px solid #d6e9eb; margin: 25px 0; }
+          strong { color: #0B7B8C; font-weight: 600; }
+          em { font-style: italic; }
+          page { page-break-after: always; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">⬡ LARA</div>
+          <div class="meta">
+            <strong>${escapeHtmlContent(projectname)}</strong> | Reporte ${reportType} | ${today}
+          </div>
+        </div>
+        <div class="content">
+          ${reportContent}
+        </div>
+      </body>
+      </html>
+    `;
 
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-    // Pipe PDF to response
-    doc.pipe(res);
-
-    // Add header
-    doc.fontSize(18).font('Helvetica-Bold').text('⬡ LARA', { align: 'left' });
-    doc.moveDown(0.2);
-    doc.fontSize(11).font('Helvetica').text(`${projectname} | Reporte ${reportType} | ${today}`, { align: 'left' });
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke('#17B8A0');
-    doc.moveDown();
-
-    // Strip HTML tags and format content
-    const strippedContent = reportContent
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .trim();
-
-    // Add content
-    doc.fontSize(10).font('Helvetica').text(strippedContent, {
-      align: 'left',
-      lineGap: 3,
-      width: 515
+    // Launch Puppeteer
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
-    // Finalize PDF
-    doc.end();
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
+      printBackground: true
+    });
+
+    // Send response
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(pdfBuffer);
 
     routeLogger.info({ projectId, type }, 'PDF exported successfully');
   } catch (err) {
     routeLogger.error({ err: errorMessage(err) }, 'GET /export/pdf error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  } finally {
+    if (browser) await browser.close();
   }
 });
+
+// Helper to escape HTML content
+function escapeHtmlContent(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export default router;
