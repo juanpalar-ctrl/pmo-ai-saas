@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import { errorMessage } from '../core/errors';
 import multer from 'multer';
 import * as path from 'path';
-import puppeteer from 'puppeteer';
 import { ExcelAdapter } from '../services/adapters/ExcelAdapter';
 import { dataIngestService } from '../services/dataIngestService';
 import { projectRepository } from '../repositories/projectRepository';
@@ -317,10 +316,9 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
   }
 });
 
-// GET /api/data/export/pdf
-// Generate and download PDF report
-router.get('/export/pdf', async (req: Request, res: Response) => {
-  let browser;
+// GET /api/data/export/report
+// Return printable HTML report (user prints to PDF via browser)
+router.get('/export/report', async (req: Request, res: Response) => {
   try {
     const { projectId, type } = req.query;
     const userId = (req as AuthRequest).user!.id;
@@ -339,7 +337,7 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
       [projectId, userId]
     );
     if (projectResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+      return res.status(404).send('Proyecto no encontrado');
     }
 
     const { projectid: realProjectId, projectname } = projectResult.rows[0];
@@ -353,7 +351,7 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
     );
 
     if (analysisResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'No hay análisis' });
+      return res.status(404).send('No hay análisis');
     }
 
     const { output } = analysisResult.rows[0];
@@ -362,22 +360,23 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
       : output.reports?.technical_report;
 
     if (!reportContent) {
-      return res.status(404).json({ success: false, error: 'Reporte no disponible' });
+      return res.status(404).send('Reporte no disponible');
     }
 
     const reportType = type === 'senior' ? 'Ejecutivo' : 'Técnico';
     const today = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-    const fileName = `LARA_${projectname.replace(/[^\w]/g, '_')}_${type}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-    // Generate HTML
+    // Return HTML that browser will print to PDF
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="es">
       <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>LARA - ${projectname} - ${reportType}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; background: white; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; background: white; padding: 40px; max-width: 800px; margin: 0 auto; }
           .header { border-bottom: 3px solid #17B8A0; padding: 20px 0 15px 0; margin-bottom: 30px; }
           .logo { font-size: 20px; font-weight: 900; color: #0B7B8C; }
           .meta { font-size: 12px; color: #666; margin-top: 8px; }
@@ -390,7 +389,7 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
           ul, ol { margin: 12px 0 12px 25px; }
           li { margin-bottom: 6px; }
           table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #d6e9eb; padding: 10px; text-align: left; }
+          th, td { border: 1px solid #d6e9eb; padding: 10px; text-align: left; font-size: 12px; }
           th { background: #e6f4f5; color: #0B7B8C; font-weight: bold; }
           tr:nth-child(even) td { background: #f7fcfc; }
           blockquote { border-left: 4px solid #17B8A0; background: #f0f9fa; padding: 12px 15px; margin: 15px 0; color: #0B7B8C; font-style: italic; }
@@ -399,15 +398,24 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
           hr { border: none; border-top: 1px solid #d6e9eb; margin: 25px 0; }
           strong { color: #0B7B8C; font-weight: 600; }
           em { font-style: italic; }
-          page { page-break-after: always; }
+          .print-only { display: none; }
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+            .print-only { display: block; }
+            a { color: #0B7B8C; text-decoration: none; }
+          }
         </style>
       </head>
       <body>
         <div class="header">
           <div class="logo">⬡ LARA</div>
           <div class="meta">
-            <strong>${escapeHtmlContent(projectname)}</strong> | Reporte ${reportType} | ${today}
+            <strong>${projectname}</strong> | Reporte ${reportType} | ${today}
           </div>
+        </div>
+        <div class="no-print" style="background: #f0fdfb; border: 1px solid #86efac; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <strong>📄 Para guardar como PDF:</strong> Presiona Ctrl+P (Windows/Linux) o Cmd+P (Mac) y selecciona "Guardar como PDF"
         </div>
         <div class="content">
           ${reportContent}
@@ -416,62 +424,14 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
       </html>
     `;
 
-    // Launch Puppeteer
-    try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
-        timeout: 30000
-      });
-    } catch (launchErr) {
-      routeLogger.error({ err: errorMessage(launchErr) }, 'Puppeteer launch failed');
-      return res.status(500).json({ success: false, error: 'Error iniciando generador de PDF' });
-    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(htmlContent);
 
-    try {
-      const page = await browser.newPage();
-      await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-      // Generate PDF
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
-        printBackground: true,
-        timeout: 30000
-      });
-
-      // Send response
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      res.send(pdfBuffer);
-
-      routeLogger.info({ projectId, type }, 'PDF exported successfully');
-    } catch (renderErr) {
-      routeLogger.error({ err: errorMessage(renderErr) }, 'PDF rendering failed');
-      return res.status(500).json({ success: false, error: 'Error generando PDF: ' + errorMessage(renderErr) });
-    }
+    routeLogger.info({ projectId, type }, 'Report HTML sent successfully');
   } catch (err) {
-    routeLogger.error({ err: errorMessage(err) }, 'GET /export/pdf error');
-    res.status(500).json({ success: false, error: 'Error interno del servidor' });
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeErr) {
-        routeLogger.error({ err: errorMessage(closeErr) }, 'Error closing browser');
-      }
-    }
+    routeLogger.error({ err: errorMessage(err) }, 'GET /export/report error');
+    res.status(500).send('Error generando reporte');
   }
 });
-
-// Helper to escape HTML content
-function escapeHtmlContent(str: string): string {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export default router;

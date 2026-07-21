@@ -1393,7 +1393,7 @@
     }
     // ─────────────────────────────────────────────────────────────
 
-    async function exportPDF() {
+    function exportPDF() {
       const activeReport = document.querySelector('#report-senior:not(.hidden), #report-technical:not(.hidden)');
       if (!activeReport || !activeReport.children.length) {
         alert('Primero selecciona un reporte (Ejecutivo o Técnico) para exportar.');
@@ -1404,32 +1404,9 @@
       const projectId = new URLSearchParams(location.search).get('id');
       const type = isSenior ? 'senior' : 'technical';
 
-      try {
-        // Request PDF from backend
-        const response = await fetch(`/api/data/export/pdf?projectId=${projectId}&type=${type}`, {
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          alert('Error generando PDF: ' + (error.error || 'Error desconocido'));
-          return;
-        }
-
-        // Download PDF
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `LARA_Reporte_${type}_${new Date().toISOString().split('T')[0]}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error('Error exporting PDF:', err);
-        alert('Error generando PDF. Por favor intenta de nuevo.');
-      }
+      // Open report in new window for printing to PDF
+      const url = `/api/data/export/report?projectId=${projectId}&type=${type}`;
+      window.open(url, '_blank');
     }
 
     function ganttWhatIf(btn, delta) {
