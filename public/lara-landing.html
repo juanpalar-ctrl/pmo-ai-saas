@@ -23,9 +23,15 @@
     nav a:hover { color: var(--color-primary); }
     .btn { background: var(--color-primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
     .btn:hover { opacity: 0.9; }
+    .hero-ctas { display: flex; gap: 0.9rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { background: var(--color-accent); color: #14532d; padding: 0.9rem 1.7rem; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 700; text-decoration: none; display: inline-block; transition: opacity 0.2s; }
+    .btn-outline { background: transparent; color: white; padding: 0.9rem 1.7rem; border: 2px solid rgba(255,255,255,0.85); border-radius: 0.5rem; cursor: pointer; font-weight: 700; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-outline:hover { background: rgba(255,255,255,0.14); }
     .hero { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); color: white; padding: 2.6rem 2rem; text-align: center; }
     .hero h1 { font-size: 2.3rem; margin-bottom: 0.6rem; }
-    .hero p { font-size: 1.1rem; margin-bottom: 1.4rem; }
+    .hero p { font-size: 1.1rem; margin-bottom: 1.4rem; max-width: 660px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+    .hero p .highlight { color: var(--color-accent); font-weight: 700; }
     h2, h3 { color: var(--color-secondary); margin: 2rem 0 1rem 0; }
     .feature { background: white; padding: 2rem; margin: 2rem 0; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
     .feature h3 { color: var(--color-secondary); }
@@ -50,6 +56,11 @@
       .tab-panel { grid-template-columns: 1fr; gap: 1.2rem; padding: 1.5rem; text-align: center; }
       .tab-panel img { height: 240px; }
     }
+    @media (max-width: 720px) {
+      header { padding: 0.9rem 1rem; }
+      .header-content { flex-direction: column; gap: 0.7rem; }
+      nav { flex-wrap: wrap; justify-content: center; gap: 0.6rem 1.2rem; }
+    }
     .comparison { margin: 3rem auto; text-align: center; }
     .comparison h2 { text-align: center; }
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07); margin-top: 2rem; }
@@ -60,10 +71,22 @@
     tbody tr { transition: background 0.2s; }
     tbody tr:hover { background: #f0fffe; }
     tbody tr:last-child td { border-bottom: none; }
+    /* Testimonials */
+    .testimonials { background: #f2fbf9; padding: 4rem 2rem; }
+    .testimonials h2 { text-align: center; }
+    .testimonial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; max-width: 900px; margin: 2rem auto 0; }
+    .testimonial-card { background: white; border-radius: 1rem; border-left: 4px solid var(--color-primary); box-shadow: 0 4px 12px rgba(11,123,140,0.08); padding: 1.8rem; text-align: left; }
+    .testimonial-card blockquote { font-size: 1.1rem; line-height: 1.55; color: #1f2937; margin: 0 0 1.2rem 0; }
+    .testimonial-author { display: flex; align-items: center; gap: 0.9rem; }
+    .testimonial-avatar { width: 46px; height: 46px; border-radius: 50%; flex: none; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .testimonial-name { font-weight: 700; color: #111827; }
+    .testimonial-role { color: #6b7280; font-size: 0.9rem; }
     .contact { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); color: white; padding: 4rem 2rem; text-align: center; margin-top: 4rem; }
+    .contact .form-subtitle { max-width: 480px; margin: 0.4rem auto 1.8rem; line-height: 1.5; }
     .contact form { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
-    .contact input, .contact textarea { padding: 0.8rem; border: none; border-radius: 0.5rem; font-family: inherit; }
-    .contact button { background: #EAB308; color: black; font-weight: 600; }
+    .contact input, .contact select, .contact textarea { padding: 0.85rem; border: none; border-radius: 0.5rem; font-family: inherit; font-size: 1rem; color: #1f2937; }
+    .contact textarea { min-height: 96px; resize: vertical; }
+    .contact button { background: var(--color-accent); color: #14532d; font-weight: 700; padding: 0.95rem; font-size: 1.05rem; }
     footer { background: #1f2937; color: white; padding: 2rem; text-align: center; }
   </style>
 </head>
@@ -78,7 +101,8 @@
         <a href="#features">Features</a>
         <a href="#comparison">Compare</a>
         <a href="#contact">Contact</a>
-        <a href="/login" class="btn">Ingresa</a>
+        <a href="/login">Ingresa</a>
+        <a href="#contact" class="btn">Agendar Demo Gratis</a>
       </nav>
     </div>
   </header>
@@ -86,8 +110,11 @@
   <section class="hero">
     <div class="container">
       <h1>LARA</h1>
-      <p>Intelligence Accelerated — Optimiza tus proyectos con análisis IA avanzado</p>
-      <a href="/login" class="btn">Ingresa</a>
+      <p>La herramienta que Monday, Asana y Smartsheet debería tener. Análisis automático de presupuestos + AI que identifica riesgos <span class="highlight">ANTES</span> de que se conviertan en problemas.</p>
+      <div class="hero-ctas">
+        <a href="#contact" class="btn-primary">Agendar Demo Gratis</a>
+        <a href="/login" class="btn-outline">Prueba 30 Días</a>
+      </div>
     </div>
   </section>
 
@@ -242,14 +269,50 @@
     </table>
   </section>
 
+  <section id="testimonials" class="testimonials">
+    <div class="container">
+      <h2>Testimonios</h2>
+      <div class="testimonial-grid">
+        <div class="testimonial-card">
+          <blockquote>"Reduce desviaciones de presupuesto e identifica riesgos a tiempo."</blockquote>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">WM</div>
+            <div>
+              <div class="testimonial-name">William M.</div>
+              <div class="testimonial-role">Senior Technology Delivery Leader</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <blockquote>"Excelente plataforma. Debería tenerla todo Project Manager."</blockquote>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">JP</div>
+            <div>
+              <div class="testimonial-name">Juan Pablo P.</div>
+              <div class="testimonial-role">Project Manager, Technology Solutions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="contact" class="contact">
     <div class="container">
-      <h2 style="color: white;">Contacto</h2>
-      <p>Cuéntanos cómo podemos ayudarte</p>
+      <h2 style="color: white;">Reserva Tu Demo de 15 Minutos</h2>
+      <p class="form-subtitle">Sin compromiso. Descubre cómo LARA identifica riesgos que otros tools pierden.</p>
       <form>
+        <input type="text" placeholder="Empresa" required>
+        <select required>
+          <option value="" disabled selected>Rol</option>
+          <option>PMO Director</option>
+          <option>Project Manager</option>
+          <option>Consulting Firm</option>
+          <option>Otro</option>
+        </select>
         <input type="email" placeholder="Tu email" required>
-        <textarea placeholder="Tu mensaje" required></textarea>
-        <button type="submit" class="btn">Enviar</button>
+        <textarea placeholder="¿Qué desafío específico tienes con presupuestos?" required></textarea>
+        <button type="submit" class="btn">Solicitar Demo</button>
       </form>
     </div>
   </section>
