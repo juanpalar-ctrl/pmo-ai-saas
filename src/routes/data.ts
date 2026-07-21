@@ -417,32 +417,50 @@ router.get('/export/pdf', async (req: Request, res: Response) => {
     `;
 
     // Launch Puppeteer
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+        timeout: 30000
+      });
+    } catch (launchErr) {
+      routeLogger.error({ err: errorMessage(launchErr) }, 'Puppeteer launch failed');
+      return res.status(500).json({ success: false, error: 'Error iniciando generador de PDF' });
+    }
 
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'load' });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
-      printBackground: true
-    });
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
+        printBackground: true,
+        timeout: 30000
+      });
 
-    // Send response
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(pdfBuffer);
+      // Send response
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
 
-    routeLogger.info({ projectId, type }, 'PDF exported successfully');
+      routeLogger.info({ projectId, type }, 'PDF exported successfully');
+    } catch (renderErr) {
+      routeLogger.error({ err: errorMessage(renderErr) }, 'PDF rendering failed');
+      return res.status(500).json({ success: false, error: 'Error generando PDF: ' + errorMessage(renderErr) });
+    }
   } catch (err) {
     routeLogger.error({ err: errorMessage(err) }, 'GET /export/pdf error');
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeErr) {
+        routeLogger.error({ err: errorMessage(closeErr) }, 'Error closing browser');
+      }
+    }
   }
 });
 
