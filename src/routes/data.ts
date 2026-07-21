@@ -316,4 +316,126 @@ router.get('/analysis/:projectId/tasks', async (req: Request, res: Response) => 
   }
 });
 
+// GET /api/data/export/pdf
+// Generate and download PDF report
+router.get('/export/pdf', async (req: Request, res: Response) => {
+  try {
+    const { projectId, type } = req.query;
+    const userId = (req as AuthRequest).user!.id;
+
+    if (!projectId || !type) {
+      return res.status(400).json({ success: false, error: 'projectId y type requeridos' });
+    }
+
+    if (type !== 'senior' && type !== 'technical') {
+      return res.status(400).json({ success: false, error: 'type debe ser senior o technical' });
+    }
+
+    // Fetch project
+    const projectResult = await pool.query(
+      `SELECT projectid, projectname FROM project_data WHERE id = $1 AND user_id = $2`,
+      [projectId, userId]
+    );
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
+    }
+
+    const { projectid: realProjectId, projectname } = projectResult.rows[0];
+
+    // Fetch analysis
+    const analysisResult = await pool.query(
+      `SELECT output FROM ai_analyses
+       WHERE projectid = $1 AND user_id = $2 AND agenttype = 'combined'
+       ORDER BY generatedat DESC LIMIT 1`,
+      [realProjectId, userId]
+    );
+
+    if (analysisResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'No hay análisis' });
+    }
+
+    const { output } = analysisResult.rows[0];
+    const reportContent = type === 'senior'
+      ? output.reports?.senior_report
+      : output.reports?.technical_report;
+
+    if (!reportContent) {
+      return res.status(404).json({ success: false, error: 'Reporte no disponible' });
+    }
+
+    // Generate HTML
+    const reportType = type === 'senior' ? 'Ejecutivo' : 'Técnico';
+    const today = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+          .header { border-bottom: 2px solid #17B8A0; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
+          .logo { font-size: 24px; font-weight: bold; color: #0B7B8C; }
+          .meta { text-align: right; font-size: 12px; color: #666; }
+          .meta-title { font-weight: bold; color: #0B7B8C; font-size: 14px; }
+          .content { font-size: 12px; line-height: 1.8; }
+          .content h1, .content h2, .content h3 { color: #0B7B8C; margin: 20px 0 12px 0; }
+          .content h1 { font-size: 1.6em; }
+          .content h2 { font-size: 1.3em; }
+          .content h3 { font-size: 1.1em; }
+          .content p { margin-bottom: 10px; }
+          .content ul, .content ol { margin: 10px 0 10px 30px; }
+          .content li { margin-bottom: 5px; }
+          .content table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+          .content th, .content td { border: 1px solid #d6e9eb; padding: 8px; text-align: left; }
+          .content th { background: #e6f4f5; color: #0B7B8C; font-weight: bold; }
+          .content tr:nth-child(even) td { background: #f7fcfc; }
+          .content blockquote { border-left: 4px solid #17B8A0; background: #f0f9fa; padding: 10px 15px; margin: 10px 0; color: #0B7B8C; font-style: italic; }
+          .content hr { border: none; border-top: 1px solid #d6e9eb; margin: 20px 0; }
+          .content strong { color: #0B7B8C; font-weight: bold; }
+          .content code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }
+          .content pre { background: #f3f4f6; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">⬡ LARA</div>
+          <div class="meta">
+            <div class="meta-title">${escapeHtml(projectname)}</div>
+            <div>Reporte ${reportType}</div>
+            <div>${today}</div>
+          </div>
+        </div>
+        <div class="content">
+          ${reportContent}
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Generate PDF
+    const pdf = require('html-pdf');
+    const fileName = `LARA_${projectname.replace(/[^\w]/g, '_')}_${type}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    pdf.create(htmlContent, {
+      format: 'A4',
+      margin: '10mm',
+      timeout: 30000
+    }).toStream((err: any, stream: any) => {
+      if (err) {
+        routeLogger.error({ err }, 'PDF generation error');
+        return res.status(500).json({ success: false, error: 'Error generando PDF' });
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      stream.pipe(res);
+    });
+  } catch (err) {
+    routeLogger.error({ err: errorMessage(err) }, 'GET /export/pdf error');
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
 export default router;

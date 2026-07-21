@@ -10,8 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- Sanitiza el HTML que marked.parse genera del reporte IA antes de inyectarlo (innerHTML) → evita XSS si el modelo emite HTML. -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
-  <!-- PDF export library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); min-height: 100vh; }
 
@@ -1395,7 +1393,7 @@
     }
     // ─────────────────────────────────────────────────────────────
 
-    function exportPDF() {
+    async function exportPDF() {
       const activeReport = document.querySelector('#report-senior:not(.hidden), #report-technical:not(.hidden)');
       if (!activeReport || !activeReport.children.length) {
         alert('Primero selecciona un reporte (Ejecutivo o Técnico) para exportar.');
@@ -1403,48 +1401,35 @@
       }
 
       const isSenior = activeReport.id === 'report-senior';
-      const projectName = window.projectContext?.projectName || 'Proyecto';
-      const reportType = isSenior ? 'Ejecutivo' : 'Técnico';
-      const fileName = `LARA_${projectName}_${reportType}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const projectId = new URLSearchParams(location.search).get('id');
+      const type = isSenior ? 'senior' : 'technical';
 
-      // Create container with header and content
-      const container = document.createElement('div');
-      container.style.padding = '20px';
-      container.style.backgroundColor = 'white';
+      try {
+        // Request PDF from backend
+        const response = await fetch(`/api/data/export/pdf?projectId=${projectId}&type=${type}`, {
+          credentials: 'include'
+        });
 
-      const header = document.createElement('div');
-      header.style.marginBottom = '20px';
-      header.style.borderBottom = '2px solid #17B8A0';
-      header.style.paddingBottom = '15px';
-      header.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="font-size: 18px; font-weight: bold; color: #0B7B8C;">⬡ LARA</div>
-          <div style="text-align: right; font-size: 12px; color: #666;">
-            <div style="font-weight: bold; color: #0B7B8C;">${escapeHtml(projectName)}</div>
-            <div>Reporte ${reportType}</div>
-            <div>${new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' })}</div>
-          </div>
-        </div>
-      `;
+        if (!response.ok) {
+          const error = await response.json();
+          alert('Error generando PDF: ' + (error.error || 'Error desconocido'));
+          return;
+        }
 
-      const content = document.createElement('div');
-      content.innerHTML = activeReport.innerHTML;
-      content.style.fontSize = '12px';
-      content.style.lineHeight = '1.6';
-
-      container.appendChild(header);
-      container.appendChild(content);
-
-      // Generate PDF with html2pdf
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-      };
-
-      html2pdf().set(opt).from(container).save();
+        // Download PDF
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `LARA_Reporte_${type}_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Error exporting PDF:', err);
+        alert('Error generando PDF. Por favor intenta de nuevo.');
+      }
     }
 
     function ganttWhatIf(btn, delta) {
