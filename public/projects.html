@@ -58,7 +58,8 @@
       .no-print, #chat-fab, #chat-panel, nav, header,
       .gantt-whatif-btns, #gantt-filters, #chat-suggestions, #health-banner { display: none !important; }
       .pdf-only { display: block !important; }
-      #report-senior, #report-technical {
+      #report-senior:not(.hidden), #report-technical:not(.hidden),
+      #report-senior.hidden, #report-technical.hidden {
         display: block !important; max-height: none !important; overflow: visible !important;
       }
       .bg-white.rounded-xl.shadow-lg:not(.pdf-report-section) { display: none !important; }
