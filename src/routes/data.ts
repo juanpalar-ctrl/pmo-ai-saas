@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 import { errorMessage } from '../core/errors';
 import multer from 'multer';
 import * as path from 'path';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
 import { ExcelAdapter } from '../services/adapters/ExcelAdapter';
 import { dataIngestService } from '../services/dataIngestService';
 import { projectRepository } from '../repositories/projectRepository';
@@ -355,13 +357,22 @@ router.get('/export/report', async (req: Request, res: Response) => {
     }
 
     const { output } = analysisResult.rows[0];
-    const reportContent = type === 'senior'
+    let reportContent = type === 'senior'
       ? output.reports?.senior_report
       : output.reports?.technical_report;
 
     if (!reportContent) {
       return res.status(404).send('Reporte no disponible');
     }
+
+    // Parse markdown to HTML
+    const htmlContent = await marked(reportContent);
+
+    // Sanitize HTML to prevent XSS
+    const sanitizedContent = sanitizeHtml(htmlContent, {
+      allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'blockquote', 'code', 'pre', 'hr', 'a'],
+      allowedAttributes: { 'a': ['href'] }
+    });
 
     const reportType = type === 'senior' ? 'Ejecutivo' : 'Técnico';
     const today = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -606,7 +617,7 @@ router.get('/export/report', async (req: Request, res: Response) => {
           📄 <strong>Para guardar como PDF:</strong> Presiona Ctrl+P (Cmd+P en Mac) → "Guardar como PDF"
         </div>
         <div class="content">
-          ${reportContent}
+          ${sanitizedContent}
         </div>
       </body>
       </html>
