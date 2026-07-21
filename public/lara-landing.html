@@ -71,6 +71,16 @@
     tbody tr { transition: background 0.2s; }
     tbody tr:hover { background: #f0fffe; }
     tbody tr:last-child td { border-bottom: none; }
+    /* Value proposition statement */
+    .value-prop { text-align: center; max-width: 820px; margin: 4rem auto; padding: 0 1rem; }
+    .value-prop .accent-rule { width: 56px; height: 4px; background: var(--color-accent); border-radius: 2px; margin: 0 auto 1.8rem; }
+    .value-statement { font-size: 1.5rem; line-height: 1.6; color: #374151; font-weight: 400; }
+    .value-statement .hl { color: var(--color-primary); font-weight: 700; }
+    .value-statement .hl-strong { color: var(--color-secondary); font-weight: 700; }
+    @media (max-width: 768px) {
+      .value-prop { margin: 3rem auto; }
+      .value-statement { font-size: 1.2rem; }
+    }
     /* Testimonials */
     .testimonials { background: #f2fbf9; padding: 4rem 2rem; }
     .testimonials h2 { text-align: center; }
@@ -267,6 +277,13 @@
         </tr>
       </tbody>
     </table>
+  </section>
+
+  <section class="value-prop">
+    <div class="accent-rule"></div>
+    <p class="value-statement">
+      Mientras Monday, Asana y Smartsheet te dejan persiguiendo números en hojas de cálculo, <span class="hl">LARA ya identificó los riesgos</span>. Análisis automático que tarda <span class="hl">5 minutos</span> (no 5 días). IA que ve lo que otros tools pierden. Presupuestos con <span class="hl">visibilidad en tiempo real</span>. Eso no es una mejora. <span class="hl-strong">Es un cambio de juego.</span>
+    </p>
   </section>
 
   <section id="testimonials" class="testimonials">
