@@ -180,3 +180,4 @@ runMigrations()
       logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Servidor iniciado (sin migraciones)');
     });
   });
+// Force rebuild Tue Jul 21 11:43:35 -05 2026
