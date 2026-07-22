@@ -142,6 +142,89 @@
       .benefit-content { padding: 1.8rem 1.5rem; }
       .solution-title { font-size: 1.1rem; }
     }
+    /* How LARA Works Section */
+    .how-works-section { padding: 4rem 2rem; }
+    .how-works-title { text-align: center; font-size: 2rem; margin-bottom: 3rem; color: var(--color-secondary); }
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.2rem;
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+    .step {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s ease;
+      text-align: center;
+    }
+    .step:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(23, 184, 160, 0.15);
+      border-color: var(--color-primary);
+    }
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      color: white;
+      border-radius: 10px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 auto 1.2rem;
+      box-shadow: 0 4px 12px rgba(23, 184, 160, 0.25);
+    }
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--color-secondary);
+      margin-bottom: 0.8rem;
+    }
+    .step-description {
+      font-size: 0.9rem;
+      color: #6b7280;
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
+      flex-grow: 1;
+    }
+    .step-benefit {
+      background: linear-gradient(135deg, rgba(23, 184, 160, 0.08) 0%, rgba(158, 217, 0, 0.06) 100%);
+      padding: 0.8rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--color-accent);
+      text-align: left;
+    }
+    .benefit-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 0.3rem;
+    }
+    .benefit-text {
+      font-size: 0.85rem;
+      color: #374151;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    @media (max-width: 1024px) {
+      .steps-row { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .step { padding: 1.5rem 1.2rem; }
+    }
+    @media (max-width: 640px) {
+      .steps-row { grid-template-columns: 1fr; }
+      .how-works-title { font-size: 1.6rem; }
+      .step-number { width: 45px; height: 45px; font-size: 1.3rem; }
+      .step-title { font-size: 1rem; }
+    }
   </style>
 </head>
 <body>
@@ -172,10 +255,57 @@
     </div>
   </section>
 
+  <section class="how-works-section">
+    <div class="container">
+      <h2 class="how-works-title" data-i18n="how_works_title">Cómo Funciona LARA</h2>
+      <div class="steps-row">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3 class="step-title" data-i18n="step1_title">Conecta</h3>
+          <p class="step-description" data-i18n="step1_desc">Importa tu Excel o conecta Azure DevOps, Jira, Monday.</p>
+          <div class="step-benefit">
+            <div class="benefit-label" data-i18n="step1_label">Beneficio</div>
+            <div class="benefit-text" data-i18n="step1_benefit">Sin implementación manual</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3 class="step-title" data-i18n="step2_title">Analiza</h3>
+          <p class="step-description" data-i18n="step2_desc">LARA procesa presupuestos, patrones y desviaciones con IA.</p>
+          <div class="step-benefit">
+            <div class="benefit-label" data-i18n="step2_label">Beneficio</div>
+            <div class="benefit-text" data-i18n="step2_benefit">EVM en tiempo real automático</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3 class="step-title" data-i18n="step3_title">Predice Riesgos</h3>
+          <p class="step-description" data-i18n="step3_desc">Identifica problemas 2-4 semanas antes que ocurran.</p>
+          <div class="step-benefit">
+            <div class="benefit-label" data-i18n="step3_label">Beneficio</div>
+            <div class="benefit-text" data-i18n="step3_benefit">Actúa antes de la crisis</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <h3 class="step-title" data-i18n="step4_title">Decides</h3>
+          <p class="step-description" data-i18n="step4_desc">Recibe insights claros y reportes automáticos con datos.</p>
+          <div class="step-benefit">
+            <div class="benefit-label" data-i18n="step4_label">Beneficio</div>
+            <div class="benefit-text" data-i18n="step4_benefit">Control financiero real</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="features" class="container">
     <!-- Section Intro -->
     <div class="section-intro">
-      <h2 data-i18n="feat_title">Cómo LARA Resuelve Tus Mayores Desafíos</h2>
+      <h2 data-i18n="feat_title">Qué Diferencia a LARA</h2>
       <p data-i18n="feat_subtitle">No es una herramienta más. Es la diferencia entre descubrir problemas a tiempo vs. cuando ya es demasiado tarde.</p>
     </div>
 
@@ -490,7 +620,8 @@
         cta_demo: "Book a Free Demo",
         cta_trial: "7-Day Trial",
         hero_sub: 'The tool Monday, Asana and Smartsheet should have. Automatic budget analysis + AI that spots risks <span class="highlight">BEFORE</span> they turn into problems.',
-        feat_title: "How LARA Solves Your Biggest Challenges",
+        feat_title: "What Sets LARA Apart",
+        how_works_title: "How LARA Works",
         feat_subtitle: "It's not just another tool. It's the difference between spotting problems in time vs. when it's already too late.",
         feat_risk_h: "🎯 AI Risk Analysis",
         feat_risk_p: "Automatically identify and mitigate risks across your projects",
@@ -561,7 +692,23 @@
         impact_people_2: "<strong>Optimize allocation</strong> with real capacity visibility per person",
         impact_people_3: "<strong>Retain talent</strong>: happy teams = less turnover",
         cta_benefit_title: "🚀 All this, automated in 5 minutes",
-        cta_benefit_sub: "Import your Excel, connect your current tool, and LARA starts working. No long implementation."
+        cta_benefit_sub: "Import your Excel, connect your current tool, and LARA starts working. No long implementation.",
+        step1_title: "Connect",
+        step1_desc: "Import your Excel or connect Azure DevOps, Jira, Monday.",
+        step1_label: "Benefit",
+        step1_benefit: "No manual implementation",
+        step2_title: "Analyze",
+        step2_desc: "LARA processes budgets, patterns, and variances with AI.",
+        step2_label: "Benefit",
+        step2_benefit: "Real-time EVM automation",
+        step3_title: "Predict Risks",
+        step3_desc: "Identifies problems 2-4 weeks before they occur.",
+        step3_label: "Benefit",
+        step3_benefit: "Act before the crisis",
+        step4_title: "Decide",
+        step4_desc: "Receive clear insights and automatic reports with real data.",
+        step4_label: "Benefit",
+        step4_benefit: "Real financial control"
       };
       document.querySelectorAll('[data-i18n]').forEach(function (el) {
         var k = el.getAttribute('data-i18n');
