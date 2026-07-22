@@ -225,6 +225,36 @@
       .step-number { width: 45px; height: 45px; font-size: 1.3rem; }
       .step-title { font-size: 1rem; }
     }
+    /* Carousel Section */
+    .carousel-section { padding: 4rem 2rem; }
+    .carousel-title { text-align: center; font-size: 2rem; margin-bottom: 3rem; color: var(--color-secondary); }
+    .carousel-wrapper { position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+    .carousel-container { display: flex; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .carousel-slide { flex: 0 0 100%; display: grid; grid-template-columns: 1.3fr 1fr; gap: 3rem; align-items: center; padding: 4rem; min-height: 500px; }
+    .slide-image { background: linear-gradient(135deg, #f0f9f8 0%, #e0f2f0 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4rem; min-height: 350px; }
+    .slide-content { display: flex; flex-direction: column; gap: 1.5rem; }
+    .slide-badge { display: inline-block; background: #f0fffe; color: var(--color-secondary); padding: 0.6rem 1.2rem; border-radius: 24px; font-size: 0.8rem; font-weight: 600; border: 1px solid #d1e8e5; width: fit-content; }
+    .slide-title { font-size: 1.8rem; font-weight: 700; color: var(--color-secondary); }
+    .slide-description { font-size: 1rem; color: #6b7280; line-height: 1.6; }
+    .impact-section { margin-top: 1rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb; }
+    .impact-title { font-size: 0.75rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+    .impact-list { list-style: none; }
+    .impact-item { font-size: 0.95rem; color: #374151; margin-bottom: 0.6rem; padding-left: 1.8rem; position: relative; line-height: 1.5; }
+    .impact-item::before { content: "✓"; position: absolute; left: 0; color: var(--color-accent); font-weight: 700; }
+    .impact-item strong { color: var(--color-secondary); font-weight: 600; }
+    .carousel-controls { position: absolute; bottom: 2rem; right: 2rem; display: flex; gap: 1rem; z-index: 10; }
+    .carousel-btn { width: 44px; height: 44px; border-radius: 8px; border: 1px solid #e5e7eb; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; font-size: 1.2rem; color: var(--color-secondary); font-weight: 600; }
+    .carousel-btn:hover { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+    .carousel-dots { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.6rem; z-index: 10; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #d1d5db; cursor: pointer; transition: all 0.3s; border: none; padding: 0; }
+    .dot.active { background: var(--color-primary); width: 32px; border-radius: 6px; }
+    @media (max-width: 768px) {
+      .carousel-slide { grid-template-columns: 1fr; padding: 2rem; min-height: auto; gap: 2rem; }
+      .slide-image { min-height: 280px; font-size: 3rem; }
+      .carousel-controls { bottom: 1rem; right: 1rem; }
+      .carousel-dots { bottom: 1rem; }
+      .carousel-btn { width: 40px; height: 40px; font-size: 1rem; }
+    }
   </style>
 </head>
 <body>
@@ -302,98 +332,82 @@
     </div>
   </section>
 
-  <section id="features" class="container">
-    <!-- Section Intro -->
-    <div class="section-intro">
-      <h2 data-i18n="feat_title">Qué Diferencia a LARA</h2>
-      <p data-i18n="feat_subtitle">No es una herramienta más. Es la diferencia entre descubrir problemas a tiempo vs. cuando ya es demasiado tarde.</p>
-    </div>
+  <section id="features" class="carousel-section">
+    <div class="container">
+      <h2 class="carousel-title" data-i18n="feat_title">Qué Diferencia a LARA</h2>
 
-    <!-- Benefits Grid -->
-    <div class="benefits-grid">
-      <!-- Benefit 1: Risk Analysis -->
-      <div class="benefit-card">
-        <div class="benefit-image">
-          <img src="/pagina/vista-portafolio.png" alt="Análisis de Riesgo">
-        </div>
-        <div class="benefit-content">
-          <span class="benefit-badge" data-i18n="badge_risk">🎯 Anticipación de Riesgos</span>
-          <div class="problem-block">
-            <div class="problem-label" data-i18n="label_problem">El Problema Hoy</div>
-            <div class="problem-text" data-i18n="problem_risk">"Descubres las desviaciones de presupuesto cuando ya es demasiado tarde—en la junta de seguimiento o peor, cuando el cliente se da cuenta."</div>
+      <div class="carousel-wrapper">
+        <div class="carousel-container" id="carousel">
+          <!-- Slide 1: Risk Analysis -->
+          <div class="carousel-slide">
+            <div class="slide-image">🎯</div>
+            <div class="slide-content">
+              <span class="slide-badge" data-i18n="badge_risk">🎯 Anticipación de Riesgos</span>
+              <h3 class="slide-title" data-i18n="solution_risk_title">Análisis de Riesgo Predictivo</h3>
+              <p class="slide-description" data-i18n="solution_risk">LARA analiza patrones históricos e indicadores clave en tiempo real para alertarte sobre posibles sobrecostos y retrasos semanas antes de que ocurran.</p>
+              <div class="impact-section">
+                <div class="impact-title" data-i18n="label_impact">El Impacto</div>
+                <ul class="impact-list">
+                  <li class="impact-item" data-i18n="impact_risk_1"><strong>Ahorra 80%</strong> del tiempo en auditorías manuales</li>
+                  <li class="impact-item" data-i18n="impact_risk_2"><strong>Protege márgenes</strong> previniendo fugas de presupuesto</li>
+                  <li class="impact-item" data-i18n="impact_risk_3"><strong>Reduce imprevistos</strong> en comités de seguimiento</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div class="solution-block">
-            <div class="solution-label" data-i18n="label_solution">La Solución LARA</div>
-            <div class="solution-title" data-i18n="solution_risk_title">Análisis de Riesgo Predictivo</div>
-            <div class="solution-text" data-i18n="solution_risk">LARA analiza patrones históricos e indicadores clave en tiempo real para alertarte sobre posibles sobrecostos y retrasos semanas antes de que ocurran.</div>
-          </div>
-          <div class="impact-block">
-            <h4 data-i18n="label_impact">El Impacto</h4>
-            <ul class="impact-list">
-              <li data-i18n="impact_risk_1"><strong>Ahorra 80%</strong> del tiempo en auditorías manuales</li>
-              <li data-i18n="impact_risk_2"><strong>Protege márgenes</strong> previniendo fugas de presupuesto</li>
-              <li data-i18n="impact_risk_3"><strong>Reduce imprevistos</strong> en comités de seguimiento</li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
-      <!-- Benefit 2: EVM Metrics (REVERSED) -->
-      <div class="benefit-card reverse">
-        <div class="benefit-image">
-          <img src="/pagina/metricas.png" alt="Métricas EVM">
-        </div>
-        <div class="benefit-content">
-          <span class="benefit-badge" data-i18n="badge_evm">📈 Control Financiero Real</span>
-          <div class="problem-block">
-            <div class="problem-label" data-i18n="label_problem">El Problema Hoy</div>
-            <div class="problem-text" data-i18n="problem_evm">"Tus reportes siempre están atrasados. No sabes si estás ganando o perdiendo dinero hasta que cierras el mes."</div>
+          <!-- Slide 2: EVM Metrics -->
+          <div class="carousel-slide">
+            <div class="slide-image">📊</div>
+            <div class="slide-content">
+              <span class="slide-badge" data-i18n="badge_evm">📈 Control Financiero Real</span>
+              <h3 class="slide-title" data-i18n="solution_evm_title">Earned Value Management en Tiempo Real</h3>
+              <p class="slide-description" data-i18n="solution_evm">Obtén claridad absoluta sobre el desempeño real de tus proyectos con métricas de Valor Ganado (CPI, SPI, EAC) actualizadas automáticamente.</p>
+              <div class="impact-section">
+                <div class="impact-title" data-i18n="label_impact">El Impacto</div>
+                <ul class="impact-list">
+                  <li class="impact-item" data-i18n="impact_evm_1"><strong>Visibilidad 360°</strong>: presupuesto vs. valor entregado en un panel</li>
+                  <li class="impact-item" data-i18n="impact_evm_2"><strong>Pronósticos precisos</strong>: costo final estimado (EAC) al instante</li>
+                  <li class="impact-item" data-i18n="impact_evm_3"><strong>Decisiones rápidas</strong>: reajusta recursos basándote en datos reales</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div class="solution-block">
-            <div class="solution-label" data-i18n="label_solution">La Solución LARA</div>
-            <div class="solution-title" data-i18n="solution_evm_title">Earned Value Management en Tiempo Real</div>
-            <div class="solution-text" data-i18n="solution_evm">Obtén claridad absoluta sobre el desempeño real de tus proyectos con métricas de Valor Ganado (CPI, SPI, EAC) actualizadas automáticamente.</div>
-          </div>
-          <div class="impact-block">
-            <h4 data-i18n="label_impact">El Impacto</h4>
-            <ul class="impact-list">
-              <li data-i18n="impact_evm_1"><strong>Visibilidad 360°</strong>: presupuesto vs. valor entregado en un panel</li>
-              <li data-i18n="impact_evm_2"><strong>Pronósticos precisos</strong>: costo final estimado (EAC) al instante</li>
-              <li data-i18n="impact_evm_3"><strong>Decisiones rápidas</strong>: reajusta recursos basándote en datos reales</li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
-      <!-- Benefit 3: Team Health -->
-      <div class="benefit-card">
-        <div class="benefit-image">
-          <img src="/pagina/vista-personas.png" alt="Salud del Equipo">
+          <!-- Slide 3: Team Health -->
+          <div class="carousel-slide">
+            <div class="slide-image">❤️</div>
+            <div class="slide-content">
+              <span class="slide-badge" data-i18n="badge_people">❤️ Salud del Equipo</span>
+              <h3 class="slide-title" data-i18n="solution_people_title">Monitoreo de Personas e Indicadores</h3>
+              <p class="slide-description" data-i18n="solution_people">LARA monitorea automáticamente la carga por persona, detecta patrones de sobrecarga y te alerta antes de que se generen problemas de retención.</p>
+              <div class="impact-section">
+                <div class="impact-title" data-i18n="label_impact">El Impacto</div>
+                <ul class="impact-list">
+                  <li class="impact-item" data-i18n="impact_people_1"><strong>Evita burnout</strong> detectando sobrecarga antes de que sea crítico</li>
+                  <li class="impact-item" data-i18n="impact_people_2"><strong>Optimiza asignación</strong> con visibilidad de capacidad real por persona</li>
+                  <li class="impact-item" data-i18n="impact_people_3"><strong>Retiene talento</strong>: equipos felices = menos rotación</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="benefit-content">
-          <span class="benefit-badge" data-i18n="badge_people">❤️ Salud del Equipo</span>
-          <div class="problem-block">
-            <div class="problem-label" data-i18n="label_problem">El Problema Hoy</div>
-            <div class="problem-text" data-i18n="problem_people">"No sabes quién está al borde del burnout hasta que alguien renuncia. La carga está desigual y nadie lo ve."</div>
-          </div>
-          <div class="solution-block">
-            <div class="solution-label" data-i18n="label_solution">La Solución LARA</div>
-            <div class="solution-title" data-i18n="solution_people_title">Monitoreo de Personas e Indicadores</div>
-            <div class="solution-text" data-i18n="solution_people">LARA monitorea automáticamente la carga por persona, detecta patrones de sobrecarga y te alerta antes de que se generen problemas de retención.</div>
-          </div>
-          <div class="impact-block">
-            <h4 data-i18n="label_impact">El Impacto</h4>
-            <ul class="impact-list">
-              <li data-i18n="impact_people_1"><strong>Evita burnout</strong> detectando sobrecarga antes de que sea crítico</li>
-              <li data-i18n="impact_people_2"><strong>Optimiza asignación</strong> con visibilidad de capacidad real por persona</li>
-              <li data-i18n="impact_people_3"><strong>Retiene talento</strong>: equipos felices = menos rotación</li>
-            </ul>
-          </div>
+
+        <div class="carousel-dots">
+          <button class="dot active" onclick="currentSlide(0)" aria-label="Slide 1"></button>
+          <button class="dot" onclick="currentSlide(1)" aria-label="Slide 2"></button>
+          <button class="dot" onclick="currentSlide(2)" aria-label="Slide 3"></button>
+        </div>
+
+        <div class="carousel-controls">
+          <button class="carousel-btn" onclick="prevSlide()" aria-label="Previous slide">←</button>
+          <button class="carousel-btn" onclick="nextSlide()" aria-label="Next slide">→</button>
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- CTA Section -->
+    <!-- CTA Section after carousel -->
     <div class="cta-benefits">
       <h3 data-i18n="cta_benefit_title">🚀 Todo esto, automatizado en 5 minutos</h3>
       <p data-i18n="cta_benefit_sub">Importa tu Excel, conecta tu herramienta actual, y LARA comienza a trabajar. Sin implementación larga.</p>
@@ -744,6 +758,37 @@
           activate(parseInt(b.getAttribute('data-tab'), 10));
         });
       });
+    })();
+
+    (function () {
+      var currentIndex = 0;
+      const slides = 3;
+      const carousel = document.getElementById('carousel');
+      const dots = document.querySelectorAll('.dot');
+
+      function showSlide(n) {
+        currentIndex = (n + slides) % slides;
+        carousel.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+        dots.forEach(function (dot, i) {
+          dot.classList.toggle('active', i === currentIndex);
+        });
+      }
+
+      window.nextSlide = function() {
+        showSlide(currentIndex + 1);
+      };
+
+      window.prevSlide = function() {
+        showSlide(currentIndex - 1);
+      };
+
+      window.currentSlide = function(n) {
+        showSlide(n);
+      };
+
+      setInterval(function() {
+        showSlide(currentIndex + 1);
+      }, 5000);
     })();
   </script>
 </body>
