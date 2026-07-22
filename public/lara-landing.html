@@ -106,6 +106,11 @@
     .contact textarea { min-height: 96px; resize: vertical; }
     .contact button:not(.btn-primary) { background: var(--color-accent); color: #14532d; font-weight: 700; padding: 0.95rem; font-size: 1.05rem; }
     footer { background: #1f2937; color: white; padding: 2rem; text-align: center; }
+    footer img { max-width: 100%; }
+    @media (max-width: 480px) {
+      footer img { height: 80px !important; }
+      footer { padding: 1.5rem 1rem; }
+    }
     /* Benefit Cards Section */
     .section-intro { text-align: center; margin-bottom: 3rem; }
     .section-intro h2 { margin-top: 0; }
