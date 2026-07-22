@@ -105,6 +105,43 @@
     .contact textarea { min-height: 96px; resize: vertical; }
     .contact button { background: var(--color-accent); color: #14532d; font-weight: 700; padding: 0.95rem; font-size: 1.05rem; }
     footer { background: #1f2937; color: white; padding: 2rem; text-align: center; }
+    /* Benefit Cards Section */
+    .section-intro { text-align: center; margin-bottom: 3rem; }
+    .section-intro h2 { margin-top: 0; }
+    .section-intro p { font-size: 1rem; color: #6b7280; max-width: 650px; margin: 0.8rem auto 0; line-height: 1.6; }
+    .benefits-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; margin-bottom: 2rem; }
+    .benefit-card { background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07); display: grid; grid-template-columns: 1fr 1.1fr; gap: 0; min-height: 380px; }
+    .benefit-card.reverse { grid-template-columns: 1.1fr 1fr; }
+    .benefit-image { background: linear-gradient(135deg, #f0f9f8 0%, #e0f2f0 100%); display: flex; align-items: center; justify-content: center; min-height: 380px; position: relative; border-right: 1px solid #e5e7eb; }
+    .benefit-card.reverse .benefit-image { border-right: none; border-left: 1px solid #e5e7eb; order: 2; }
+    .benefit-image img { width: 100%; height: 100%; object-fit: contain; padding: 2rem; }
+    .benefit-content { padding: 2.5rem; display: flex; flex-direction: column; justify-content: center; }
+    .benefit-card.reverse .benefit-content { order: 1; }
+    .benefit-badge { display: inline-block; background: #f0fffe; color: var(--color-secondary); padding: 0.4rem 1rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 600; margin-bottom: 1.2rem; border: 1px solid #d1e8e5; width: fit-content; }
+    .problem-block { margin-bottom: 2rem; }
+    .problem-label { font-size: 0.75rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+    .problem-text { font-size: 0.95rem; color: #6b7280; line-height: 1.6; font-style: italic; padding-left: 0.8rem; border-left: 3px solid var(--color-accent); }
+    .solution-block { margin-bottom: 1.8rem; padding-bottom: 1.8rem; border-bottom: 1px solid #e5e7eb; }
+    .solution-label { font-size: 0.75rem; font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+    .solution-title { font-size: 1.25rem; font-weight: 600; color: var(--color-secondary); margin-bottom: 0.6rem; }
+    .solution-text { font-size: 0.95rem; color: #374151; line-height: 1.6; }
+    .impact-block h4 { font-size: 0.75rem; font-weight: 700; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; margin-top: 0; }
+    .impact-list { list-style: none; }
+    .impact-list li { font-size: 0.9rem; color: #374151; margin-bottom: 0.8rem; padding-left: 1.8rem; position: relative; line-height: 1.5; }
+    .impact-list li::before { content: "✓"; position: absolute; left: 0; color: var(--color-accent); font-weight: 700; font-size: 1.2rem; }
+    .impact-list li strong { color: var(--color-secondary); font-weight: 600; }
+    .cta-benefits { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); color: white; padding: 3rem 2rem; text-align: center; border-radius: 1rem; margin: 4rem 0; }
+    .cta-benefits h3 { color: white; font-size: 1.5rem; margin: 0 0 0.6rem 0; }
+    .cta-benefits p { font-size: 1rem; margin: 0 0 1.5rem 0; opacity: 0.95; }
+    .cta-benefits .btn-primary { display: inline-block; }
+    @media (max-width: 768px) {
+      .benefit-card { grid-template-columns: 1fr; min-height: auto; }
+      .benefit-card.reverse { grid-template-columns: 1fr; }
+      .benefit-image { border-right: none; border-bottom: 1px solid #e5e7eb; min-height: 240px; }
+      .benefit-card.reverse .benefit-image { border-left: none; border-bottom: 1px solid #e5e7eb; order: auto; }
+      .benefit-content { padding: 1.8rem 1.5rem; }
+      .solution-title { font-size: 1.1rem; }
+    }
   </style>
 </head>
 <body>
@@ -136,18 +173,105 @@
   </section>
 
   <section id="features" class="container">
-    <h2 data-i18n="feat_title">Características Principales</h2>
-
-    <!-- Risk Analysis - MAIN FEATURE -->
-    <div class="feature">
-      <h3 data-i18n="feat_risk_h">🎯 Análisis de Riesgo con IA</h3>
-      <p data-i18n="feat_risk_p">Identifica y mitigua riesgos automáticamente en tus proyectos</p>
-      <p class="feature-benefit" data-i18n="ben_risk">⭐ Anticipa desviaciones de presupuesto antes de que se conviertan en crisis</p>
-      <img src="/pagina/vista-portafolio.png" alt="Risk Analysis">
+    <!-- Section Intro -->
+    <div class="section-intro">
+      <h2 data-i18n="feat_title">Cómo LARA Resuelve Tus Mayores Desafíos</h2>
+      <p data-i18n="feat_subtitle">No es una herramienta más. Es la diferencia entre descubrir problemas a tiempo vs. cuando ya es demasiado tarde.</p>
     </div>
 
-    <!-- Interactive Feature Tabs -->
-    <h3 style="margin-top: 3rem;" data-i18n="feat_more">Más Características</h3>
+    <!-- Benefits Grid -->
+    <div class="benefits-grid">
+      <!-- Benefit 1: Risk Analysis -->
+      <div class="benefit-card">
+        <div class="benefit-image">
+          <img src="/pagina/vista-portafolio.png" alt="Análisis de Riesgo">
+        </div>
+        <div class="benefit-content">
+          <span class="benefit-badge" data-i18n="badge_risk">🎯 Anticipación de Riesgos</span>
+          <div class="problem-block">
+            <div class="problem-label" data-i18n="label_problem">El Problema Hoy</div>
+            <div class="problem-text" data-i18n="problem_risk">"Descubres las desviaciones de presupuesto cuando ya es demasiado tarde—en la junta de seguimiento o peor, cuando el cliente se da cuenta."</div>
+          </div>
+          <div class="solution-block">
+            <div class="solution-label" data-i18n="label_solution">La Solución LARA</div>
+            <div class="solution-title" data-i18n="solution_risk_title">Análisis de Riesgo Predictivo</div>
+            <div class="solution-text" data-i18n="solution_risk">LARA analiza patrones históricos e indicadores clave en tiempo real para alertarte sobre posibles sobrecostos y retrasos semanas antes de que ocurran.</div>
+          </div>
+          <div class="impact-block">
+            <h4 data-i18n="label_impact">El Impacto</h4>
+            <ul class="impact-list">
+              <li data-i18n="impact_risk_1"><strong>Ahorra 80%</strong> del tiempo en auditorías manuales</li>
+              <li data-i18n="impact_risk_2"><strong>Protege márgenes</strong> previniendo fugas de presupuesto</li>
+              <li data-i18n="impact_risk_3"><strong>Reduce imprevistos</strong> en comités de seguimiento</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benefit 2: EVM Metrics (REVERSED) -->
+      <div class="benefit-card reverse">
+        <div class="benefit-image">
+          <img src="/pagina/metricas.png" alt="Métricas EVM">
+        </div>
+        <div class="benefit-content">
+          <span class="benefit-badge" data-i18n="badge_evm">📈 Control Financiero Real</span>
+          <div class="problem-block">
+            <div class="problem-label" data-i18n="label_problem">El Problema Hoy</div>
+            <div class="problem-text" data-i18n="problem_evm">"Tus reportes siempre están atrasados. No sabes si estás ganando o perdiendo dinero hasta que cierras el mes."</div>
+          </div>
+          <div class="solution-block">
+            <div class="solution-label" data-i18n="label_solution">La Solución LARA</div>
+            <div class="solution-title" data-i18n="solution_evm_title">Earned Value Management en Tiempo Real</div>
+            <div class="solution-text" data-i18n="solution_evm">Obtén claridad absoluta sobre el desempeño real de tus proyectos con métricas de Valor Ganado (CPI, SPI, EAC) actualizadas automáticamente.</div>
+          </div>
+          <div class="impact-block">
+            <h4 data-i18n="label_impact">El Impacto</h4>
+            <ul class="impact-list">
+              <li data-i18n="impact_evm_1"><strong>Visibilidad 360°</strong>: presupuesto vs. valor entregado en un panel</li>
+              <li data-i18n="impact_evm_2"><strong>Pronósticos precisos</strong>: costo final estimado (EAC) al instante</li>
+              <li data-i18n="impact_evm_3"><strong>Decisiones rápidas</strong>: reajusta recursos basándote en datos reales</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benefit 3: Team Health -->
+      <div class="benefit-card">
+        <div class="benefit-image">
+          <img src="/pagina/vista-personas.png" alt="Salud del Equipo">
+        </div>
+        <div class="benefit-content">
+          <span class="benefit-badge" data-i18n="badge_people">❤️ Salud del Equipo</span>
+          <div class="problem-block">
+            <div class="problem-label" data-i18n="label_problem">El Problema Hoy</div>
+            <div class="problem-text" data-i18n="problem_people">"No sabes quién está al borde del burnout hasta que alguien renuncia. La carga está desigual y nadie lo ve."</div>
+          </div>
+          <div class="solution-block">
+            <div class="solution-label" data-i18n="label_solution">La Solución LARA</div>
+            <div class="solution-title" data-i18n="solution_people_title">Monitoreo de Personas e Indicadores</div>
+            <div class="solution-text" data-i18n="solution_people">LARA monitorea automáticamente la carga por persona, detecta patrones de sobrecarga y te alerta antes de que se generen problemas de retención.</div>
+          </div>
+          <div class="impact-block">
+            <h4 data-i18n="label_impact">El Impacto</h4>
+            <ul class="impact-list">
+              <li data-i18n="impact_people_1"><strong>Evita burnout</strong> detectando sobrecarga antes de que sea crítico</li>
+              <li data-i18n="impact_people_2"><strong>Optimiza asignación</strong> con visibilidad de capacidad real por persona</li>
+              <li data-i18n="impact_people_3"><strong>Retiene talento</strong>: equipos felices = menos rotación</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="cta-benefits">
+      <h3 data-i18n="cta_benefit_title">🚀 Todo esto, automatizado en 5 minutos</h3>
+      <p data-i18n="cta_benefit_sub">Importa tu Excel, conecta tu herramienta actual, y LARA comienza a trabajar. Sin implementación larga.</p>
+      <a href="#contact" class="btn-primary" data-i18n="cta_demo">Agendar Demo Gratis</a>
+    </div>
+
+    <!-- Interactive Feature Tabs - Additional Features -->
+    <h3 style="margin-top: 3rem; text-align: center;" data-i18n="feat_more">Más Características</h3>
     <div class="tabs" id="feature-tabs">
       <div class="tab-buttons" role="tablist">
         <button class="tab-btn active" role="tab" aria-selected="true" data-tab="0" data-i18n="tab_evm">📊 Métricas EVM</button>
@@ -366,7 +490,8 @@
         cta_demo: "Book a Free Demo",
         cta_trial: "7-Day Trial",
         hero_sub: 'The tool Monday, Asana and Smartsheet should have. Automatic budget analysis + AI that spots risks <span class="highlight">BEFORE</span> they turn into problems.',
-        feat_title: "Key Features",
+        feat_title: "How LARA Solves Your Biggest Challenges",
+        feat_subtitle: "It's not just another tool. It's the difference between spotting problems in time vs. when it's already too late.",
         feat_risk_h: "🎯 AI Risk Analysis",
         feat_risk_p: "Automatically identify and mitigate risks across your projects",
         feat_more: "More Features",
@@ -410,7 +535,33 @@
         ben_tech: "⭐ Document every technical detail so nothing gets lost",
         ben_exec: "⭐ Communicate project status in seconds, not hours",
         ben_project: "⭐ One screen with everything you need to decide",
-        cta_request: "Request Demo"
+        cta_request: "Request Demo",
+        badge_risk: "🎯 Risk Anticipation",
+        badge_evm: "📈 Real Financial Control",
+        badge_people: "❤️ Team Health",
+        label_problem: "The Problem Today",
+        label_solution: "The LARA Solution",
+        label_impact: "The Impact",
+        problem_risk: '"You discover budget overruns when it\'s already too late—in the status meeting or worse, when the client finds out."',
+        solution_risk_title: "Predictive Risk Analysis",
+        solution_risk: "LARA analyzes historical patterns and key indicators in real-time to alert you about potential cost overruns and delays weeks before they occur.",
+        impact_risk_1: "<strong>Saves 80%</strong> of time on manual audits",
+        impact_risk_2: "<strong>Protects margins</strong> by preventing silent budget leaks",
+        impact_risk_3: "<strong>Reduces surprises</strong> in status meetings",
+        problem_evm: '"Your reports are always late. You don\'t know if you\'re making or losing money until you close the month."',
+        solution_evm_title: "Earned Value Management in Real-Time",
+        solution_evm: "Get absolute clarity on your project\'s true performance with Earned Value metrics (CPI, SPI, EAC) automatically updated.",
+        impact_evm_1: "<strong>360° visibility</strong>: budget spent vs. real value delivered in one panel",
+        impact_evm_2: "<strong>Precise forecasts</strong>: estimated final cost (EAC) instantly",
+        impact_evm_3: "<strong>Quick decisions</strong>: adjust resources based on real data",
+        problem_people: '"You don\'t know who\'s heading for burnout until someone quits. Workload is uneven and nobody sees it."',
+        solution_people_title: "People & Indicator Monitoring",
+        solution_people: "LARA automatically monitors workload per person, detects overload patterns, and alerts you before retention problems arise.",
+        impact_people_1: "<strong>Prevent burnout</strong> by detecting overload before it\'s critical",
+        impact_people_2: "<strong>Optimize allocation</strong> with real capacity visibility per person",
+        impact_people_3: "<strong>Retain talent</strong>: happy teams = less turnover",
+        cta_benefit_title: "🚀 All this, automated in 5 minutes",
+        cta_benefit_sub: "Import your Excel, connect your current tool, and LARA starts working. No long implementation."
       };
       document.querySelectorAll('[data-i18n]').forEach(function (el) {
         var k = el.getAttribute('data-i18n');
