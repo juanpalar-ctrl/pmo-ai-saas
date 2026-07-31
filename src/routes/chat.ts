@@ -52,6 +52,39 @@ NO incluyas el bloque <actions> cuando el usuario solo hace preguntas conceptual
 ## Idioma
 Responde siempre en español, a menos que el usuario escriba en otro idioma.`;
 
+const TEAM_HEALTH_PROMPT = `Eres LARA Assistant, especialista en Salud y Bienestar de Equipos con 15 años de experiencia en gestión de talento. Tu misión es ayudar a PMs y líderes a construir equipos saludables, evitar burnout y mejorar la moral.
+
+## Tu personalidad
+- Empatía: entiendes que la gente es el corazón del proyecto
+- Practicidad: das soluciones concretas y rápidas
+- Proactividad: señalas riesgos antes de que se conviertan en crisis
+- Nunca juzgas, solo ayudas
+
+## Aspectos que dominas
+- **Burnout Detection**: síntomas, factores de riesgo, prevención
+- **Team Dynamics**: conflictos, comunicación, cohesión
+- **Workload Management**: distribución de carga, utilización óptima
+- **Morale & Engagement**: motivación, reconocimiento, carrera profesional
+- **Turnover & Retention**: por qué se van los buenos, cómo retener talento
+- **Well-being Metrics**: estrés, satisfacción, balance vida-trabajo
+
+## Cómo responder
+1. Si tienes datos del equipo disponibles, úsalos para contextualizar
+2. Sé honesto: si detectas un problema, dilo claramente pero ofrece soluciones
+3. Prioriza acciones: "primero X, luego Y"
+4. Dale herramientas al PM: frases, planes, checkpoints
+5. Máximo 300 palabras, sé conciso
+
+## Menú de Acción Inmediata
+Cuando detectes un problema de equipo accionable (burnout, conflicto, retención, moral baja):
+
+<actions>
+[{"id":"draft_team","label":"✉️ Redactar mensaje para el equipo","intent":"draft:team"},{"id":"draft_clevel","label":"📊 Reportar a Ejecutivos","intent":"draft:clevel"}]
+</actions>
+
+## Idioma
+Responde siempre en español, a menos que el usuario escriba en otro idioma.`;
+
 router.post('/', async (req: Request, res: Response) => {
   try {
     const body = ChatMessageSchema.safeParse(req.body);
@@ -61,18 +94,26 @@ router.post('/', async (req: Request, res: Response) => {
 
     const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 
+    // Detect context type: team or project
+    const isTeamContext = projectContext && (projectContext.teamHealth || projectContext.teamMembers);
+    const systemPrompt = isTeamContext ? TEAM_HEALTH_PROMPT : SYSTEM_PROMPT;
+
     // Inject project context as first user message if available (ALL messages, not just first 2)
     if (projectContext && history.length === 0) {
-      const ctx = buildContextMessage(projectContext);
+      const ctx = isTeamContext
+        ? buildTeamContextMessage(projectContext)
+        : buildContextMessage(projectContext);
       if (ctx) {
         messages.push({ role: 'user', content: ctx });
       }
     } else if (projectContext && history.length > 0) {
       // Keep injecting context every conversation to ensure LLM always has access to real data
-      const ctx = buildContextMessage(projectContext);
+      const ctx = isTeamContext
+        ? buildTeamContextMessage(projectContext)
+        : buildContextMessage(projectContext);
       if (ctx) {
         // Insert context as system-level data (via user message) before current turn
-        messages.push({ role: 'user', content: `[CURRENT PROJECT DATA]\n${ctx}` });
+        messages.push({ role: 'user', content: `[CURRENT ${isTeamContext ? 'TEAM' : 'PROJECT'} DATA]\n${ctx}` });
       }
     }
 
@@ -89,7 +130,7 @@ router.post('/', async (req: Request, res: Response) => {
     const response = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 1200,
-      system: `${SYSTEM_PROMPT}\n\n${languageDirective(lang)}`,
+      system: `${systemPrompt}\n\n${languageDirective(lang)}`,
       messages,
     });
 
@@ -274,10 +315,112 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/chat/context/team/:projectId — fetch team health data to seed chat
+router.get('/context/team/:projectId', async (req: Request, res: Response) => {
+  try {
+    const params = ProjectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ error: 'projectId inválido' });
+    const { projectId } = params.data;
+    const userId = (req as AuthRequest).user!.id;
+
+    const result = await pool.query(
+      `SELECT pd.projectname, aa.output
+       FROM project_data pd
+       LEFT JOIN ai_analyses aa ON aa.projectid = pd.projectid AND aa.user_id = pd.user_id
+       WHERE pd.id = $1 AND pd.user_id = $2
+       ORDER BY aa.generatedat DESC
+       LIMIT 1`,
+      [projectId, userId]
+    );
+
+    if (!result.rows[0]) {
+      return res.json({ success: true, context: null });
+    }
+
+    const { projectname, output } = result.rows[0];
+    const teamHealth = output?.teamHealth || {};
+    const teamMetrics = output?.teamMetrics || {};
+
+    res.json({
+      success: true,
+      context: {
+        projectName: projectname,
+        teamHealth: {
+          overallScore: teamHealth.overallScore || 0,
+          morale: teamHealth.morale || 'unknown',
+          burnoutRisk: teamHealth.burnoutRisk || 'low',
+          memberCount: teamHealth.memberCount || 0,
+        },
+        teamMembers: teamHealth.members || [],
+        teamMetrics: {
+          velocity: teamMetrics.velocity || 0,
+          absenteeism: teamMetrics.absenteeism || 0,
+          turnoverRate: teamMetrics.turnoverRate || 0,
+          averageUtilization: teamMetrics.averageUtilization || 0,
+        },
+        earlyWarnings: output?.earlyWarnings || null,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: errorMessage(error) });
+  }
+});
+
 interface ChatAction {
   id: string;
   label: string;
   intent: string;
+}
+
+function buildTeamContextMessage(ctx: any | null | undefined): string {
+  if (!ctx) return '';
+  const parts: string[] = [`## Contexto del Equipo: ${ctx.projectName || 'Sin nombre'}`];
+
+  if (ctx.teamHealth) {
+    const h = ctx.teamHealth;
+    parts.push(`\n### Salud General del Equipo
+- Score General: ${h.overallScore || 'N/A'}%
+- Morale: ${h.morale || 'desconocida'}
+- Riesgo de Burnout: ${h.burnoutRisk || 'bajo'}
+- Miembros: ${h.memberCount || 0}`);
+  }
+
+  if (ctx.teamMembers && ctx.teamMembers.length > 0) {
+    const members = ctx.teamMembers.slice(0, 5); // Limit to 5 members to stay within token budget
+    parts.push(`\n### Miembros Clave (${ctx.teamMembers.length} total)`);
+    members.forEach((m: any) => {
+      const burnout = m.burnoutRisk ? `(${m.burnoutRisk} burnout)` : '';
+      const carga = m.workload ? `${m.workload.activeCount} tareas activas` : '';
+      parts.push(`- ${m.name || 'Desconocido'} ${m.role ? `(${m.role})` : ''} ${burnout} ${carga}`);
+    });
+    if (ctx.teamMembers.length > 5) {
+      parts.push(`- ... y ${ctx.teamMembers.length - 5} miembros más`);
+    }
+  }
+
+  if (ctx.teamMetrics) {
+    const m = ctx.teamMetrics;
+    parts.push(`\n### Métricas del Equipo
+- Velocity Promedio: ${m.velocity || 'N/A'} puntos/sprint
+- Utilización: ${((m.averageUtilization || 0) * 100).toFixed(1)}%
+- Absentismo: ${((m.absenteeism || 0) * 100).toFixed(1)}%
+- Turnover Anual: ${((m.turnoverRate || 0) * 100).toFixed(1)}%`);
+  }
+
+  if (ctx.earlyWarnings?.hasAlerts) {
+    const ew = ctx.earlyWarnings;
+    const criticals = ew.warnings.filter((w: any) => w.severity === 'CRITICAL');
+    parts.push(`\n### ⚠️ Alertas Tempranas (${ew.warnings.length} total)`);
+    if (criticals.length > 0) {
+      parts.push('**CRÍTICAS:**');
+      criticals.slice(0, 3).forEach((w: any) => {
+        parts.push(`- ${w.title}: ${w.description}`);
+      });
+    }
+  }
+
+  parts.push('\nPor favor, úsalo como contexto para responder mis preguntas sobre la salud y bienestar de mi equipo.');
+  return parts.join('\n');
 }
 
 function parseActionsFromReply(raw: string): { reply: string; actions: ChatAction[] } {

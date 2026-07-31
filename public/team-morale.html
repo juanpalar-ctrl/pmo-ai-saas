@@ -34,6 +34,82 @@
 
     .filter-chip { font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 9999px; border: 1px solid #e5e7eb; color: #4b5563; background: white; cursor: pointer; transition: all .15s; }
     .filter-chip.active { background: #0B7B8C; color: white; border-color: #0B7B8C; }
+
+    /* ── Chat Widget ── */
+    #chat-fab {
+      position: fixed; bottom: 28px; right: 28px; z-index: 1000;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      color: white; border: none; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(11,123,140,0.45);
+      font-size: 24px; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #chat-fab:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(11,123,140,0.55); }
+
+    #chat-panel {
+      position: fixed; bottom: 96px; right: 28px; z-index: 1000;
+      width: 380px; max-width: calc(100vw - 24px); max-height: 560px;
+      background: white; border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      display: none; flex-direction: column; overflow: hidden;
+    }
+    #chat-panel.open { display: flex; }
+
+    #chat-header {
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      color: white; padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    #chat-header .avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    #chat-header .info { flex: 1; }
+    #chat-header .info strong { display: block; font-size: 0.95em; }
+    #chat-header .info span { font-size: 0.75em; opacity: 0.85; }
+    #chat-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0 4px; }
+
+    #chat-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      background: #f9fafb;
+    }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 0.875em; line-height: 1.5; }
+    .msg.bot { background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 4px; align-self: flex-start; color: #1f2937; }
+    .msg.user { background: linear-gradient(135deg, #17B8A0, #0B7B8C); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
+    .msg.bot strong { color: #0B7B8C; }
+    .msg.typing { color: #9ca3af; font-style: italic; }
+
+    #chat-input-row {
+      display: flex; gap: 8px; padding: 12px 16px;
+      border-top: 1px solid #e5e7eb; background: white;
+    }
+    #chat-input {
+      flex: 1; padding: 10px 14px; border: 1.5px solid #e5e7eb;
+      border-radius: 24px; font-size: 0.875em; outline: none;
+      font-family: inherit; resize: none; max-height: 80px;
+      transition: border-color 0.2s;
+    }
+    #chat-input:focus { border-color: #17B8A0; }
+    #chat-send {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      border: none; color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.2s;
+    }
+    #chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #chat-suggestions { padding: 0 16px 12px; display: flex; flex-wrap: wrap; gap: 6px; background: white; }
+    .suggestion-chip {
+      padding: 4px 12px; border-radius: 20px; font-size: 0.78em;
+      border: 1.5px solid #17B8A0; color: #0B7B8C; cursor: pointer;
+      background: white; transition: all 0.15s;
+    }
+    .suggestion-chip:hover { background: #17B8A0; color: white; }
   </style>
 </head>
 <body>
@@ -532,6 +608,266 @@
     function logout() {
       fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => { window.location = '/login'; });
     }
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       LARA CHAT WIDGET (Team Health)
+  ══════════════════════════════════════════ -->
+  <button id="chat-fab" onclick="toggleChat()" title="Habla con LARA sobre tu equipo">🤖</button>
+
+  <div id="chat-panel">
+    <div id="chat-header">
+      <div class="avatar">🤖</div>
+      <div class="info">
+        <strong>LARA Assistant</strong>
+        <span>Experta en Salud de Equipo</span>
+      </div>
+      <button id="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+
+    <div id="chat-messages"></div>
+
+    <div id="chat-suggestions">
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Cómo está la salud general de mi equipo?')">Salud del equipo</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Quién está en riesgo de burnout?')">Burnout Risk</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Cómo mejoro la moral?')">Mejorar moral</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué hacer ahora?')">¿Qué hago?</button>
+    </div>
+
+    <div id="chat-input-row">
+      <textarea id="chat-input" placeholder="Pregúntame sobre tu equipo..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+      <button id="chat-send" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      let chatHistory = [];
+      let teamContext = null;
+      let chatInitialized = false;
+
+      // Load team context from current project if available
+      async function loadChatContext() {
+        const params = new URLSearchParams(window.location.search);
+        const projectId = params.get('id');
+        if (!projectId) return;
+        try {
+          const res = await fetch(`/api/chat/context/team/${projectId}`, { credentials: 'include' });
+          const data = await res.json();
+          if (data.success && data.context) teamContext = window.teamContext = data.context;
+        } catch (_) {}
+      }
+
+      function generateDynamicTeamWelcome() {
+        if (!teamContext) {
+          return {
+            message: '¡Hola! 👋 Soy **LARA Assistant**, experta en salud de equipos. Puedo ayudarte a entender bienestar, carga de trabajo y riesgos de burnout. ¿Qué quieres saber?',
+            suggestions: [
+              '¿Cómo está la salud de mi equipo?',
+              '¿Quién está en burnout?',
+              '¿Cómo mejoro la moral del equipo?',
+              '¿Qué riesgos hay?'
+            ]
+          };
+        }
+
+        const ctx = teamContext;
+        const health = ctx.teamHealth || {};
+        const members = ctx.teamMembers || [];
+        const metrics = ctx.teamMetrics || {};
+
+        let message = `¡Hola! 👋 Tengo acceso a **${ctx.projectName}**. Veo tu equipo:\n\n`;
+        let suggestions = [];
+
+        // Analyze team size and health
+        const memberCount = members.length || health.memberCount || 0;
+        message += `👥 **${memberCount} miembro(s)** en el equipo.\n`;
+
+        // Analyze overall health score
+        if (health.overallScore !== undefined && health.overallScore !== null) {
+          const score = health.overallScore;
+          if (score >= 70) {
+            message += `🟢 **Salud general: ${score}%** — equipo en buena forma.\n`;
+          } else if (score >= 50) {
+            message += `🟡 **Salud general: ${score}%** — hay áreas de atención.\n`;
+            suggestions.push('¿Dónde está el problema del equipo?');
+          } else {
+            message += `🔴 **Salud general: ${score}%** — equipo en riesgo.\n`;
+            suggestions.push('¿Cómo rescato a mi equipo?');
+          }
+        }
+
+        // Analyze burnout risk
+        if (health.burnoutRisk) {
+          const riskLevel = health.burnoutRisk.toLowerCase();
+          if (riskLevel === 'high') {
+            message += `⚠️ **Riesgo de burnout: ALTO** — acción inmediata requerida.\n`;
+            suggestions.push('¿Quién está en mayor riesgo?');
+          } else if (riskLevel === 'medium') {
+            message += `🟡 **Riesgo de burnout: MEDIO** — monitorear de cerca.\n`;
+          } else {
+            message += `🟢 **Riesgo de burnout: BAJO** — situación controlada.\n`;
+          }
+        }
+
+        // Analyze turnover
+        if (metrics.turnoverRate !== undefined && metrics.turnoverRate > 0) {
+          message += `📊 **Rotación: ${(metrics.turnoverRate * 100).toFixed(1)}%** anual.\n`;
+          if (metrics.turnoverRate > 0.15) {
+            suggestions.push('¿Por qué se van mis empleados?');
+          }
+        }
+
+        // Analyze utilization
+        if (metrics.averageUtilization !== undefined) {
+          const util = metrics.averageUtilization;
+          if (util > 90) {
+            message += `⚠️ **Utilización: ${(util * 100).toFixed(0)}%** — sobrecargado.\n`;
+            suggestions.push('¿Cómo redistribuyo la carga?');
+          } else if (util < 60) {
+            message += `📉 **Utilización: ${(util * 100).toFixed(0)}%** — subutilizado.\n`;
+          } else {
+            message += `✅ **Utilización: ${(util * 100).toFixed(0)}%** — balanceado.\n`;
+          }
+        }
+
+        // Add morale
+        if (health.morale) {
+          message += `💬 **Moral: ${health.morale}**\n`;
+        }
+
+        message += `\n¿En qué te puedo ayudar?`;
+
+        // Ensure at least 4 suggestions
+        if (suggestions.length < 4) {
+          const defaults = [
+            `Analizar estado del equipo en ${ctx.projectName}`,
+            '¿Cómo mejoro las métricas?',
+            '¿Cuál es el riesgo más crítico?',
+            '¿Qué acciones tomar ahora?'
+          ];
+          for (const def of defaults) {
+            if (!suggestions.includes(def) && suggestions.length < 4) {
+              suggestions.push(def);
+            }
+          }
+        }
+
+        return { message, suggestions: suggestions.slice(0, 4) };
+      }
+
+      function toggleChat() {
+        const panel = document.getElementById('chat-panel');
+        const isOpen = panel.classList.toggle('open');
+        if (isOpen && !chatInitialized) {
+          chatInitialized = true;
+          const welcome = generateDynamicTeamWelcome();
+          addBotMessage(welcome.message);
+
+          // Update suggestions with dynamic ones
+          const suggestionsContainer = document.getElementById('chat-suggestions');
+          if (suggestionsContainer && welcome.suggestions.length > 0) {
+            suggestionsContainer.innerHTML = welcome.suggestions
+              .map(text => `<button class="suggestion-chip" onclick="sendSuggestion('${text.replace(/'/g, "\\'")}')">${escapeHtml(text)}</button>`)
+              .join('');
+          }
+        }
+      }
+      window.toggleChat = toggleChat;
+
+      function addBotMessage(text, isTyping = false) {
+        const msgs = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'msg bot' + (isTyping ? ' typing' : '');
+        div.innerHTML = isTyping ? '✦ Escribiendo...' : formatMarkdown(text);
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div;
+      }
+
+      function addUserMessage(text) {
+        const msgs = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'msg user';
+        div.textContent = text;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      function formatMarkdown(text) {
+        return escapeHtml(text)
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:0.9em">$1</code>')
+          .replace(/^### (.*$)/gm, '<strong style="color:#0B7B8C;display:block;margin-top:8px">$1</strong>')
+          .replace(/^## (.*$)/gm, '<strong style="color:#0B7B8C;font-size:1.05em;display:block;margin-top:8px">$1</strong>')
+          .replace(/^- (.*$)/gm, '&bull; $1<br>')
+          .replace(/\n/g, '<br>');
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+        addUserMessage(text);
+        chatHistory.push({ role: 'user', content: text });
+
+        const sendBtn = document.getElementById('chat-send');
+        sendBtn.disabled = true;
+        const typingDiv = addBotMessage('', true);
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text,
+              history: chatHistory.slice(-10),
+              projectContext: chatHistory.length <= 2 ? teamContext : null,
+              lang: (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es',
+            }),
+          });
+          const data = await res.json();
+          typingDiv.remove();
+
+          if (data.success) {
+            chatHistory.push({ role: 'assistant', content: data.reply });
+            addBotMessage(data.reply, false, data.actions || []);
+            document.getElementById('chat-suggestions').style.display = 'none';
+          } else {
+            addBotMessage('Lo siento, ocurrió un error. Por favor intenta de nuevo.');
+          }
+        } catch (_) {
+          typingDiv.remove();
+          addBotMessage('Error de conexión. Verifica tu internet e intenta de nuevo.');
+        } finally {
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      }
+      window.sendMessage = sendMessage;
+
+      function sendSuggestion(text) {
+        document.getElementById('chat-input').value = text;
+        sendMessage();
+      }
+      window.sendSuggestion = sendSuggestion;
+
+      // Initialize on page load
+      window.addEventListener('load', () => {
+        loadChatContext();
+      });
+    })();
   </script>
 </body>
 </html>
