@@ -508,6 +508,23 @@
     .gantt-summary-item-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
     .gantt-summary-item-value { font-size: 18px; font-weight: 900; color: #1f2937; }
 
+    /* ── Gantt Visual Chart ── */
+    #gantt-svg-container {
+      width: 100%; height: 400px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+      overflow: hidden; position: relative;
+    }
+    #gantt-svg { width: 100%; height: 100%; }
+    .gantt-tooltip {
+      position: absolute; background: #1f2937; color: white; padding: 8px 12px;
+      border-radius: 6px; font-size: 11px; z-index: 100; pointer-events: none;
+      white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      max-width: 300px; white-space: normal;
+    }
+    .gantt-tooltip::before {
+      content: ''; position: absolute; top: -6px; left: 12px; width: 0; height: 0;
+      border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid #1f2937;
+    }
+
     /* ── Chat Widget ── */
     #chat-fab {
       position: fixed; bottom: 28px; right: 28px; z-index: 1000;
@@ -922,9 +939,14 @@
                 </div>
               </div>
             </div>
-            <div id="gantt-container" class="text-gray-500 text-center py-8">
-              <i class="fa-solid fa-chart-gantt text-3xl mb-2"></i>
-              <p class="text-sm">Gantt chart placeholder</p>
+            <div id="gantt-svg-container">
+              <svg id="gantt-svg" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+            <div id="gantt-chart-legend" class="flex flex-wrap gap-4 mt-4 text-xs">
+              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-red-500 rounded"></div><span>En Riesgo</span></div>
+              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-yellow-500 rounded"></div><span>Atrasado</span></div>
+              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-green-500 rounded"></div><span>Al Día</span></div>
+              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-gray-400 rounded"></div><span>Completado</span></div>
             </div>
           </div>
         </div>
@@ -1862,6 +1884,7 @@
 
       renderGanttChips();
       renderGanttRows();
+      renderGanttVisual();
     }
 
     // ── Gantt filtering: "excepción primero" default + status chips + búsqueda ──
@@ -2051,6 +2074,151 @@
     function onGanttSearch(v) {
       _ganttSearch = v.trim().toLowerCase();
       renderGanttRows();
+      renderGanttVisual();
+    }
+
+    function renderGanttVisual() {
+      const svg = document.getElementById('gantt-svg');
+      if (!svg) return;
+
+      svg.innerHTML = ''; // Clear previous
+
+      // SVG dimensions
+      const padding = { top: 20, right: 40, bottom: 40, left: 150 };
+      const viewBox = svg.getAttribute('viewBox') || '0 0 1200 400';
+      const svgWidth = parseFloat(viewBox.split(' ')[2]) || 1200;
+      const svgHeight = parseFloat(viewBox.split(' ')[3]) || 400;
+      const chartWidth = svgWidth - padding.left - padding.right;
+      const taskHeight = 24;
+
+      // Debug: log status
+      console.log('renderGanttVisual: _ganttTasks.length=', _ganttTasks.length, 'span=', _ganttSpan.start, _ganttSpan.ms);
+
+      if (_ganttTasks.length === 0) {
+        svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#999" font-size="14">Sin tareas</text>';
+        return;
+      }
+
+      // Only show tasks with valid dates
+      const spanStart = _ganttSpan.start;
+      const spanMs = _ganttSpan.ms;
+      const tasksWithDates = _ganttTasks.filter(t => t.start && t.end && !isNaN(new Date(t.start)) && !isNaN(new Date(t.end)));
+
+      console.log('tasksWithDates.length=', tasksWithDates.length);
+
+      if (tasksWithDates.length === 0) {
+        svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#999" font-size="14">No hay fechas válidas</text>';
+        return;
+      }
+
+      const chartHeight = Math.min(tasksWithDates.length * taskHeight + taskHeight, 350);
+
+      // Create groups
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+      // Draw background grid
+      for (let i = 0; i <= 10; i++) {
+        const x = padding.left + (i / 10) * chartWidth;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x);
+        line.setAttribute('y1', padding.top);
+        line.setAttribute('x2', x);
+        line.setAttribute('y2', padding.top + chartHeight);
+        line.setAttribute('stroke', '#f0f0f0');
+        line.setAttribute('stroke-width', '1');
+        group.appendChild(line);
+      }
+
+      // Draw tasks
+      tasksWithDates.forEach((t, idx) => {
+        const startMs = new Date(t.start).getTime();
+        const endMs = new Date(t.end).getTime();
+
+        if (spanMs && spanStart) {
+          const barStart = Math.max(0, ((startMs - spanStart) / spanMs) * chartWidth);
+          const barWidth = Math.min(chartWidth - barStart, ((endMs - startMs) / spanMs) * chartWidth);
+          const y = padding.top + idx * taskHeight + 2;
+
+          // Determine color based on status
+          const status = t._bucket || 'green';
+          const colors = {
+            red: '#ef4444',
+            yellow: '#f59e0b',
+            green: '#10b981',
+            done: '#9ca3af'
+          };
+          const barColor = colors[status] || colors.green;
+
+          // Draw task bar background
+          const barBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          barBg.setAttribute('x', padding.left + barStart);
+          barBg.setAttribute('y', y);
+          barBg.setAttribute('width', barWidth);
+          barBg.setAttribute('height', taskHeight - 4);
+          barBg.setAttribute('fill', barColor);
+          barBg.setAttribute('opacity', '0.3');
+          barBg.setAttribute('rx', '3');
+          group.appendChild(barBg);
+
+          // Draw progress fill
+          const progressWidth = barWidth * (t.progress / 100);
+          const progressBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          progressBar.setAttribute('x', padding.left + barStart);
+          progressBar.setAttribute('y', y);
+          progressBar.setAttribute('width', progressWidth);
+          progressBar.setAttribute('height', taskHeight - 4);
+          progressBar.setAttribute('fill', barColor);
+          progressBar.setAttribute('rx', '3');
+          group.appendChild(progressBar);
+
+          // Add hover interaction
+          [barBg, progressBar].forEach(bar => {
+            bar.style.cursor = 'pointer';
+            bar.addEventListener('mouseenter', (e) => {
+              const tooltip = document.createElement('div');
+              tooltip.className = 'gantt-tooltip';
+              tooltip.textContent = `${t.name} • ${t.progress.toFixed(0)}% • ${new Date(t.start).toLocaleDateString('es-MX')} → ${new Date(t.end).toLocaleDateString('es-MX')}`;
+              document.body.appendChild(tooltip);
+              const rect = bar.getBoundingClientRect();
+              tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+              tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+              bar._tooltip = tooltip;
+            });
+            bar.addEventListener('mouseleave', () => {
+              if (bar._tooltip) {
+                bar._tooltip.remove();
+                bar._tooltip = null;
+              }
+            });
+          });
+        }
+      });
+
+      // Draw task labels (left side)
+      tasksWithDates.forEach((t, idx) => {
+        const y = padding.top + idx * taskHeight + taskHeight / 2 + 2;
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', padding.left - 10);
+        label.setAttribute('y', y);
+        label.setAttribute('text-anchor', 'end');
+        label.setAttribute('dominant-baseline', 'middle');
+        label.setAttribute('font-size', '11');
+        label.setAttribute('fill', '#333');
+        label.textContent = t.name.substring(0, 20) + (t.name.length > 20 ? '...' : '');
+        group.appendChild(label);
+      });
+
+      // Draw axes
+      const axisLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      axisLine.setAttribute('x1', padding.left);
+      axisLine.setAttribute('y1', padding.top + chartHeight);
+      axisLine.setAttribute('x2', svgWidth - padding.right);
+      axisLine.setAttribute('y2', padding.top + chartHeight);
+      axisLine.setAttribute('stroke', '#ccc');
+      axisLine.setAttribute('stroke-width', '2');
+      group.appendChild(axisLine);
+
+      svg.appendChild(group);
     }
 
     function renderGanttRows() {
