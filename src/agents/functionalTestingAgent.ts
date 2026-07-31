@@ -43,9 +43,35 @@ export class FunctionalTestingAgent {
 
   private loadTestConfig(): any {
     try {
-      const fileContent = readFileSync(this.testConfigPath, 'utf8');
+      // Try multiple paths for tests-functional.yaml
+      const possiblePaths = [
+        this.testConfigPath,
+        resolve('../tests-functional.yaml'),
+        resolve('../../tests-functional.yaml'),
+        resolve('./tests-functional.yaml'),
+      ];
+
+      let fileContent: string | null = null;
+      let foundPath: string | null = null;
+
+      for (const path of possiblePaths) {
+        try {
+          fileContent = readFileSync(path, 'utf8');
+          foundPath = path;
+          break;
+        } catch (e) {
+          // Try next path
+        }
+      }
+
+      if (!fileContent) {
+        throw new Error(
+          `Could not find tests-functional.yaml in: ${possiblePaths.join(', ')}`
+        );
+      }
+
       const config = yaml.load(fileContent);
-      agentLogger.info({}, 'Functional test config loaded');
+      agentLogger.info({ foundPath }, 'Functional test config loaded');
       return config;
     } catch (error: any) {
       agentLogger.error({ err: error.message }, 'Failed to load functional test config');
