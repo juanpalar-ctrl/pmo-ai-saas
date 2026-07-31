@@ -22,6 +22,7 @@ import chatRouter from './routes/chat';
 import portfolioRouter from './routes/portfolio';
 import teamRouter from './routes/team';
 import testingRouter from './routes/testing';
+import TestingAgent from './services/testingAgent';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { runMigrations, seedAdminUser } from './db-migrate';
 import { mkdirSync } from 'fs';
@@ -128,6 +129,51 @@ app.get('/login', (_req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// PUBLIC ENDPOINT: Scheduled test execution (for webhooks/Upstash Cron)
+// Must be BEFORE adminAuthMiddleware to avoid auth requirement
+app.post('/api/testing/scheduled-run', async (req: Request, res: Response) => {
+  try {
+    const RENDER_URL = process.env.RENDER_URL || 'https://pmo-ai-saas.onrender.com';
+    const testingAgent = new TestingAgent(RENDER_URL);
+
+    logger.info({}, '🧪 SCHEDULED TEST RUN STARTED - Full exhaustive suite');
+    const startTime = Date.now();
+    const suiteResult = await testingAgent.runAll();
+    const duration = Date.now() - startTime;
+
+    const report = testingAgent.generateReport(suiteResult);
+
+    logger.info(
+      {
+        passed: suiteResult.passed,
+        failed: suiteResult.failed,
+        total: suiteResult.total,
+        duration,
+      },
+      report
+    );
+
+    const message =
+      suiteResult.failed === 0
+        ? `✅ ALL TESTS PASSED (${suiteResult.passed}/${suiteResult.total})`
+        : `⚠️ SOME TESTS FAILED (${suiteResult.failed} failures)`;
+
+    res.json({
+      success: suiteResult.failed === 0,
+      message,
+      suite: suiteResult,
+      report,
+    });
+  } catch (error: any) {
+    logger.error({ err: error.message }, '❌ Scheduled test run failed');
+    res.status(500).json({
+      success: false,
+      error: 'Scheduled test execution failed',
+      message: error.message,
+    });
+  }
 });
 
 app.use('/api/chat', requireAuth, chatLimiter, chatRouter);
