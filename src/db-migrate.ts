@@ -216,8 +216,7 @@ export async function runMigrations(): Promise<void> {
       response TEXT,
       status VARCHAR(50) DEFAULT 'open',
       createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (projectid) REFERENCES project_data(id)
+      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
@@ -232,8 +231,7 @@ export async function runMigrations(): Promise<void> {
       status VARCHAR(50) DEFAULT 'open',
       impact VARCHAR(50),
       createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (projectid) REFERENCES project_data(id)
+      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
