@@ -132,8 +132,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 // PUBLIC ENDPOINT: Scheduled test execution (for webhooks/Upstash Cron)
-// Must be BEFORE adminAuthMiddleware to avoid auth requirement
-app.post('/api/testing/scheduled-run', async (req: Request, res: Response) => {
+// Must be at root level BEFORE /api/testing middleware to avoid auth requirement
+app.post('/api/run-scheduled-tests', async (req: Request, res: Response) => {
   try {
     const RENDER_URL = process.env.RENDER_URL || 'https://pmo-ai-saas.onrender.com';
     const testingAgent = new TestingAgent(RENDER_URL);
