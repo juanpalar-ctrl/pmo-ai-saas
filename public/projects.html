@@ -996,14 +996,14 @@
           </div>
 
           <div class="border border-teal-200 rounded-xl overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse" style="table-layout: fixed;">
               <thead>
                 <tr class="bg-teal-50 border-b border-teal-200 text-xs font-bold text-gray-700">
-                  <th class="p-4 flex-1">Entregable</th>
-                  <th class="p-4 w-[15%]">Presupuesto</th>
-                  <th class="p-4 w-[15%]">Real</th>
-                  <th class="p-4 w-[12%]">Progreso</th>
-                  <th class="p-4 flex-1">Timeline</th>
+                  <th class="p-4" style="width: 31%;">Entregable</th>
+                  <th class="p-4" style="width: 15%;">Presupuesto</th>
+                  <th class="p-4" style="width: 15%;">Real</th>
+                  <th class="p-4" style="width: 12%;">Progreso</th>
+                  <th class="p-4" style="width: 27%;">Timeline</th>
                 </tr>
               </thead>
               <tbody id="gantt-body" class="divide-y divide-teal-100 text-sm text-gray-700"></tbody>
@@ -2285,13 +2285,13 @@
 
         return `
           <tr class="gantt-row transition" style="${rowBg}" data-task="${encodeURIComponent(t.name)}" data-progress="${Math.round(t.progress)}">
-            <td class="p-4 font-semibold text-gray-800 flex-1">
+            <td class="p-4 font-semibold text-gray-800" style="width: 31%;">
               ${escapeHtml(t.name)}
               ${dateLabel ? `<div style="font-size:10px;color:#9ca3af;font-weight:400;margin-top:2px">${dateLabel}</div>` : ''}
             </td>
-            <td class="p-4 font-mono text-gray-700 w-[15%]">$${Math.round(t.plan).toLocaleString('es-MX')}</td>
-            <td class="p-4 font-mono w-[15%]" style="color:${actualColor}">$${Math.round(t.actual).toLocaleString('es-MX')}</td>
-            <td class="p-4 w-[12%]">
+            <td class="p-4 font-mono text-gray-700" style="width: 15%;">$${Math.round(t.plan).toLocaleString('es-MX')}</td>
+            <td class="p-4 font-mono" style="width: 15%; color:${actualColor}">$${Math.round(t.actual).toLocaleString('es-MX')}</td>
+            <td class="p-4" style="width: 12%;">
               <div class="flex items-center gap-2">
                 <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                   <div style="width:${t.progress}%;background:${barCol}" class="h-full rounded-full"></div>
@@ -2299,7 +2299,7 @@
                 <span style="font-size:11px;font-weight:700;color:${barCol}">${Math.round(t.progress)}%</span>
               </div>
             </td>
-            <td class="p-4 flex-1">
+            <td class="p-4" style="width: 27%;">
               <div class="gantt-bar-cell">
                 <div class="relative h-6 bg-gray-100 rounded-lg overflow-hidden flex-1" title="${dateLabel}">
                   <div style="left:${barLeft}%;width:${barWidth}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
