@@ -519,7 +519,7 @@
 
     /* ── Gantt Visual Chart ── */
     #gantt-svg-container {
-      width: 100%; height: 600px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+      width: 100%; height: 800px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;
       overflow-x: auto; overflow-y: auto; position: relative;
     }
     #gantt-svg { display: block; width: 2300px; height: 600px; margin: 0; padding: 0; }
@@ -2231,6 +2231,11 @@
       group.appendChild(axisLine);
 
       svg.appendChild(group);
+
+      // Update viewBox and SVG height dynamically based on chart content
+      const totalHeight = padding.top + chartHeight + padding.bottom;
+      svg.setAttribute('viewBox', `0 0 ${svgWidth} ${totalHeight}`);
+      svg.style.height = `${totalHeight}px`;
     }
 
     function renderGanttRows() {
