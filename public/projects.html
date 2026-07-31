@@ -90,10 +90,7 @@
     .gantt-whatif-btn.accent:hover { background: #17B8A0; color: white; }
 
     /* ── Gantt Table Collapse ── */
-    #gantt-body {
-      max-height: 400px; overflow: hidden; transition: max-height 0.3s ease-in-out;
-    }
-    #gantt-body.expanded { max-height: 9999px; }
+    #gantt-body-wrapper.expanded { max-height: 9999px; }
     #gantt-expand-btn {
       display: inline-block; margin-top: 12px; padding: 8px 16px;
       background: #0B7B8C; color: white; border: none; border-radius: 6px;
@@ -995,7 +992,7 @@
             </div>
           </div>
 
-          <div class="border border-teal-200 rounded-xl overflow-x-auto">
+          <div id="gantt-body-wrapper" class="border border-teal-200 rounded-xl overflow-x-auto" style="max-height: 400px; overflow-y: auto; transition: max-height 0.3s ease-in-out;">
             <table class="w-full text-left border-collapse" style="table-layout: fixed;">
               <colgroup>
                 <col style="width: 31%;">
@@ -2084,10 +2081,10 @@
     }
 
     function toggleGanttExpand() {
-      const tbody = document.getElementById('gantt-body');
+      const wrapper = document.getElementById('gantt-body-wrapper');
       const btn = document.getElementById('gantt-expand-btn');
-      tbody.classList.toggle('expanded');
-      if (tbody.classList.contains('expanded')) {
+      wrapper.classList.toggle('expanded');
+      if (wrapper.classList.contains('expanded')) {
         btn.innerHTML = '<i class="fa-solid fa-chevron-up mr-2"></i> Ver menos entregas (contraer)';
       } else {
         btn.innerHTML = '<i class="fa-solid fa-chevron-down mr-2"></i> Ver más entregas (expandir)';
