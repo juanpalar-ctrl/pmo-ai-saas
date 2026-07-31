@@ -89,6 +89,18 @@
     .gantt-whatif-btn.accent { border-color: #17B8A0; color: #17B8A0; }
     .gantt-whatif-btn.accent:hover { background: #17B8A0; color: white; }
 
+    /* ── Gantt Table Collapse ── */
+    #gantt-body-container {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s ease-in-out;
+    }
+    #gantt-body-container.expanded { max-height: none; }
+    #gantt-expand-btn {
+      display: inline-block; margin-top: 12px; padding: 8px 16px;
+      background: #0B7B8C; color: white; border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    #gantt-expand-btn:hover { background: #05556b; }
+
     /* ── Gantt filters (excepción primero + chips) ── */
     #gantt-filters { display: flex; }
     .gantt-chip {
@@ -994,9 +1006,12 @@
                   <th class="p-4 w-1/3">Timeline</th>
                 </tr>
               </thead>
-              <tbody id="gantt-body" class="divide-y divide-teal-100 text-sm text-gray-700"></tbody>
+              <tbody id="gantt-body-container" class="divide-y divide-teal-100 text-sm text-gray-700"></tbody>
             </table>
           </div>
+          <button id="gantt-expand-btn" onclick="toggleGanttExpand()">
+            <i class="fa-solid fa-chevron-down mr-2"></i> Ver más entregas (expandir)
+          </button>
 
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4" id="kpi-grid">
             <div class="border p-4 rounded-lg" id="kpi-card-bac">
@@ -2059,6 +2074,17 @@
       _ganttSearch = v.trim().toLowerCase();
       renderGanttRows();
       renderGanttVisual();
+    }
+
+    function toggleGanttExpand() {
+      const container = document.getElementById('gantt-body-container');
+      const btn = document.getElementById('gantt-expand-btn');
+      container.classList.toggle('expanded');
+      if (container.classList.contains('expanded')) {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-up mr-2"></i> Ver menos entregas (contraer)';
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-chevron-down mr-2"></i> Ver más entregas (expandir)';
+      }
     }
 
     function renderGanttVisual() {
