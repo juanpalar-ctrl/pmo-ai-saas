@@ -379,6 +379,22 @@
       #kpi-cards-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
+    /* ── Sidebar Collapse Toggle ── */
+    #history-sidebar { width: 20rem; transition: width 0.3s ease; }
+    #history-sidebar.collapsed { width: 4rem; }
+    #history-sidebar.collapsed #history-list { display: none; }
+    #history-sidebar.collapsed h3 { font-size: 0; margin: 0; padding: 0; }
+    #history-sidebar.collapsed p { display: none; }
+    #history-sidebar.collapsed .collapse-btn-text { display: none; }
+    .collapse-btn { padding: 8px 6px !important; min-width: auto; }
+    .collapse-btn-text { margin-left: 4px; font-size: 13px; }
+
+    @media (max-width: 767px) {
+      #history-sidebar { width: calc(85vw); }
+      #history-sidebar.collapsed { width: calc(85vw); display: none; }
+      .collapse-btn { display: none; }
+    }
+
     /* ── Cronograma Gantt Jerárquico (Acordeones) ── */
     .gantt-alert {
       display: flex; align-items: flex-start; gap: 12px; padding: 16px;
@@ -650,7 +666,13 @@
           <h3 class="font-bold text-sm">📋 Historial Reciente</h3>
           <p class="text-xs opacity-90 mt-1">Últimos 10 proyectos analizados</p>
         </div>
-        <button onclick="toggleHistorySidebar(false)" class="md:hidden text-white text-xl leading-none px-2" title="Cerrar">✕</button>
+        <div class="flex items-center gap-1">
+          <button onclick="toggleSidebarCollapse()" class="hidden md:block collapse-btn text-white text-lg leading-none px-2" title="Contraer/Expandir">
+            <i class="fa-solid fa-angles-left"></i>
+            <span class="collapse-btn-text">Ocultar</span>
+          </button>
+          <button onclick="toggleHistorySidebar(false)" class="md:hidden text-white text-xl leading-none px-2" title="Cerrar">✕</button>
+        </div>
       </div>
       <div id="history-list" class="p-4 space-y-2">
         <div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
@@ -1312,6 +1334,21 @@
       sidebar.classList.toggle('-translate-x-full', !show);
       sidebar.classList.toggle('translate-x-0', show);
       backdrop.classList.toggle('hidden', !show);
+    }
+
+    function toggleSidebarCollapse() {
+      const sidebar = document.getElementById('history-sidebar');
+      sidebar.classList.toggle('collapsed');
+      const btn = document.querySelector('.collapse-btn i');
+      if (sidebar.classList.contains('collapsed')) {
+        btn.classList.remove('fa-angles-left');
+        btn.classList.add('fa-angles-right');
+        document.querySelector('.collapse-btn-text').textContent = 'Mostrar';
+      } else {
+        btn.classList.add('fa-angles-left');
+        btn.classList.remove('fa-angles-right');
+        document.querySelector('.collapse-btn-text').textContent = 'Ocultar';
+      }
     }
 
     async function deleteHistoryProject(id) {
