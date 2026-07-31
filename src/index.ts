@@ -135,6 +135,8 @@ app.use('/api/portfolio', requireAuth, heavyLimiter, portfolioRouter);
 app.use('/api/analysis', requireAuth, heavyLimiter, analysisRouter);
 app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
 app.use('/api/team', requireAuth, heavyLimiter, teamRouter);
+// Testing routes: most require admin auth, except scheduled-run (for webhooks)
+app.post('/api/testing/scheduled-run', testingRouter);
 app.use('/api/testing', adminAuthMiddleware, testingRouter);
 app.use('/api/dev', adminAuthMiddleware, devRouter);
 app.use('/api/admin', requireAuth, adminRouter);
