@@ -297,6 +297,41 @@
     #gov-view-raid { display: none; }
     #gov-view-raid.active { display: block; }
 
+    /* ── KPI Dashboard Cards ── */
+    .kpi-card {
+      background: white; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid;
+      display: flex; flex-direction: column; gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .kpi-card.green { border-color: #10b981; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
+    .kpi-card.yellow { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); }
+    .kpi-card.red { border-color: #ef4444; background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%); }
+    .kpi-label {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #6b7280;
+    }
+    .kpi-value {
+      font-size: 28px; font-weight: 900; line-height: 1;
+    }
+    .kpi-value.green { color: #10b981; }
+    .kpi-value.yellow { color: #f59e0b; }
+    .kpi-value.red { color: #ef4444; }
+    .kpi-detail {
+      font-size: 12px; color: #64748b; display: flex;
+      justify-content: space-between; align-items: center;
+      margin-top: 4px;
+    }
+    .kpi-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 8px; font-size: 10px;
+      font-weight: 700; text-transform: uppercase;
+    }
+    .kpi-badge.green { background: #d1fae5; color: #065f46; }
+    .kpi-badge.yellow { background: #fed7aa; color: #92400e; }
+    .kpi-badge.red { background: #fee2e2; color: #991b1b; }
+
     /* ── Cronograma Gantt Jerárquico (Acordeones) ── */
     .gantt-alert {
       display: flex; align-items: flex-start; gap: 12px; padding: 16px;
@@ -723,6 +758,21 @@
               <tbody id="raid-table-body"></tbody>
             </table>
           </div>
+        </div>
+
+        <!-- KPI Dashboard -->
+        <div id="kpi-dashboard" class="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-6 shadow-lg space-y-4">
+          <div class="flex items-center justify-between border-b border-teal-200 pb-4">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-chart-line text-teal-600 text-2xl"></i>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">KPI Dashboard</h3>
+                <p class="text-xs text-gray-500 mt-1">Indicadores clave de desempeño del proyecto</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="kpi-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
         <!-- Health Score Banner -->
@@ -2806,8 +2856,105 @@
         if (e.target === this) closeRaidModal();
       });
 
+      // ── KPI DASHBOARD FUNCTION ──
+      window.renderKPIDashboard = function() {
+        const grid = document.getElementById('kpi-cards-grid');
+
+        // Use global analysisData from existing app state
+        if (!analysisData || !analysisData.metrics) {
+          grid.innerHTML = '<p class="text-gray-500 col-span-3 text-center py-4">Sin datos de análisis disponibles</p>';
+          return;
+        }
+
+        const metrics = analysisData.metrics || {};
+        const risk = analysisData.risk?.analysis?.analysis || {};
+        const economic = analysisData.economic?.analysis?.analysis || {};
+
+        // Calculate KPIs
+        const spi = parseFloat(metrics.spi || 1);
+        const cpi = parseFloat(metrics.cpi || 1);
+        const percentComplete = parseFloat(metrics.percentComplete || 0);
+        const velocity = parseFloat(metrics.velocity || 0);
+        const burnRate = parseFloat(economic.daily_burn_rate || 0);
+        const cv = parseFloat(metrics.cv || 0);
+        const bac = parseFloat(metrics.bac || 1);
+        const ac = parseFloat(metrics.ac || 0);
+        const pv = parseFloat(metrics.pv || 0);
+
+        // Determine RAG colors
+        const ragSPI = spi >= 0.95 ? 'green' : spi >= 0.85 ? 'yellow' : 'red';
+        const ragCPI = cpi >= 0.95 ? 'green' : cpi >= 0.85 ? 'yellow' : 'red';
+        const ragProgress = percentComplete >= 75 ? 'green' : percentComplete >= 50 ? 'yellow' : 'red';
+        const ragVelocity = velocity > 0 ? 'green' : 'yellow';
+        const ragBurn = burnRate < (bac / 30) ? 'green' : burnRate < (bac / 20) ? 'yellow' : 'red';
+        const ragCV = cv >= 0 ? 'green' : 'red';
+
+        const kpiData = [
+          {
+            label: 'Schedule Performance',
+            icon: '⏱️',
+            value: spi.toFixed(2),
+            detail: spi >= 1 ? 'Adelantado' : 'Retrasado',
+            rag: ragSPI
+          },
+          {
+            label: 'Cost Performance',
+            icon: '💰',
+            value: cpi.toFixed(2),
+            detail: cpi >= 1 ? 'Bajo presupuesto' : 'Sobre presupuesto',
+            rag: ragCPI
+          },
+          {
+            label: 'Progress Completion',
+            icon: '📊',
+            value: percentComplete.toFixed(0) + '%',
+            detail: `${percentComplete.toFixed(1)}% completado`,
+            rag: ragProgress
+          },
+          {
+            label: 'Velocity',
+            icon: '🚀',
+            value: velocity.toFixed(1),
+            detail: 'Unidades/período',
+            rag: ragVelocity
+          },
+          {
+            label: 'Daily Burn Rate',
+            icon: '🔥',
+            value: `$${Math.round(burnRate).toLocaleString('es-MX')}`,
+            detail: 'Gasto/día',
+            rag: ragBurn
+          },
+          {
+            label: 'Cost Variance',
+            icon: '📈',
+            value: `$${Math.round(cv).toLocaleString('es-MX')}`,
+            detail: cv >= 0 ? 'Favorable' : 'Desfavorable',
+            rag: ragCV
+          }
+        ];
+
+        grid.innerHTML = kpiData.map(kpi => `
+          <div class="kpi-card ${kpi.rag}">
+            <p class="kpi-label">${kpi.icon} ${kpi.label}</p>
+            <p class="kpi-value ${kpi.rag}">${kpi.value}</p>
+            <div class="kpi-detail">
+              <span>${kpi.detail}</span>
+              <span class="kpi-badge ${kpi.rag}">
+                ${kpi.rag === 'green' ? '✓ OK' : kpi.rag === 'yellow' ? '⚠ Riesgo' : '✗ Crítico'}
+              </span>
+            </div>
+          </div>
+        `).join('');
+      };
+
       renderRisksTable();
       renderRaidTable();
+
+      // Render KPI dashboard when analysis data is loaded
+      if (analysisData) {
+        renderKPIDashboard();
+      }
     })();
   </script>
 </body>
