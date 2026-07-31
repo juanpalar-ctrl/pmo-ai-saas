@@ -46,8 +46,9 @@ export class FunctionalTestingAgent {
       // Try multiple paths for tests-functional.yaml
       const possiblePaths = [
         this.testConfigPath,
-        resolve('../tests-functional.yaml'),
-        resolve('../../tests-functional.yaml'),
+        resolve(__dirname, '../tests-functional.yaml'),
+        resolve(__dirname, './tests-functional.yaml'),
+        resolve(__dirname, '../../tests-functional.yaml'),
         resolve('./tests-functional.yaml'),
       ];
 
