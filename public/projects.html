@@ -374,7 +374,7 @@
       height: 14px;
     }
 
-    /* Responsive: 1 col en móvil, 2 cols en tablet, 4 columnas internas en desktop */
+    /* Responsive: 1 col en móvil, 2 cols en tablet, 4 cols en desktop */
     @media (max-width: 640px) {
       .kpi-card-consolidated { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
       #kpi-cards-grid { gap: 5px; }
@@ -385,8 +385,7 @@
     }
     @media (min-width: 1025px) {
       #kpi-cards-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-      .kpi-card-consolidated { width: 100%; grid-template-columns: repeat(4, 1fr); }
-      .kpi-card-header { grid-column: 1 / -1; }
+      .kpi-card-consolidated { width: 100%; }
     }
 
     /* ── Sidebar Collapse Toggle ── */
