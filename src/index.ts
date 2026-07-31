@@ -176,7 +176,7 @@ app.use('/api/portfolio', requireAuth, heavyLimiter, portfolioRouter);
 app.use('/api/analysis', requireAuth, heavyLimiter, analysisRouter);
 app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
 app.use('/api/team', requireAuth, heavyLimiter, teamRouter);
-app.use('/api', requireAuth, heavyLimiter, risksRouter);
+app.use('/api/projects', requireAuth, heavyLimiter, risksRouter);
 
 // Testing routes: public scheduled-run endpoint (for webhooks), others require admin auth
 const testingAuthMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {

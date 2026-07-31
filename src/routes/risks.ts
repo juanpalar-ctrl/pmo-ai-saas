@@ -12,8 +12,8 @@ const getProjectId = (projectId: string | string[]): string => {
  * RISK REGISTER ENDPOINTS
  */
 
-// GET /api/projects/:projectId/risks
-router.get('/projects/:projectId/risks', async (req: Request, res: Response) => {
+// GET /:projectId/risks
+router.get('/:projectId/risks', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const risks = await riskRepository.getRisks(parseInt(projectId));
@@ -24,8 +24,8 @@ router.get('/projects/:projectId/risks', async (req: Request, res: Response) => 
   }
 });
 
-// POST /api/projects/:projectId/risks
-router.post('/projects/:projectId/risks', async (req: Request, res: Response) => {
+// POST /:projectId/risks
+router.post('/:projectId/risks', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const { description, probability, impact, response } = req.body;
@@ -49,8 +49,8 @@ router.post('/projects/:projectId/risks', async (req: Request, res: Response) =>
   }
 });
 
-// PATCH /api/projects/:projectId/risks/:riskId
-router.patch('/projects/:projectId/risks/:riskId', async (req: Request, res: Response) => {
+// PATCH /:projectId/risks/:riskId
+router.patch('/:projectId/risks/:riskId', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const riskId = getProjectId(req.params.riskId);
@@ -69,8 +69,8 @@ router.patch('/projects/:projectId/risks/:riskId', async (req: Request, res: Res
   }
 });
 
-// DELETE /api/projects/:projectId/risks/:riskId
-router.delete('/projects/:projectId/risks/:riskId', async (req: Request, res: Response) => {
+// DELETE /:projectId/risks/:riskId
+router.delete('/:projectId/risks/:riskId', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const riskId = getProjectId(req.params.riskId);
@@ -91,8 +91,8 @@ router.delete('/projects/:projectId/risks/:riskId', async (req: Request, res: Re
  * RAID LOG ENDPOINTS
  */
 
-// GET /api/projects/:projectId/raid
-router.get('/projects/:projectId/raid', async (req: Request, res: Response) => {
+// GET /:projectId/raid
+router.get('/:projectId/raid', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const raidLog = await riskRepository.getRAIDLog(parseInt(projectId));
@@ -103,8 +103,8 @@ router.get('/projects/:projectId/raid', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/projects/:projectId/raid
-router.post('/projects/:projectId/raid', async (req: Request, res: Response) => {
+// POST /:projectId/raid
+router.post('/:projectId/raid', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const { type, description, owner, status, impact } = req.body;
@@ -129,8 +129,8 @@ router.post('/projects/:projectId/raid', async (req: Request, res: Response) => 
   }
 });
 
-// PATCH /api/projects/:projectId/raid/:raidId
-router.patch('/projects/:projectId/raid/:raidId', async (req: Request, res: Response) => {
+// PATCH /:projectId/raid/:raidId
+router.patch('/:projectId/raid/:raidId', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const raidId = getProjectId(req.params.raidId);
@@ -149,8 +149,8 @@ router.patch('/projects/:projectId/raid/:raidId', async (req: Request, res: Resp
   }
 });
 
-// DELETE /api/projects/:projectId/raid/:raidId
-router.delete('/projects/:projectId/raid/:raidId', async (req: Request, res: Response) => {
+// DELETE /:projectId/raid/:raidId
+router.delete('/:projectId/raid/:raidId', async (req: Request, res: Response) => {
   try {
     const projectId = getProjectId(req.params.projectId);
     const raidId = getProjectId(req.params.raidId);
