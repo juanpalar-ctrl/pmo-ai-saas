@@ -37,8 +37,8 @@ export class RiskRepository {
         [projectid]
       );
       return result.rows;
-    } catch (error) {
-      dbLogger.error(`Error fetching risks for project ${projectid}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error fetching risks for project ${projectid}:`, error?.message);
       throw error;
     }
   }
@@ -50,8 +50,8 @@ export class RiskRepository {
         [id, projectid]
       );
       return result.rows[0] || null;
-    } catch (error) {
-      dbLogger.error(`Error fetching risk ${id}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error fetching risk ${id}:`, error?.message);
       throw error;
     }
   }
@@ -63,8 +63,8 @@ export class RiskRepository {
         [risk.projectid, risk.description, risk.probability, risk.impact, risk.response, risk.status || 'open']
       );
       return result.rows[0];
-    } catch (error) {
-      dbLogger.error('Error creating risk:', error);
+    } catch (error: any) {
+      dbLogger.error('Error creating risk:', error?.message);
       throw error;
     }
   }
@@ -104,8 +104,8 @@ export class RiskRepository {
         values
       );
       return result.rows[0] || null;
-    } catch (error) {
-      dbLogger.error(`Error updating risk ${id}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error updating risk ${id}:`, error?.message);
       throw error;
     }
   }
@@ -114,8 +114,8 @@ export class RiskRepository {
     try {
       const result = await pool.query('DELETE FROM risks WHERE id = $1 AND projectid = $2', [id, projectid]);
       return result.rowCount! > 0;
-    } catch (error) {
-      dbLogger.error(`Error deleting risk ${id}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error deleting risk ${id}:`, error?.message);
       throw error;
     }
   }
@@ -131,8 +131,8 @@ export class RiskRepository {
         [projectid]
       );
       return result.rows;
-    } catch (error) {
-      dbLogger.error(`Error fetching RAID log for project ${projectid}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error fetching RAID log for project ${projectid}:`, error?.message);
       throw error;
     }
   }
@@ -144,8 +144,8 @@ export class RiskRepository {
         [id, projectid]
       );
       return result.rows[0] || null;
-    } catch (error) {
-      dbLogger.error(`Error fetching RAID item ${id}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error fetching RAID item ${id}:`, error?.message);
       throw error;
     }
   }
@@ -157,8 +157,8 @@ export class RiskRepository {
         [item.projectid, item.type, item.description, item.owner || null, item.status || 'open', item.impact || null]
       );
       return result.rows[0];
-    } catch (error) {
-      dbLogger.error('Error creating RAID item:', error);
+    } catch (error: any) {
+      dbLogger.error('Error creating RAID item:', error?.message);
       throw error;
     }
   }
@@ -198,8 +198,8 @@ export class RiskRepository {
         values
       );
       return result.rows[0] || null;
-    } catch (error) {
-      dbLogger.error(`Error updating RAID item ${id}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error updating RAID item ${id}:`, error?.message);
       throw error;
     }
   }
@@ -208,8 +208,8 @@ export class RiskRepository {
     try {
       const result = await pool.query('DELETE FROM raid_log WHERE id = $1 AND projectid = $2', [id, projectid]);
       return result.rowCount! > 0;
-    } catch (error) {
-      dbLogger.error(`Error deleting RAID item ${id}:`, error);
+    } catch (error: any) {
+      dbLogger.error(`Error deleting RAID item ${id}:`, error?.message);
       throw error;
     }
   }
