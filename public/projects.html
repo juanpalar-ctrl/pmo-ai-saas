@@ -1317,12 +1317,13 @@
 
         const data = await res.json();
         if (res.ok) {
+          alert('✓ Usuario aprobado correctamente');
           loadPendingUsers();
         } else {
-          console.error('❌ Error:', data.error);
+          alert('❌ Error: ' + (data.error || 'No se pudo aprobar'));
         }
       } catch (error) {
-        console.error('Error approving user:', error);
+        alert('❌ Error al procesar: ' + error.message);
       }
     }
 
@@ -1336,12 +1337,13 @@
 
         const data = await res.json();
         if (res.ok) {
+          alert('✓ Usuario rechazado correctamente');
           loadPendingUsers();
         } else {
-          console.error('❌ Error:', data.error);
+          alert('❌ Error: ' + (data.error || 'No se pudo rechazar'));
         }
       } catch (error) {
-        console.error('Error rejecting user:', error);
+        alert('❌ Error al procesar: ' + error.message);
       }
     }
 
