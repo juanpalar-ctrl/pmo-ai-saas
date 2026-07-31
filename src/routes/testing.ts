@@ -351,4 +351,50 @@ router.post('/webhook', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/testing/scheduled-run
+ * Execute complete test suite (for scheduled/automated runs)
+ * No admin auth required for webhook calls (from trusted services only)
+ */
+router.post('/scheduled-run', async (req: Request, res: Response) => {
+  try {
+    agentLogger.info({}, '🧪 SCHEDULED TEST RUN STARTED - Full exhaustive suite');
+
+    const startTime = Date.now();
+    const suiteResult = await testingAgent.runAll();
+    const duration = Date.now() - startTime;
+
+    const report = testingAgent.generateReport(suiteResult);
+
+    agentLogger.info(
+      {
+        passed: suiteResult.passed,
+        failed: suiteResult.failed,
+        total: suiteResult.total,
+        duration,
+      },
+      report
+    );
+
+    const message =
+      suiteResult.failed === 0
+        ? `✅ ALL TESTS PASSED (${suiteResult.passed}/${suiteResult.total})`
+        : `⚠️ SOME TESTS FAILED (${suiteResult.failed} failures)`;
+
+    res.json({
+      success: suiteResult.failed === 0,
+      message,
+      suite: suiteResult,
+      report,
+    });
+  } catch (error: any) {
+    agentLogger.error({ err: error.message }, '❌ Scheduled test run failed');
+    res.status(500).json({
+      success: false,
+      error: 'Scheduled test execution failed',
+      message: error.message,
+    });
+  }
+});
+
 export default router;
