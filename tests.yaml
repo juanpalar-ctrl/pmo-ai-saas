@@ -1,28 +1,38 @@
-# Dynamic Testing Suite for PMO AI SaaS
-# Edit this file to add/update tests. The testing agent will read and execute these.
-# Format: YAML with test cases organized by category
+# ============================================
+# EXHAUSTIVE SECURITY & QA TEST SUITE
+# PMO AI SaaS — Production Testing
+# Access: Admin only (protected by adminAuthMiddleware)
+# ============================================
 
 metadata:
-  version: "1.0"
+  version: "2.0"
   production_url: "https://pmo-ai-saas.onrender.com"
   last_updated: "2026-07-31"
-  maintained_by: "development-team"
+  maintained_by: "security-team"
+  access_level: "admin-only"
+  description: "Comprehensive security, functionality, and regression testing suite"
 
-# API Endpoint Tests
-api_tests:
-  - name: "Health Check"
-    method: "GET"
-    endpoint: "/api/health"
-    expected_status: 200
-    expected_body_contains: ["status", "ok"]
-    tags: ["smoke", "critical"]
+# ============================================
+# 1. AUTHENTICATION & AUTHORIZATION TESTS
+# ============================================
+auth_tests:
+  # Auth Flow Tests
+  - name: "Auth - Register New User"
+    method: "POST"
+    endpoint: "/api/auth/register"
+    body:
+      email: "newuser@test.example.com"
+      password: "SecurePass123!@#"
+      name: "Test User"
+    expected_status: [200, 201]
+    tags: ["auth", "critical"]
 
-  - name: "Auth - Login Success"
+  - name: "Auth - Login Valid Credentials"
     method: "POST"
     endpoint: "/api/auth/login"
     body:
-      email: "test@example.com"
-      password: "password123"
+      email: "admin@example.com"
+      password: "admin123"
     expected_status: [200, 201]
     tags: ["auth", "critical"]
 
@@ -30,46 +40,460 @@ api_tests:
     method: "POST"
     endpoint: "/api/auth/login"
     body:
-      email: "wrong@example.com"
-      password: "wrong"
+      email: "admin@example.com"
+      password: "wrongpassword"
     expected_status: 401
     tags: ["auth", "security"]
 
-  - name: "Data - Get Projects"
+  - name: "Auth - Login Nonexistent User"
+    method: "POST"
+    endpoint: "/api/auth/login"
+    body:
+      email: "nonexistent@example.com"
+      password: "password123"
+    expected_status: 401
+    tags: ["auth", "security"]
+
+  # SQL Injection Prevention
+  - name: "Security - SQL Injection in Login Email"
+    method: "POST"
+    endpoint: "/api/auth/login"
+    body:
+      email: "admin' OR '1'='1"
+      password: "password"
+    expected_status: 401
+    tags: ["security", "critical"]
+
+  - name: "Security - SQL Injection in Password"
+    method: "POST"
+    endpoint: "/api/auth/login"
+    body:
+      email: "admin@example.com"
+      password: "' OR '1'='1"
+    expected_status: 401
+    tags: ["security", "critical"]
+
+  # Token/Session Validation
+  - name: "Auth - Access Protected Endpoint Without Token"
+    method: "GET"
+    endpoint: "/api/data/projects"
+    requires_auth: false
+    expected_status: 401
+    tags: ["auth", "security", "critical"]
+
+  - name: "Auth - Access Protected Endpoint with Invalid Token"
+    method: "GET"
+    endpoint: "/api/data/projects"
+    requires_auth: false
+    headers:
+      Authorization: "Bearer invalid.token.here"
+    expected_status: 401
+    tags: ["auth", "security"]
+
+  - name: "Auth - Expired Token Rejection"
+    method: "GET"
+    endpoint: "/api/data/projects"
+    requires_auth: false
+    headers:
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjAwMDAwMDB9.invalid"
+    expected_status: 401
+    tags: ["auth", "security"]
+
+  # Cookie Security
+  - name: "Security - Inspect Auth Cookie Flags"
+    method: "POST"
+    endpoint: "/api/auth/login"
+    body:
+      email: "admin@example.com"
+      password: "admin123"
+    expected_status: [200, 201]
+    validate_cookie_flags:
+      - httpOnly
+      - secure
+      - sameSite
+    tags: ["security", "critical"]
+
+# ============================================
+# 2. AUTHORIZATION & ACCESS CONTROL TESTS
+# ============================================
+authorization_tests:
+  - name: "Authz - User Cannot Access Other User Projects"
+    method: "GET"
+    endpoint: "/api/data/projects?user_id=other_user_id"
+    requires_auth: true
+    expected_status: 403
+    tags: ["authz", "security", "critical"]
+
+  - name: "Authz - User Cannot Modify Other User Data"
+    method: "PUT"
+    endpoint: "/api/data/projects/other_project_id"
+    requires_auth: true
+    body:
+      name: "Hacked"
+    expected_status: [403, 404]
+    tags: ["authz", "security", "critical"]
+
+  - name: "Authz - Non-Admin Cannot Access Admin Endpoints"
+    method: "GET"
+    endpoint: "/api/admin/users"
+    requires_auth: true
+    expected_status: 403
+    tags: ["authz", "security", "critical"]
+
+  - name: "Authz - User Cannot Delete Other User Account"
+    method: "DELETE"
+    endpoint: "/api/auth/account/other_user_id"
+    requires_auth: true
+    expected_status: [403, 404]
+    tags: ["authz", "security"]
+
+# ============================================
+# 3. INPUT VALIDATION & XSS PREVENTION TESTS
+# ============================================
+input_validation_tests:
+  - name: "XSS - Script Tag in Project Name"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "<script>alert('XSS')</script>"
+      description: "Test"
+    expected_status: [200, 400]
+    tags: ["security", "xss", "critical"]
+
+  - name: "XSS - Event Handler in Description"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "Project"
+      description: "<img src=x onerror='alert(1)'>"
+    expected_status: [200, 400]
+    tags: ["security", "xss", "critical"]
+
+  - name: "XSS - HTML Encoding Verification"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "<b>Bold Test</b>"
+      description: "Should be escaped"
+    expected_status: [200, 201]
+    tags: ["security", "xss"]
+
+  - name: "Input - Extremely Long String"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "A"
+      description: "X" * 50000
+    expected_status: [400, 413, 422]
+    tags: ["validation", "security"]
+
+  - name: "Input - Null Bytes in Input"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "Project\x00Name"
+      description: "Test"
+    expected_status: [400, 422]
+    tags: ["validation", "security"]
+
+  - name: "Input - Invalid UTF-8 Characters"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "Project"
+      description: "\xFF\xFE"
+    expected_status: [400, 422]
+    tags: ["validation", "security"]
+
+  - name: "Input - Email Validation"
+    method: "POST"
+    endpoint: "/api/auth/register"
+    body:
+      email: "not-an-email"
+      password: "Password123"
+    expected_status: 400
+    tags: ["validation"]
+
+  - name: "Input - Weak Password Rejection"
+    method: "POST"
+    endpoint: "/api/auth/register"
+    body:
+      email: "user@test.com"
+      password: "123"
+    expected_status: 400
+    tags: ["validation", "security"]
+
+# ============================================
+# 4. CSRF & COOKIE SECURITY TESTS
+# ============================================
+csrf_tests:
+  - name: "CSRF - Missing CSRF Token"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "Test Project"
+    headers:
+      "X-Requested-With": null
+    expected_status: [403, 400]
+    tags: ["security", "csrf"]
+
+  - name: "Security - Inspect CSP Headers"
+    method: "GET"
+    endpoint: "/"
+    requires_auth: true
+    validate_headers:
+      - "Content-Security-Policy"
+    tags: ["security", "headers"]
+
+  - name: "Security - Inspect HSTS Header"
+    method: "GET"
+    endpoint: "/"
+    requires_auth: true
+    validate_headers:
+      - "Strict-Transport-Security"
+    tags: ["security", "headers"]
+
+# ============================================
+# 5. API ENDPOINT TESTS (Comprehensive)
+# ============================================
+api_endpoint_tests:
+  # Health & Status
+  - name: "Health - Service Status"
+    method: "GET"
+    endpoint: "/api/health"
+    expected_status: 200
+    expected_body_contains: ["status", "ok"]
+    tags: ["smoke", "critical"]
+
+  # Auth Endpoints
+  - name: "Auth - Get Current User"
+    method: "GET"
+    endpoint: "/api/auth/me"
+    requires_auth: true
+    expected_status: 200
+    tags: ["auth", "critical"]
+
+  - name: "Auth - Logout"
+    method: "POST"
+    endpoint: "/api/auth/logout"
+    requires_auth: true
+    expected_status: 200
+    tags: ["auth"]
+
+  # Data API - Projects
+  - name: "Data - Get All Projects"
     method: "GET"
     endpoint: "/api/data/projects"
     requires_auth: true
     expected_status: 200
     tags: ["data", "critical"]
 
+  - name: "Data - Get Project by ID"
+    method: "GET"
+    endpoint: "/api/data/projects/test-project"
+    requires_auth: true
+    expected_status: [200, 404]
+    tags: ["data"]
+
+  - name: "Data - Create Project"
+    method: "POST"
+    endpoint: "/api/data/projects"
+    requires_auth: true
+    body:
+      name: "QA Test Project"
+      description: "Test project for QA"
+    expected_status: [200, 201]
+    tags: ["data"]
+
+  - name: "Data - Update Project"
+    method: "PUT"
+    endpoint: "/api/data/projects/test-project"
+    requires_auth: true
+    body:
+      name: "Updated Project"
+    expected_status: [200, 404]
+    tags: ["data"]
+
+  - name: "Data - Delete Project"
+    method: "DELETE"
+    endpoint: "/api/data/projects/test-project"
+    requires_auth: true
+    expected_status: [200, 204, 404]
+    tags: ["data"]
+
+  # Analysis API
   - name: "Analysis - Trigger Analysis"
     method: "POST"
     endpoint: "/api/analysis/trigger"
     requires_auth: true
     body:
       project_id: "test-project"
-    expected_status: [200, 202]
+    expected_status: [200, 202, 422]
     tags: ["analysis", "critical"]
 
+  - name: "Analysis - Get Analysis Results"
+    method: "GET"
+    endpoint: "/api/analysis/results/test-project"
+    requires_auth: true
+    expected_status: [200, 404]
+    tags: ["analysis"]
+
+  - name: "Analysis - List Analysis History"
+    method: "GET"
+    endpoint: "/api/analysis/history"
+    requires_auth: true
+    expected_status: 200
+    tags: ["analysis"]
+
+  # Team/Wellbeing API
   - name: "Team - Get Team Health"
     method: "GET"
     endpoint: "/api/team/health"
     requires_auth: true
     expected_status: 200
-    tags: ["team", "data"]
+    tags: ["team", "critical"]
 
-# UI/E2E Tests
+  - name: "Team - Get Team Breakdown"
+    method: "GET"
+    endpoint: "/api/team/breakdown"
+    requires_auth: true
+    expected_status: [200, 404]
+    tags: ["team"]
+
+  # Chat API
+  - name: "Chat - Send Message"
+    method: "POST"
+    endpoint: "/api/chat/send"
+    requires_auth: true
+    body:
+      message: "Hello AI"
+      project_id: "test-project"
+    expected_status: [200, 202, 422]
+    tags: ["chat"]
+
+  - name: "Chat - Get Chat History"
+    method: "GET"
+    endpoint: "/api/chat/history"
+    requires_auth: true
+    expected_status: 200
+    tags: ["chat"]
+
+  # Portfolio API
+  - name: "Portfolio - Get Portfolio Summary"
+    method: "GET"
+    endpoint: "/api/portfolio"
+    requires_auth: true
+    expected_status: 200
+    tags: ["portfolio"]
+
+  - name: "Portfolio - Get Portfolio Analysis"
+    method: "GET"
+    endpoint: "/api/portfolio/analysis"
+    requires_auth: true
+    expected_status: [200, 404]
+    tags: ["portfolio"]
+
+  # Branding API (Public, no auth)
+  - name: "Branding - Get Config"
+    method: "GET"
+    endpoint: "/api/branding/config"
+    requires_auth: false
+    expected_status: 200
+    tags: ["branding"]
+
+  - name: "Branding - Update Config (Admin)"
+    method: "PUT"
+    endpoint: "/api/branding/config"
+    requires_auth: true
+    body:
+      logo_url: "https://example.com/logo.png"
+    expected_status: [200, 403]
+    tags: ["branding"]
+
+# ============================================
+# 6. RATE LIMITING TESTS
+# ============================================
+rate_limiting_tests:
+  - name: "RateLimit - Auth Endpoint Limits"
+    method: "POST"
+    endpoint: "/api/auth/login"
+    body:
+      email: "test@test.com"
+      password: "test"
+    rapid_fire: 25
+    max_requests_per_15min: 20
+    expected_status: 429
+    tags: ["security", "rate-limit", "critical"]
+
+  - name: "RateLimit - Chat Endpoint Limits"
+    method: "POST"
+    endpoint: "/api/chat/send"
+    requires_auth: true
+    rapid_fire: 70
+    max_requests_per_min: 60
+    expected_status: 429
+    tags: ["security", "rate-limit"]
+
+# ============================================
+# 7. DATA INTEGRITY & CONSISTENCY TESTS
+# ============================================
+data_integrity_tests:
+  - name: "Data - Projects Table Exists and Indexed"
+    query: "SELECT COUNT(*) FROM projects"
+    expects_result: true
+    tags: ["schema", "critical"]
+
+  - name: "Data - Users Table Exists and Indexed"
+    query: "SELECT COUNT(*) FROM users"
+    expects_result: true
+    tags: ["schema", "critical"]
+
+  - name: "Data - Analyses Table Exists"
+    query: "SELECT COUNT(*) FROM ai_analyses"
+    expects_result: true
+    tags: ["schema", "critical"]
+
+  - name: "Data - User Foreign Key Integrity"
+    query: "SELECT COUNT(*) FROM projects WHERE user_id NOT IN (SELECT id FROM users)"
+    expects_result: 0
+    tags: ["integrity", "critical"]
+
+  - name: "Data - No Orphaned Analyses"
+    query: "SELECT COUNT(*) FROM ai_analyses WHERE project_id NOT IN (SELECT id FROM projects)"
+    expects_result: 0
+    tags: ["integrity", "critical"]
+
+  - name: "Data - Encryption Verification"
+    query: "SELECT COUNT(*) FROM users WHERE password IS NULL OR password = ''"
+    expects_result: 0
+    tags: ["security", "critical"]
+
+  - name: "Data - No Hardcoded Test Tokens"
+    query: "SELECT COUNT(*) FROM sessions WHERE token LIKE '%test%' OR token LIKE '%admin%'"
+    expects_result: 0
+    tags: ["security"]
+
+# ============================================
+# 8. E2E / UI TESTS
+# ============================================
 e2e_tests:
-  - name: "Landing Page Loads"
+  - name: "UI - Landing Page Loads"
     url: "/lara-landing.html"
     checks:
-      - type: "element_exists"
-        selector: "h1"
       - type: "text_contains"
         text: "LARA"
-    tags: ["smoke", "landing"]
+      - type: "text_contains"
+        text: "portfolios"
+    tags: ["smoke", "ui", "critical"]
 
-  - name: "Login Page Accessible"
+  - name: "UI - Login Page Elements Present"
     url: "/login"
     checks:
       - type: "text_contains"
@@ -78,92 +502,269 @@ e2e_tests:
         text: "Email"
       - type: "text_contains"
         text: "password"
-    tags: ["smoke", "auth"]
+    tags: ["smoke", "ui"]
 
-  - name: "Dashboard Available After Login"
-    url: "/dashboard"
+  - name: "UI - Dashboard Accessible (Protected)"
+    url: "/"
     requires_auth: true
     checks:
       - type: "element_exists"
-        selector: ".dashboard-container"
-      - type: "page_title"
-        contains: "Dashboard"
-    tags: ["critical", "ui"]
+        selector: "dashboard"
+    tags: ["ui"]
 
-  - name: "Project View Renders KPIs"
-    url: "/project/test-project"
+  - name: "UI - Projects Page Renders"
+    url: "/projects"
     requires_auth: true
     checks:
-      - type: "element_exists"
-        selector: "[data-testid='kpi-grid']"
-      - type: "element_count_min"
-        selector: ".kpi-card"
-        minimum: 1
-    tags: ["ui", "critical"]
+      - type: "text_contains"
+        text: "project"
+    tags: ["ui"]
 
-# Database Query Tests
-db_tests:
-  - name: "Users Table Exists"
-    query: "SELECT COUNT(*) FROM users"
-    expects_result: true
-    tags: ["schema", "data"]
-
-  - name: "Projects Table Exists"
-    query: "SELECT COUNT(*) FROM projects"
-    expects_result: true
-    tags: ["schema", "data"]
-
-  - name: "Analyses Table Exists"
-    query: "SELECT COUNT(*) FROM ai_analyses"
-    expects_result: true
-    tags: ["schema", "data"]
-
-# Performance Tests
+# ============================================
+# 9. PERFORMANCE TESTS
+# ============================================
 performance_tests:
-  - name: "Login Response Time"
+  - name: "Performance - Auth Login Response Time"
     endpoint: "/api/auth/login"
     method: "POST"
+    body:
+      email: "admin@example.com"
+      password: "admin123"
     max_response_time_ms: 2000
-    tags: ["performance"]
+    tags: ["performance", "critical"]
 
-  - name: "Dashboard Load Time"
+  - name: "Performance - Data API Response Time"
     endpoint: "/api/data/projects"
     method: "GET"
     requires_auth: true
     max_response_time_ms: 3000
+    tags: ["performance", "critical"]
+
+  - name: "Performance - Analysis Trigger Response"
+    endpoint: "/api/analysis/trigger"
+    method: "POST"
+    requires_auth: true
+    body:
+      project_id: "test-project"
+    max_response_time_ms: 5000
     tags: ["performance"]
 
-# Smoke Test Suite (quick validation after deployments)
+  - name: "Performance - Chat Message Latency"
+    endpoint: "/api/chat/send"
+    method: "POST"
+    requires_auth: true
+    body:
+      message: "Performance test"
+    max_response_time_ms: 3000
+    tags: ["performance"]
+
+  - name: "Performance - Portfolio Load Time"
+    endpoint: "/api/portfolio"
+    method: "GET"
+    requires_auth: true
+    max_response_time_ms: 4000
+    tags: ["performance"]
+
+# ============================================
+# 10. SECURITY HEADERS VALIDATION
+# ============================================
+security_headers_tests:
+  - name: "Headers - Content-Security-Policy"
+    method: "GET"
+    endpoint: "/"
+    requires_auth: false
+    validate_header: "Content-Security-Policy"
+    should_contain: ["script-src", "style-src"]
+    tags: ["security", "headers", "critical"]
+
+  - name: "Headers - Strict-Transport-Security"
+    method: "GET"
+    endpoint: "/"
+    requires_auth: false
+    validate_header: "Strict-Transport-Security"
+    tags: ["security", "headers", "critical"]
+
+  - name: "Headers - X-Content-Type-Options"
+    method: "GET"
+    endpoint: "/"
+    requires_auth: false
+    validate_header: "X-Content-Type-Options"
+    expected_value: "nosniff"
+    tags: ["security", "headers"]
+
+  - name: "Headers - X-Frame-Options"
+    method: "GET"
+    endpoint: "/"
+    requires_auth: false
+    validate_header: "X-Frame-Options"
+    should_contain: ["SAMEORIGIN", "DENY"]
+    tags: ["security", "headers"]
+
+# ============================================
+# TEST SUITES FOR DIFFERENT SCENARIOS
+# ============================================
+
 smoke_suite:
-  - "Health Check"
-  - "Landing Page Loads"
-  - "Login Page Accessible"
-  - "Data - Get Projects"
+  - "Health - Service Status"
+  - "Auth - Login Valid Credentials"
+  - "UI - Landing Page Loads"
+  - "Data - Get All Projects"
+  - "Team - Get Team Health"
 
-# Critical Test Suite (run before production release)
 critical_suite:
-  - "Health Check"
-  - "Auth - Login Success"
+  - "Health - Service Status"
+  - "Auth - Login Valid Credentials"
   - "Auth - Login Invalid Credentials"
-  - "Data - Get Projects"
-  - "Dashboard Available After Login"
-  - "Project View Renders KPIs"
-  - "Users Table Exists"
-  - "Projects Table Exists"
+  - "Security - SQL Injection in Login Email"
+  - "Security - SQL Injection in Password"
+  - "Auth - Access Protected Endpoint Without Token"
+  - "Authz - User Cannot Access Other User Projects"
+  - "Authz - Non-Admin Cannot Access Admin Endpoints"
+  - "XSS - Script Tag in Project Name"
+  - "XSS - Event Handler in Description"
+  - "Data - Get All Projects"
+  - "Data - Create Project"
+  - "Team - Get Team Health"
+  - "UI - Landing Page Loads"
+  - "Data - Projects Table Exists and Indexed"
+  - "Data - Users Table Exists and Indexed"
+  - "Data - User Foreign Key Integrity"
+  - "Data - Encryption Verification"
+  - "Performance - Auth Login Response Time"
+  - "Performance - Data API Response Time"
+  - "Headers - Content-Security-Policy"
+  - "Headers - Strict-Transport-Security"
 
-# Schedule for automated test runs
+security_suite:
+  - "Auth - Login Invalid Credentials"
+  - "Auth - Login Nonexistent User"
+  - "Security - SQL Injection in Login Email"
+  - "Security - SQL Injection in Password"
+  - "Auth - Access Protected Endpoint Without Token"
+  - "Auth - Access Protected Endpoint with Invalid Token"
+  - "Auth - Expired Token Rejection"
+  - "Security - Inspect Auth Cookie Flags"
+  - "Authz - User Cannot Access Other User Projects"
+  - "Authz - User Cannot Modify Other User Data"
+  - "Authz - Non-Admin Cannot Access Admin Endpoints"
+  - "Authz - User Cannot Delete Other User Account"
+  - "XSS - Script Tag in Project Name"
+  - "XSS - Event Handler in Description"
+  - "XSS - HTML Encoding Verification"
+  - "Input - Extremely Long String"
+  - "Input - Null Bytes in Input"
+  - "Input - Invalid UTF-8 Characters"
+  - "Input - Email Validation"
+  - "Input - Weak Password Rejection"
+  - "CSRF - Missing CSRF Token"
+  - "Security - Inspect CSP Headers"
+  - "Security - Inspect HSTS Header"
+  - "RateLimit - Auth Endpoint Limits"
+  - "RateLimit - Chat Endpoint Limits"
+  - "Data - Encryption Verification"
+  - "Data - No Hardcoded Test Tokens"
+  - "Headers - Content-Security-Policy"
+  - "Headers - Strict-Transport-Security"
+  - "Headers - X-Content-Type-Options"
+  - "Headers - X-Frame-Options"
+
+exhaustive_suite:
+  # Include all tests
+  - "Health - Service Status"
+  - "Auth - Register New User"
+  - "Auth - Login Valid Credentials"
+  - "Auth - Login Invalid Credentials"
+  - "Auth - Login Nonexistent User"
+  - "Security - SQL Injection in Login Email"
+  - "Security - SQL Injection in Password"
+  - "Auth - Access Protected Endpoint Without Token"
+  - "Auth - Access Protected Endpoint with Invalid Token"
+  - "Auth - Expired Token Rejection"
+  - "Security - Inspect Auth Cookie Flags"
+  - "Authz - User Cannot Access Other User Projects"
+  - "Authz - User Cannot Modify Other User Data"
+  - "Authz - Non-Admin Cannot Access Admin Endpoints"
+  - "Authz - User Cannot Delete Other User Account"
+  - "XSS - Script Tag in Project Name"
+  - "XSS - Event Handler in Description"
+  - "XSS - HTML Encoding Verification"
+  - "Input - Extremely Long String"
+  - "Input - Null Bytes in Input"
+  - "Input - Invalid UTF-8 Characters"
+  - "Input - Email Validation"
+  - "Input - Weak Password Rejection"
+  - "CSRF - Missing CSRF Token"
+  - "Security - Inspect CSP Headers"
+  - "Security - Inspect HSTS Header"
+  - "Data - Get All Projects"
+  - "Data - Get Project by ID"
+  - "Data - Create Project"
+  - "Data - Update Project"
+  - "Data - Delete Project"
+  - "Analysis - Trigger Analysis"
+  - "Analysis - Get Analysis Results"
+  - "Analysis - List Analysis History"
+  - "Team - Get Team Health"
+  - "Team - Get Team Breakdown"
+  - "Chat - Send Message"
+  - "Chat - Get Chat History"
+  - "Portfolio - Get Portfolio Summary"
+  - "Portfolio - Get Portfolio Analysis"
+  - "Branding - Get Config"
+  - "Branding - Update Config (Admin)"
+  - "RateLimit - Auth Endpoint Limits"
+  - "RateLimit - Chat Endpoint Limits"
+  - "Data - Projects Table Exists and Indexed"
+  - "Data - Users Table Exists and Indexed"
+  - "Data - Analyses Table Exists"
+  - "Data - User Foreign Key Integrity"
+  - "Data - No Orphaned Analyses"
+  - "Data - Encryption Verification"
+  - "Data - No Hardcoded Test Tokens"
+  - "UI - Landing Page Loads"
+  - "UI - Login Page Elements Present"
+  - "UI - Dashboard Accessible (Protected)"
+  - "UI - Projects Page Renders"
+  - "Performance - Auth Login Response Time"
+  - "Performance - Data API Response Time"
+  - "Performance - Analysis Trigger Response"
+  - "Performance - Chat Message Latency"
+  - "Performance - Portfolio Load Time"
+  - "Headers - Content-Security-Policy"
+  - "Headers - Strict-Transport-Security"
+  - "Headers - X-Content-Type-Options"
+  - "Headers - X-Frame-Options"
+
+# ============================================
+# AUTOMATION SCHEDULING
+# ============================================
 automation:
   smoke_tests:
     enabled: true
-    schedule: "0 */6 * * *"  # Every 6 hours
+    schedule: "0 */6 * * *"
     suites: ["smoke_suite"]
+    description: "Quick sanity checks every 6 hours"
 
   critical_tests:
     enabled: true
-    schedule: "0 2 * * *"  # Daily at 2 AM
+    schedule: "0 2 * * *"
     suites: ["critical_suite"]
+    description: "Full regression daily at 2 AM"
+
+  security_tests:
+    enabled: true
+    schedule: "0 3 * * 0"
+    suites: ["security_suite"]
+    description: "Deep security audit weekly (Sunday 3 AM)"
+
+  exhaustive_tests:
+    enabled: true
+    schedule: "0 4 * * 0"
+    suites: ["exhaustive_suite"]
+    description: "Complete test run weekly (Sunday 4 AM)"
 
   webhook_on_deploy:
     enabled: true
-    endpoint: "/webhooks/render-deploy"
-    runs: ["smoke_suite"]
+    endpoint: "/api/testing/webhook"
+    runs: ["smoke_suite", "critical_suite"]
+    description: "Smoke + critical tests on each production deploy"

@@ -13,6 +13,8 @@
     "test:coverage": "jest --coverage",
     "test:e2e:smoke": "ts-node src/cli/run-tests.ts smoke",
     "test:e2e:critical": "ts-node src/cli/run-tests.ts critical",
+    "test:e2e:security": "ts-node src/cli/run-tests.ts security",
+    "test:e2e:exhaustive": "ts-node src/cli/run-tests.ts exhaustive",
     "test:e2e:all": "ts-node src/cli/run-tests.ts all"
   },
   "keywords": [],
