@@ -510,7 +510,7 @@
 
     /* ── Gantt Visual Chart ── */
     #gantt-svg-container {
-      width: 100%; height: 400px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+      width: 100%; height: 700px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;
       overflow: hidden; position: relative;
     }
     #gantt-svg { width: 100%; height: 100%; }
@@ -940,7 +940,7 @@
               </div>
             </div>
             <div id="gantt-svg-container">
-              <svg id="gantt-svg" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg"></svg>
+              <svg id="gantt-svg" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg"></svg>
             </div>
             <div id="gantt-chart-legend" class="flex flex-wrap gap-4 mt-4 text-xs">
               <div class="flex items-center gap-2"><div class="w-4 h-4 bg-red-500 rounded"></div><span>En Riesgo</span></div>
@@ -2084,12 +2084,12 @@
       svg.innerHTML = ''; // Clear previous
 
       // SVG dimensions
-      const padding = { top: 20, right: 40, bottom: 40, left: 150 };
-      const viewBox = svg.getAttribute('viewBox') || '0 0 1200 400';
+      const padding = { top: 30, right: 50, bottom: 50, left: 180 };
+      const viewBox = svg.getAttribute('viewBox') || '0 0 1200 600';
       const svgWidth = parseFloat(viewBox.split(' ')[2]) || 1200;
-      const svgHeight = parseFloat(viewBox.split(' ')[3]) || 400;
+      const svgHeight = parseFloat(viewBox.split(' ')[3]) || 600;
       const chartWidth = svgWidth - padding.left - padding.right;
-      const taskHeight = 24;
+      const taskHeight = 70;
 
       // Debug: log status
       console.log('renderGanttVisual: _ganttTasks.length=', _ganttTasks.length, 'span=', _ganttSpan.start, _ganttSpan.ms);
@@ -2198,13 +2198,14 @@
       tasksWithDates.forEach((t, idx) => {
         const y = padding.top + idx * taskHeight + taskHeight / 2 + 2;
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        label.setAttribute('x', padding.left - 10);
+        label.setAttribute('x', padding.left - 15);
         label.setAttribute('y', y);
         label.setAttribute('text-anchor', 'end');
         label.setAttribute('dominant-baseline', 'middle');
-        label.setAttribute('font-size', '11');
-        label.setAttribute('fill', '#333');
-        label.textContent = t.name.substring(0, 20) + (t.name.length > 20 ? '...' : '');
+        label.setAttribute('font-size', '16');
+        label.setAttribute('font-weight', '600');
+        label.setAttribute('fill', '#1f2937');
+        label.textContent = t.name.substring(0, 25) + (t.name.length > 25 ? '...' : '');
         group.appendChild(label);
       });
 
