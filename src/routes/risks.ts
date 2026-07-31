@@ -1,12 +1,50 @@
 import express, { Request, Response } from 'express';
 import { riskRepository } from '../repositories/riskRepository';
 import { routeLogger } from '../core/logger';
+import { pool } from '../db';
 
 const router = express.Router();
 
 const getProjectId = (projectId: string | string[]): string => {
   return Array.isArray(projectId) ? projectId[0] : projectId;
 };
+
+// Ensure tables exist before any request
+router.use(async (_req, _res, next) => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS risks (
+        id SERIAL PRIMARY KEY,
+        projectid INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        probability INTEGER CHECK (probability >= 0 AND probability <= 100),
+        impact VARCHAR(50),
+        response TEXT,
+        status VARCHAR(50) DEFAULT 'open',
+        createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS raid_log (
+        id SERIAL PRIMARY KEY,
+        projectid INTEGER NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        description TEXT NOT NULL,
+        owner VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'open',
+        impact VARCHAR(50),
+        createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_risks_projectid ON risks(projectid)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_raid_log_projectid ON raid_log(projectid)`);
+  } catch (err: any) {
+    routeLogger.error({ err: err?.message }, 'Failed to ensure tables exist');
+  }
+  next();
+});
 
 /**
  * RISK REGISTER ENDPOINTS
