@@ -1,0 +1,324 @@
+# ============================================
+# LARA FUNCTIONAL TEST SUITE
+# Tests que cargan datos, ejecutan agentes y validan resultados
+# ============================================
+
+metadata:
+  version: "3.0"
+  production_url: "https://pmo-ai-saas.onrender.com"
+  last_updated: "2026-07-31"
+  purpose: "Verify data loading, agent execution, and data accuracy"
+
+# ============================================
+# 1. DATA LOADING TESTS
+# ============================================
+data_loading_tests:
+  - name: "Data - Upload Excel with Test Project"
+    method: "POST"
+    endpoint: "/api/data/upload"
+    requires_auth: true
+    multipart_file: "test-data.xlsx"
+    expected_status: [200, 201]
+    validate_response:
+      - path: "success"
+        expected: true
+      - path: "project_id"
+        type: "string"
+        not_empty: true
+    tags: ["data-loading", "critical"]
+
+  - name: "Data - Verify Data Saved to Database"
+    query: "SELECT COUNT(*) as count FROM projects WHERE name LIKE '%Test Project%'"
+    expects_result: true
+    validate:
+      - field: "count"
+        type: "number"
+        greater_than: 0
+    tags: ["data-integrity", "critical"]
+
+  - name: "Data - Verify Column Normalization"
+    query: "SELECT column_mapping FROM project_data WHERE project_id = $1"
+    validate:
+      - field: "column_mapping"
+        type: "json"
+        not_empty: true
+      - field: "column_mapping"
+        contains_keys: ["task_name", "duration", "start_date", "end_date"]
+    tags: ["normalization", "critical"]
+
+# ============================================
+# 2. AGENT EXECUTION TESTS
+# ============================================
+agent_execution_tests:
+  - name: "Agent - Trigger Risk Analysis"
+    method: "POST"
+    endpoint: "/api/analysis/trigger"
+    requires_auth: true
+    body:
+      project_id: "test-project-1"
+      analysis_type: "risk"
+    expected_status: [200, 202]
+    validate_response:
+      - path: "analysis_id"
+        type: "string"
+        not_empty: true
+    tags: ["agents", "risk", "critical"]
+
+  - name: "Agent - Verify Risk Analysis Results"
+    method: "GET"
+    endpoint: "/api/analysis/results/test-project-1"
+    requires_auth: true
+    expected_status: 200
+    validate_response:
+      - path: "risk_score"
+        type: "number"
+        min: 0
+        max: 100
+      - path: "risk_factors"
+        type: "array"
+        min_length: 1
+      - path: "recommendations"
+        type: "string"
+        not_empty: true
+    tags: ["agents", "risk", "critical"]
+
+  - name: "Agent - Trigger Economic Analysis"
+    method: "POST"
+    endpoint: "/api/analysis/trigger"
+    requires_auth: true
+    body:
+      project_id: "test-project-1"
+      analysis_type: "economic"
+    expected_status: [200, 202]
+    tags: ["agents", "economic", "critical"]
+
+  - name: "Agent - Verify Economic Metrics"
+    method: "GET"
+    endpoint: "/api/analysis/results/test-project-1"
+    requires_auth: true
+    expected_status: 200
+    validate_response:
+      - path: "evm_metrics.cpi"
+        type: "number"
+        greater_than: 0
+      - path: "evm_metrics.spi"
+        type: "number"
+        greater_than: 0
+      - path: "budget_variance"
+        type: "number"
+      - path: "schedule_variance"
+        type: "number"
+    tags: ["agents", "economic", "critical"]
+
+  - name: "Agent - Trigger Full Report Generation"
+    method: "POST"
+    endpoint: "/api/analysis/trigger"
+    requires_auth: true
+    body:
+      project_id: "test-project-1"
+      generate_report: true
+    expected_status: [200, 202]
+    validate_response:
+      - path: "report_id"
+        type: "string"
+        not_empty: true
+    tags: ["agents", "reporting", "critical"]
+
+  - name: "Agent - Verify Report Contains Real Data"
+    method: "GET"
+    endpoint: "/api/analysis/report/test-project-1"
+    requires_auth: true
+    expected_status: 200
+    validate_response:
+      - path: "executive_summary"
+        type: "string"
+        not_empty: true
+        min_length: 100
+      - path: "technical_analysis"
+        type: "string"
+        not_empty: true
+        min_length: 100
+      - path: "recommendations"
+        type: "array"
+        min_length: 1
+    tags: ["agents", "reporting", "critical"]
+
+# ============================================
+# 3. DATA ACCURACY TESTS
+# ============================================
+data_accuracy_tests:
+  - name: "Accuracy - Risk Score is Reasonable"
+    method: "GET"
+    endpoint: "/api/analysis/results/test-project-1"
+    requires_auth: true
+    validate_response:
+      - path: "risk_score"
+        type: "number"
+        in_range: [0, 100]
+      - path: "risk_level"
+        type: "string"
+        in_values: ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    tags: ["accuracy", "critical"]
+
+  - name: "Accuracy - Budget Calculations are Correct"
+    query: "SELECT * FROM project_financial_metrics WHERE project_id = $1"
+    validate:
+      - field: "planned_cost"
+        type: "number"
+        greater_than: 0
+      - field: "actual_cost"
+        type: "number"
+        greater_than_or_equal: 0
+      - field: "budget_variance"
+        type: "number"
+        calculated_as: "planned_cost - actual_cost"
+    tags: ["accuracy", "financial", "critical"]
+
+  - name: "Accuracy - Schedule Variance is Calculated"
+    query: "SELECT * FROM project_schedule_metrics WHERE project_id = $1"
+    validate:
+      - field: "planned_end_date"
+        type: "date"
+      - field: "actual_end_date"
+        type: "date"
+      - field: "schedule_variance_days"
+        type: "number"
+    tags: ["accuracy", "schedule", "critical"]
+
+  - name: "Accuracy - Team Health Score is Valid"
+    method: "GET"
+    endpoint: "/api/team/health"
+    requires_auth: true
+    expected_status: 200
+    validate_response:
+      - path: "overall_health_score"
+        type: "number"
+        in_range: [0, 100]
+      - path: "team_members_count"
+        type: "number"
+        greater_than: 0
+      - path: "average_wellbeing"
+        type: "number"
+        in_range: [0, 100]
+    tags: ["accuracy", "team", "critical"]
+
+# ============================================
+# 4. END-TO-END USER FLOW TESTS
+# ============================================
+e2e_flow_tests:
+  - name: "E2E - Complete Analysis Flow"
+    steps:
+      - step: 1
+        name: "Login"
+        method: "POST"
+        endpoint: "/api/auth/login"
+        body:
+          email: "test@example.com"
+          password: "password123"
+        expected_status: [200, 201]
+        capture: "auth_token"
+
+      - step: 2
+        name: "Upload Data"
+        method: "POST"
+        endpoint: "/api/data/upload"
+        requires_auth: true
+        multipart_file: "test-data.xlsx"
+        expected_status: [200, 201]
+        capture: "project_id"
+
+      - step: 3
+        name: "Trigger Analysis"
+        method: "POST"
+        endpoint: "/api/analysis/trigger"
+        requires_auth: true
+        body:
+          project_id: "{{project_id}}"
+          generate_report: true
+        expected_status: [200, 202]
+        capture: "analysis_id"
+
+      - step: 4
+        name: "Verify Results"
+        method: "GET"
+        endpoint: "/api/analysis/results/{{project_id}}"
+        requires_auth: true
+        expected_status: 200
+        validate:
+          - path: "risk_score"
+            type: "number"
+            greater_than_or_equal: 0
+          - path: "success"
+            expected: true
+
+    tags: ["e2e", "critical", "user-flow"]
+
+  - name: "E2E - Chat with Analysis Context"
+    steps:
+      - step: 1
+        name: "Get Analysis"
+        method: "GET"
+        endpoint: "/api/analysis/results/test-project-1"
+        requires_auth: true
+        capture: "analysis_data"
+
+      - step: 2
+        name: "Send Chat Message with Context"
+        method: "POST"
+        endpoint: "/api/chat/send"
+        requires_auth: true
+        body:
+          message: "What are the main risks?"
+          project_id: "test-project-1"
+          context: "{{analysis_data}}"
+        expected_status: 200
+        validate:
+          - path: "response"
+            type: "string"
+            not_empty: true
+            min_length: 50
+
+    tags: ["e2e", "chat", "critical"]
+
+# ============================================
+# 5. TEST SUITES
+# ============================================
+
+complete_functional_suite:
+  - "Data - Upload Excel with Test Project"
+  - "Data - Verify Data Saved to Database"
+  - "Data - Verify Column Normalization"
+  - "Agent - Trigger Risk Analysis"
+  - "Agent - Verify Risk Analysis Results"
+  - "Agent - Trigger Economic Analysis"
+  - "Agent - Verify Economic Metrics"
+  - "Agent - Trigger Full Report Generation"
+  - "Agent - Verify Report Contains Real Data"
+  - "Accuracy - Risk Score is Reasonable"
+  - "Accuracy - Budget Calculations are Correct"
+  - "Accuracy - Schedule Variance is Calculated"
+  - "Accuracy - Team Health Score is Valid"
+  - "E2E - Complete Analysis Flow"
+  - "E2E - Chat with Analysis Context"
+
+smoke_functional_suite:
+  - "Data - Upload Excel with Test Project"
+  - "Agent - Trigger Risk Analysis"
+  - "Agent - Verify Report Contains Real Data"
+  - "E2E - Complete Analysis Flow"
+
+# ============================================
+# AUTOMATION SCHEDULE
+# ============================================
+automation:
+  complete_tests:
+    enabled: true
+    schedule: "0 5 * * 3"  # Wednesday 5 AM
+    suites: ["complete_functional_suite"]
+    description: "Complete functional test suite every Wednesday"
+
+  smoke_tests:
+    enabled: true
+    schedule: "0 */6 * * *"  # Every 6 hours
+    suites: ["smoke_functional_suite"]
+    description: "Quick smoke tests every 6 hours"

@@ -23,6 +23,7 @@ import portfolioRouter from './routes/portfolio';
 import teamRouter from './routes/team';
 import testingRouter from './routes/testing';
 import TestingAgent from './agents/testingAgent';
+import FunctionalTestingAgent from './agents/functionalTestingAgent';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { runMigrations, seedAdminUser } from './db-migrate';
 import { mkdirSync } from 'fs';
@@ -139,16 +140,16 @@ app.get('/api/health', (_req, res) => {
 app.post('/webhook/run-tests', (req, res) => {
   (async () => {
     try {
-      logger.info({ module: 'webhook' }, '🧪 WEBHOOK TEST RUN STARTED');
+      logger.info({ module: 'webhook' }, '🧪 FUNCTIONAL TEST SUITE STARTED - Data + Agents + Accuracy');
       const startTime = Date.now();
-      const testingAgent = new TestingAgent(RENDER_URL);
-      const suiteResult = await testingAgent.runAll();
+      const functionalAgent = new FunctionalTestingAgent(RENDER_URL);
+      const suiteResult = await functionalAgent.runSuite('complete_functional_suite');
       const duration = Date.now() - startTime;
-      const report = testingAgent.generateReport(suiteResult);
+      const report = functionalAgent.generateReport(suiteResult);
 
       logger.info(
         { module: 'webhook', passed: suiteResult.passed, failed: suiteResult.failed, total: suiteResult.total, duration_ms: duration },
-        '✅ WEBHOOK TEST RUN COMPLETED'
+        '✅ FUNCTIONAL TEST SUITE COMPLETED'
       );
 
       res.json({
@@ -159,9 +160,10 @@ app.post('/webhook/run-tests', (req, res) => {
         total: suiteResult.total,
         duration_ms: duration,
         report,
+        results: suiteResult.results,
       });
     } catch (error: any) {
-      logger.error({ module: 'webhook', err: error.message }, '❌ WEBHOOK TEST RUN FAILED');
+      logger.error({ module: 'webhook', err: error.message }, '❌ FUNCTIONAL TEST RUN FAILED');
       res.status(500).json({ success: false, error: error.message });
     }
   })();
