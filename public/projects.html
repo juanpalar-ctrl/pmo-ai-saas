@@ -818,9 +818,6 @@
           <button onclick="switchDashboardTab('riesgos')" id="tab-riesgos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
             <i class="fa-solid fa-triangle-exclamation text-orange-600"></i> ⚠️ Riesgos y RAID
           </button>
-          <button onclick="switchDashboardTab('cronograma')" id="tab-cronograma" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
-            <i class="fa-solid fa-timeline text-amber-600"></i> 📅 Cronograma
-          </button>
         </div>
 
         <!-- DASHBOARD TABS SECTION -->
@@ -927,29 +924,6 @@
         </div>
         </div><!-- Cierra dashboard-tab-riesgos -->
 
-        <!-- Tab 3: Cronograma (Gantt + Métricas) -->
-        <div id="dashboard-tab-cronograma" class="space-y-4" style="display: none;">
-          <div class="bg-white rounded-xl p-6 shadow-lg space-y-4">
-            <div class="flex items-center justify-between mb-4 border-b border-blue-200 pb-4">
-              <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-timeline text-blue-600 text-2xl"></i>
-                <div>
-                  <h3 class="font-bold text-lg text-gray-800">Cronograma</h3>
-                  <p class="text-xs text-gray-500 mt-1">Diagrama de Gantt y cronograma del proyecto</p>
-                </div>
-              </div>
-            </div>
-            <div id="gantt-svg-container">
-              <svg id="gantt-svg" viewBox="0 0 2000 600" xmlns="http://www.w3.org/2000/svg"></svg>
-            </div>
-            <div id="gantt-chart-legend" class="flex flex-wrap gap-4 mt-4 text-xs">
-              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-red-500 rounded"></div><span>En Riesgo</span></div>
-              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-yellow-500 rounded"></div><span>Atrasado</span></div>
-              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-green-500 rounded"></div><span>Al Día</span></div>
-              <div class="flex items-center gap-2"><div class="w-4 h-4 bg-gray-400 rounded"></div><span>Completado</span></div>
-            </div>
-          </div>
-        </div>
 
 
         <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -988,6 +962,16 @@
                 <p class="text-xs text-gray-500 mt-1">Datos del análisis importado</p>
               </div>
             </div>
+          </div>
+
+          <div id="gantt-svg-container">
+            <svg id="gantt-svg" viewBox="0 0 2000 600" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div id="gantt-chart-legend" class="flex flex-wrap gap-4 mt-4 text-xs">
+            <div class="flex items-center gap-2"><div class="w-4 h-4 bg-red-500 rounded"></div><span>En Riesgo</span></div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 bg-yellow-500 rounded"></div><span>Atrasado</span></div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 bg-green-500 rounded"></div><span>Al Día</span></div>
+            <div class="flex items-center gap-2"><div class="w-4 h-4 bg-gray-400 rounded"></div><span>Completado</span></div>
           </div>
 
           <div id="gantt-filters" class="flex-wrap items-center gap-2">
@@ -3079,12 +3063,10 @@
         // Hide all tabs
         document.getElementById('dashboard-tab-resumen').style.display = 'none';
         document.getElementById('dashboard-tab-riesgos').style.display = 'none';
-        document.getElementById('dashboard-tab-cronograma').style.display = 'none';
 
         // Remove active styles from all buttons
         document.getElementById('tab-resumen').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
         document.getElementById('tab-riesgos').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
-        document.getElementById('tab-cronograma').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
 
         // Show selected tab and highlight button
         document.getElementById('dashboard-tab-' + tab).style.display = 'block';
