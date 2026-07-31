@@ -196,6 +196,102 @@
     }
     .btn-save:hover { opacity: 0.9; }
 
+    /* ── RAID Log Table ── */
+    .raid-table-container { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 12px; }
+    .raid-table {
+      width: 100%; border-collapse: collapse; font-size: 0.875rem;
+    }
+    .raid-table thead {
+      background: linear-gradient(to right, #fef3c7, #fed7aa); border-bottom: 2px solid #fbbf24;
+    }
+    .raid-table th {
+      padding: 12px 16px; text-align: left; font-weight: 700; color: #92400e;
+      text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.75rem;
+    }
+    .raid-table tbody tr {
+      border-bottom: 1px solid #fde68a; transition: background 0.15s;
+    }
+    .raid-table tbody tr:hover { background: #fffbeb; }
+    .raid-table td { padding: 12px 16px; color: #374151; }
+    .raid-type-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+      border-radius: 12px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;
+    }
+    .raid-type-badge.risk { background: #fee2e2; color: #991b1b; }
+    .raid-type-badge.assumption { background: #fed7aa; color: #92400e; }
+    .raid-type-badge.issue { background: #fef3c7; color: #92400e; }
+    .raid-type-badge.dependency { background: #dbeafe; color: #1d4ed8; }
+    .raid-status {
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+      border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+    }
+    .raid-status.open { background: #fee2e2; color: #991b1b; }
+    .raid-status.in-progress { background: #fed7aa; color: #92400e; }
+    .raid-status.resolved { background: #dcfce7; color: #15803d; }
+    .raid-actions { display: flex; gap: 6px; }
+    .raid-btn {
+      padding: 4px 8px; border: none; border-radius: 6px; font-size: 0.75rem;
+      cursor: pointer; transition: all 0.15s; font-weight: 600;
+    }
+    .raid-btn-edit { background: #dbeafe; color: #1d4ed8; }
+    .raid-btn-edit:hover { background: #bfdbfe; color: #1e40af; }
+    .raid-btn-delete { background: #fee2e2; color: #991b1b; }
+    .raid-btn-delete:hover { background: #fecaca; color: #7f1d1d; }
+
+    /* ── RAID Modal ── */
+    .raid-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 50;
+      align-items: center; justify-content: center;
+    }
+    .raid-modal.open { display: flex; }
+    .raid-modal-content {
+      background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px; width: 90%; overflow-y: auto; max-height: 90vh;
+    }
+    .raid-modal-header {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white; padding: 24px; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .raid-modal-header h2 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+    .raid-modal-close {
+      background: none; border: none; color: white; font-size: 24px;
+      cursor: pointer; padding: 0; width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .raid-modal-body { padding: 24px; }
+    .raid-form-group { margin-bottom: 18px; }
+    .raid-form-group label {
+      display: block; font-weight: 600; font-size: 0.875rem;
+      color: #374151; margin-bottom: 6px;
+    }
+    .raid-form-group input, .raid-form-group textarea, .raid-form-group select {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb;
+      border-radius: 8px; font-size: 0.875rem; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .raid-form-group input:focus, .raid-form-group textarea:focus, .raid-form-group select:focus {
+      outline: none; border-color: #fbbf24;
+    }
+    .raid-form-group textarea { resize: vertical; min-height: 80px; }
+    .raid-modal-footer {
+      padding: 16px 24px; background: #f9fafb; border-top: 1px solid #e5e7eb;
+      display: flex; gap: 12px; justify-content: flex-end;
+    }
+    .raid-btn-cancel {
+      padding: 10px 24px; border: 1.5px solid #e5e7eb; background: white;
+      border-radius: 8px; font-weight: 600; cursor: pointer;
+      color: #6b7280; transition: all 0.15s;
+    }
+    .raid-btn-cancel:hover { border-color: #d1d5db; background: #f3f4f6; }
+    .raid-btn-save {
+      padding: 10px 24px; background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white; border: none; border-radius: 8px;
+      font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .raid-btn-save:hover { opacity: 0.9; }
+
     #gov-view-risks { display: none; }
     #gov-view-risks.active { display: block; }
     #gov-view-raid { display: none; }
@@ -597,11 +693,36 @@
           </div>
         </div>
 
-        <!-- RAID Log View (placeholder) -->
-        <div id="gov-view-raid" class="bg-white rounded-xl p-6 shadow-lg text-center text-gray-500">
-          <i class="fa-solid fa-flag text-teal-400 text-4xl mb-4"></i>
-          <p class="font-semibold">RAID Log - Próximamente</p>
-          <p class="text-sm">Esta vista se habilitará después de completar el Registro de Riesgos</p>
+        <!-- RAID Log View -->
+        <div id="gov-view-raid" class="bg-white rounded-xl p-6 shadow-lg space-y-4">
+          <div class="flex items-center justify-between mb-4 border-b border-amber-200 pb-4">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-flag text-amber-600 text-2xl"></i>
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">RAID Log</h3>
+                <p class="text-xs text-gray-500 mt-1">Riesgos, Suposiciones, Problemas y Dependencias identificados automáticamente</p>
+              </div>
+            </div>
+            <button onclick="openRaidModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">
+              <i class="fa-solid fa-plus"></i> Agregar RAID
+            </button>
+          </div>
+
+          <div class="raid-table-container">
+            <table class="raid-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">Tipo</th>
+                  <th>Descripción</th>
+                  <th style="width: 100px;">Propietario</th>
+                  <th style="width: 100px;">Estado</th>
+                  <th style="width: 90px;">Impacto</th>
+                  <th style="width: 120px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="raid-table-body"></tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Health Score Banner -->
@@ -824,6 +945,60 @@
           <div class="risk-modal-footer">
             <button class="btn-cancel" onclick="closeRiskModal()">Cancelar</button>
             <button class="btn-save" onclick="saveRisk()">Guardar Riesgo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAID Log Modal -->
+      <div id="raidModal" class="raid-modal">
+        <div class="raid-modal-content">
+          <div class="raid-modal-header">
+            <h2 id="raidModalTitle">Nuevo RAID</h2>
+            <button class="raid-modal-close" onclick="closeRaidModal()">×</button>
+          </div>
+          <div class="raid-modal-body">
+            <div class="raid-form-group">
+              <label for="raidType">Tipo *</label>
+              <select id="raidType">
+                <option value="">Seleccionar...</option>
+                <option value="risk">🔴 Riesgo</option>
+                <option value="assumption">🟠 Suposición</option>
+                <option value="issue">🟡 Problema</option>
+                <option value="dependency">🔵 Dependencia</option>
+              </select>
+            </div>
+            <div class="raid-form-group">
+              <label for="raidDescription">Descripción *</label>
+              <textarea id="raidDescription" placeholder="Describe el item del RAID Log..."></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="raid-form-group">
+                <label for="raidOwner">Propietario</label>
+                <input id="raidOwner" type="text" placeholder="Ej: Juan Perez" />
+              </div>
+              <div class="raid-form-group">
+                <label for="raidStatus">Estado</label>
+                <select id="raidStatus">
+                  <option value="">Seleccionar...</option>
+                  <option value="open">Abierto</option>
+                  <option value="in-progress">En Progreso</option>
+                  <option value="resolved">Resuelto</option>
+                </select>
+              </div>
+            </div>
+            <div class="raid-form-group">
+              <label for="raidImpact">Impacto</label>
+              <select id="raidImpact">
+                <option value="">Seleccionar...</option>
+                <option value="low">Bajo</option>
+                <option value="medium">Medio</option>
+                <option value="high">Alto</option>
+              </select>
+            </div>
+          </div>
+          <div class="raid-modal-footer">
+            <button class="raid-btn-cancel" onclick="closeRaidModal()">Cancelar</button>
+            <button class="raid-btn-save" onclick="saveRaid()">Guardar RAID</button>
           </div>
         </div>
       </div>
@@ -2395,15 +2570,23 @@
       ];
       let currentRiskId = null;
 
-      function calculateRiskLevel(probability, impact) {
+      let mockRaid = [
+        { id: 1, type: 'risk', description: 'Disponibilidad limitada del diseñador gráfico', owner: 'María García', status: 'open', impact: 'high' },
+        { id: 2, type: 'assumption', description: 'Asumimos que la API estará disponible 99.9% del tiempo', owner: 'Carlos López', status: 'open', impact: 'medium' },
+        { id: 3, type: 'issue', description: 'Retrasos en la aprobación de stakeholders afectando timeline', owner: 'Ana Martínez', status: 'in-progress', impact: 'high' },
+        { id: 4, type: 'dependency', description: 'Dependencia de la entrega del módulo de seguridad del equipo A', owner: 'Roberto Díaz', status: 'open', impact: 'medium' }
+      ];
+      let currentRaidId = null;
+
+      window.calculateRiskLevel = function(probability, impact) {
         const impactScore = { low: 1, medium: 2, high: 3 }[impact] || 1;
         const riskScore = probability * impactScore;
         if (riskScore >= 120) return 'red';
         if (riskScore >= 60) return 'yellow';
         return 'green';
-      }
+      };
 
-      function renderRisksTable() {
+      window.renderRisksTable = function renderRisksTable() {
         const tbody = document.getElementById('risks-table-body');
         tbody.innerHTML = mockRisks.map(risk => {
           const level = calculateRiskLevel(risk.probability, risk.impact);
@@ -2434,7 +2617,7 @@
         }).join('');
       }
 
-      function openRiskModal() {
+      window.openRiskModal = function() {
         currentRiskId = null;
         document.getElementById('riskModalTitle').textContent = 'Nuevo Riesgo';
         document.getElementById('riskDescription').value = '';
@@ -2442,14 +2625,14 @@
         document.getElementById('riskImpact').value = '';
         document.getElementById('riskResponse').value = '';
         document.getElementById('riskModal').classList.add('open');
-      }
+      };
 
-      function closeRiskModal() {
+      window.closeRiskModal = function() {
         document.getElementById('riskModal').classList.remove('open');
         currentRiskId = null;
-      }
+      };
 
-      function editRisk(id) {
+      window.editRisk = function(id) {
         const risk = mockRisks.find(r => r.id === id);
         if (!risk) return;
         currentRiskId = id;
@@ -2459,9 +2642,9 @@
         document.getElementById('riskImpact').value = risk.impact;
         document.getElementById('riskResponse').value = risk.response;
         document.getElementById('riskModal').classList.add('open');
-      }
+      };
 
-      function saveRisk() {
+      window.saveRisk = function() {
         const description = document.getElementById('riskDescription').value.trim();
         const probability = parseInt(document.getElementById('riskProbability').value);
         const impact = document.getElementById('riskImpact').value;
@@ -2489,14 +2672,14 @@
         closeRiskModal();
       }
 
-      function deleteRisk(id) {
+      window.deleteRisk = function(id) {
         if (confirm('¿Eliminar este riesgo?')) {
           mockRisks = mockRisks.filter(r => r.id !== id);
           renderRisksTable();
         }
-      }
+      };
 
-      function switchGovView(view) {
+      window.switchGovView = function(view) {
         document.getElementById('gov-view-risks').classList.remove('active');
         document.getElementById('gov-view-raid').classList.remove('active');
         document.getElementById('tab-risks').classList.remove('bg-teal-100', 'border-teal-600');
@@ -2509,13 +2692,122 @@
           document.getElementById('gov-view-raid').classList.add('active');
           document.getElementById('tab-raid').classList.add('bg-orange-100', 'border-orange-600');
         }
-      }
+      };
 
       document.getElementById('riskModal').addEventListener('click', function(e) {
         if (e.target === this) closeRiskModal();
       });
 
+      // ── RAID LOG FUNCTIONS ──
+      window.renderRaidTable = function renderRaidTable() {
+        const tbody = document.getElementById('raid-table-body');
+        tbody.innerHTML = mockRaid.map(raid => {
+          const typeEmoji = { risk: '🔴', assumption: '🟠', issue: '🟡', dependency: '🔵' }[raid.type];
+          const typeName = { risk: 'Riesgo', assumption: 'Suposición', issue: 'Problema', dependency: 'Dependencia' }[raid.type];
+          const statusLabel = { open: 'Abierto', 'in-progress': 'En Progreso', resolved: 'Resuelto' }[raid.status];
+          const impactLabel = raid.impact === 'high' ? 'Alto' : raid.impact === 'medium' ? 'Medio' : 'Bajo';
+          return `
+            <tr>
+              <td>
+                <span class="raid-type-badge ${raid.type}">
+                  ${typeEmoji} ${typeName}
+                </span>
+              </td>
+              <td class="font-medium">${escapeHtml(raid.description)}</td>
+              <td>${escapeHtml(raid.owner)}</td>
+              <td>
+                <span class="raid-status ${raid.status}">
+                  ${statusLabel}
+                </span>
+              </td>
+              <td>${impactLabel}</td>
+              <td>
+                <div class="raid-actions">
+                  <button class="raid-btn raid-btn-edit" onclick="editRaid(${raid.id})">
+                    <i class="fa-solid fa-edit"></i> Editar
+                  </button>
+                  <button class="raid-btn raid-btn-delete" onclick="deleteRaid(${raid.id})">
+                    <i class="fa-solid fa-trash"></i> Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      window.openRaidModal = function() {
+        currentRaidId = null;
+        document.getElementById('raidModalTitle').textContent = 'Nuevo RAID';
+        document.getElementById('raidType').value = '';
+        document.getElementById('raidDescription').value = '';
+        document.getElementById('raidOwner').value = '';
+        document.getElementById('raidStatus').value = '';
+        document.getElementById('raidImpact').value = '';
+        document.getElementById('raidModal').classList.add('open');
+      }
+
+      window.closeRaidModal = function() {
+        document.getElementById('raidModal').classList.remove('open');
+        currentRaidId = null;
+      };
+
+      window.editRaid = function(id) {
+        const raid = mockRaid.find(r => r.id === id);
+        if (!raid) return;
+        currentRaidId = id;
+        document.getElementById('raidModalTitle').textContent = 'Editar RAID';
+        document.getElementById('raidType').value = raid.type;
+        document.getElementById('raidDescription').value = raid.description;
+        document.getElementById('raidOwner').value = raid.owner;
+        document.getElementById('raidStatus').value = raid.status;
+        document.getElementById('raidImpact').value = raid.impact;
+        document.getElementById('raidModal').classList.add('open');
+      }
+
+      window.saveRaid = function() {
+        const type = document.getElementById('raidType').value;
+        const description = document.getElementById('raidDescription').value.trim();
+        const owner = document.getElementById('raidOwner').value.trim();
+        const status = document.getElementById('raidStatus').value;
+        const impact = document.getElementById('raidImpact').value;
+
+        if (!type || !description || !owner || !status || !impact) {
+          alert('Por favor, completa todos los campos');
+          return;
+        }
+
+        if (currentRaidId) {
+          const raid = mockRaid.find(r => r.id === currentRaidId);
+          if (raid) {
+            raid.type = type;
+            raid.description = description;
+            raid.owner = owner;
+            raid.status = status;
+            raid.impact = impact;
+          }
+        } else {
+          const newId = Math.max(...mockRaid.map(r => r.id), 0) + 1;
+          mockRaid.push({ id: newId, type, description, owner, status, impact });
+        }
+
+        renderRaidTable();
+        closeRaidModal();
+      }
+
+      window.deleteRaid = function(id) {
+        if (confirm('¿Eliminar este RAID?')) {
+          mockRaid = mockRaid.filter(r => r.id !== id);
+          renderRaidTable();
+        }
+      }
+
+      document.getElementById('raidModal').addEventListener('click', function(e) {
+        if (e.target === this) closeRaidModal();
+      });
+
       renderRisksTable();
+      renderRaidTable();
     })();
   </script>
 </body>
