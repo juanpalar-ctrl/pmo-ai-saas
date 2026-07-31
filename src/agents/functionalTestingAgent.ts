@@ -41,6 +41,31 @@ export class FunctionalTestingAgent {
     agentLogger.info({ baseUrl }, 'FunctionalTestingAgent initialized');
   }
 
+  private async obtainTestAuthToken(): Promise<string> {
+    try {
+      // Try to login as test user
+      const response = await axios.post(
+        `${this.baseUrl}/api/auth/login`,
+        {
+          email: 'test@example.com',
+          password: 'password123',
+        },
+        { timeout: 10000 }
+      );
+
+      if (response.data.token) {
+        agentLogger.info({}, 'Test auth token obtained successfully');
+        return response.data.token;
+      }
+    } catch (error: any) {
+      agentLogger.warn(
+        { error: error.message },
+        'Failed to obtain test auth token - proceeding without auth'
+      );
+    }
+    return '';
+  }
+
   private loadTestConfig(): any {
     try {
       // Try multiple paths for tests-functional.yaml
@@ -95,9 +120,11 @@ export class FunctionalTestingAgent {
       agentLogger.info({ test: testName }, 'Testing data loading');
 
       if (test.multipart_file) {
-        // File upload test
+        // File upload test with multipart data
+        const filePath = resolve('public', test.multipart_file);
+        const fileContent = readFileSync(filePath);
         const form = new FormData();
-        form.append('file', new Blob(['test data']), test.multipart_file);
+        form.append('file', new Blob([fileContent]), test.multipart_file);
 
         const response = await axios.post(`${this.baseUrl}${test.endpoint}`, form, {
           headers: {
@@ -307,6 +334,11 @@ export class FunctionalTestingAgent {
     agentLogger.info({ suite: suiteName }, 'Starting functional test suite');
     const startTime = Date.now();
     const config = this.loadTestConfig();
+
+    // Obtain auth token if not already set
+    if (!this.authToken) {
+      this.authToken = await this.obtainTestAuthToken();
+    }
 
     const suiteTests = config[suiteName] || config[`${suiteName}_suite`] || [];
 
