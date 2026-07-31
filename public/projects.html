@@ -332,6 +332,53 @@
     .kpi-badge.yellow { background: #fed7aa; color: #92400e; }
     .kpi-badge.red { background: #fee2e2; color: #991b1b; }
 
+    /* ── KPI Card Consolidated (Multi-Metric) ── */
+    .kpi-card-consolidated {
+      background: white; border-radius: 12px; padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card-consolidated:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .kpi-card-consolidated.green { border-color: #10b981; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
+    .kpi-card-consolidated.yellow { border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); }
+    .kpi-card-consolidated.red { border-color: #ef4444; background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%); }
+
+    .kpi-card-header {
+      grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.08);
+      font-weight: 700; font-size: 16px; color: #1f2937;
+    }
+    .kpi-card-header i { font-size: 20px; }
+
+    .kpi-metric {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .kpi-metric-label {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #6b7280;
+    }
+    .kpi-metric-value {
+      font-size: 22px; font-weight: 900; line-height: 1;
+    }
+    .kpi-metric-value.green { color: #10b981; }
+    .kpi-metric-value.yellow { color: #f59e0b; }
+    .kpi-metric-value.red { color: #ef4444; }
+    .kpi-metric-detail {
+      font-size: 11px; color: #64748b; margin-top: 2px;
+    }
+
+    /* Responsive: 1 col en móvil, 2 cols en tablet, 2x2 en desktop */
+    @media (max-width: 640px) {
+      .kpi-card-consolidated { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+    }
+    @media (min-width: 641px) and (max-width: 1024px) {
+      .kpi-card-consolidated { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 1025px) {
+      #kpi-cards-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
     /* ── Cronograma Gantt Jerárquico (Acordeones) ── */
     .gantt-alert {
       display: flex; align-items: flex-start; gap: 12px; padding: 16px;
@@ -2857,13 +2904,13 @@
         if (e.target === this) closeRaidModal();
       });
 
-      // ── KPI DASHBOARD FUNCTION ──
+      // ── KPI DASHBOARD FUNCTION (Consolidado 4 tarjetas) ──
       window.renderKPIDashboard = function() {
         const grid = document.getElementById('kpi-cards-grid');
 
         // Use global analysisData from existing app state
         if (!analysisData || !analysisData.metrics) {
-          grid.innerHTML = '<p class="text-gray-500 col-span-3 text-center py-4">Sin datos de análisis disponibles</p>';
+          grid.innerHTML = '<p class="text-gray-500 col-span-2 text-center py-4">Sin datos de análisis disponibles</p>';
           return;
         }
 
@@ -2879,72 +2926,77 @@
         const burnRate = parseFloat(economic.daily_burn_rate || 0);
         const cv = parseFloat(metrics.cv || 0);
         const bac = parseFloat(metrics.bac || 1);
-        const ac = parseFloat(metrics.ac || 0);
-        const pv = parseFloat(metrics.pv || 0);
+        const riskScore = risk.overallRiskScore || 'MEDIUM';
+        const delayProb = risk.delayProbability || 0;
 
         // Determine RAG colors
         const ragSPI = spi >= 0.95 ? 'green' : spi >= 0.85 ? 'yellow' : 'red';
-        const ragCPI = cpi >= 0.95 ? 'green' : cpi >= 0.85 ? 'yellow' : 'red';
         const ragProgress = percentComplete >= 75 ? 'green' : percentComplete >= 50 ? 'yellow' : 'red';
-        const ragVelocity = velocity > 0 ? 'green' : 'yellow';
+        const ragChronogram = [ragSPI, ragProgress].includes('red') ? 'red' : [ragSPI, ragProgress].includes('yellow') ? 'yellow' : 'green';
+
+        const ragCPI = cpi >= 0.95 ? 'green' : cpi >= 0.85 ? 'yellow' : 'red';
         const ragBurn = burnRate < (bac / 30) ? 'green' : burnRate < (bac / 20) ? 'yellow' : 'red';
         const ragCV = cv >= 0 ? 'green' : 'red';
+        const ragFinance = [ragCPI, ragBurn, ragCV].includes('red') ? 'red' : [ragCPI, ragBurn, ragCV].includes('yellow') ? 'yellow' : 'green';
 
-        const kpiData = [
+        const ragRisk = riskScore === 'HIGH' ? 'red' : riskScore === 'MEDIUM' ? 'yellow' : 'green';
+
+        const ragVelocity = velocity > 0 ? 'green' : 'yellow';
+
+        // 4 Tarjetas Consolidadas
+        const kpiGroups = [
           {
-            label: 'Schedule Performance',
+            title: 'Salud del Cronograma',
             icon: '⏱️',
-            value: spi.toFixed(2),
-            detail: spi >= 1 ? 'Adelantado' : 'Retrasado',
-            rag: ragSPI
+            rag: ragChronogram,
+            metrics: [
+              { label: 'SPI', value: spi.toFixed(2), detail: spi >= 1 ? 'Adelantado' : 'Retrasado', rag: ragSPI },
+              { label: 'Progreso', value: percentComplete.toFixed(0) + '%', detail: percentComplete.toFixed(1) + '% completado', rag: ragProgress }
+            ]
           },
           {
-            label: 'Cost Performance',
+            title: 'Salud Financiera',
             icon: '💰',
-            value: cpi.toFixed(2),
-            detail: cpi >= 1 ? 'Bajo presupuesto' : 'Sobre presupuesto',
-            rag: ragCPI
+            rag: ragFinance,
+            metrics: [
+              { label: 'CPI', value: cpi.toFixed(2), detail: cpi >= 1 ? 'Bajo presupuesto' : 'Sobre presupuesto', rag: ragCPI },
+              { label: 'Burn Rate', value: '$' + Math.round(burnRate).toLocaleString('es-MX'), detail: 'Gasto/día', rag: ragBurn },
+              { label: 'Variación', value: '$' + Math.round(cv).toLocaleString('es-MX'), detail: cv >= 0 ? 'Favorable' : 'Desfavorable', rag: ragCV }
+            ]
           },
           {
-            label: 'Progress Completion',
-            icon: '📊',
-            value: percentComplete.toFixed(0) + '%',
-            detail: `${percentComplete.toFixed(1)}% completado`,
-            rag: ragProgress
+            title: 'Nivel de Riesgo Global',
+            icon: '🎯',
+            rag: ragRisk,
+            metrics: [
+              { label: 'Risk Score', value: riskScore, detail: '', rag: ragRisk },
+              { label: 'Delay Prob', value: (delayProb * 100).toFixed(0) + '%', detail: 'Probabilidad', rag: ragRisk }
+            ]
           },
           {
-            label: 'Velocity',
+            title: 'Rendimiento del Equipo',
             icon: '🚀',
-            value: velocity.toFixed(1),
-            detail: 'Unidades/período',
-            rag: ragVelocity
-          },
-          {
-            label: 'Daily Burn Rate',
-            icon: '🔥',
-            value: `$${Math.round(burnRate).toLocaleString('es-MX')}`,
-            detail: 'Gasto/día',
-            rag: ragBurn
-          },
-          {
-            label: 'Cost Variance',
-            icon: '📈',
-            value: `$${Math.round(cv).toLocaleString('es-MX')}`,
-            detail: cv >= 0 ? 'Favorable' : 'Desfavorable',
-            rag: ragCV
+            rag: ragVelocity,
+            metrics: [
+              { label: 'Velocidad', value: velocity.toFixed(1), detail: 'Unidades/período', rag: ragVelocity },
+              { label: 'Estado', value: velocity > 0 ? 'Activo' : 'Pausado', detail: 'Equipo', rag: ragVelocity }
+            ]
           }
         ];
 
-        grid.innerHTML = kpiData.map(kpi => `
-          <div class="kpi-card ${kpi.rag}">
-            <p class="kpi-label">${kpi.icon} ${kpi.label}</p>
-            <p class="kpi-value ${kpi.rag}">${kpi.value}</p>
-            <div class="kpi-detail">
-              <span>${kpi.detail}</span>
-              <span class="kpi-badge ${kpi.rag}">
-                ${kpi.rag === 'green' ? '✓ OK' : kpi.rag === 'yellow' ? '⚠ Riesgo' : '✗ Crítico'}
-              </span>
+        grid.innerHTML = kpiGroups.map(group => `
+          <div class="kpi-card-consolidated ${group.rag}">
+            <div class="kpi-card-header">
+              <i class="fa-solid fa-circle-notch" style="font-size:16px;">${group.icon}</i>
+              ${group.title}
             </div>
+            ${group.metrics.map(m => `
+              <div class="kpi-metric">
+                <div class="kpi-metric-label">${m.label}</div>
+                <div class="kpi-metric-value ${m.rag}">${m.value}</div>
+                ${m.detail ? `<div class="kpi-metric-detail">${m.detail}</div>` : ''}
+              </div>
+            `).join('')}
           </div>
         `).join('');
       };
