@@ -284,10 +284,9 @@ e2e_flow_tests:
 # 5. TEST SUITES
 # ============================================
 
+# HTTP-only tests (SQL tests require DB driver implementation)
 complete_functional_suite:
   - "Data - Upload Excel with Test Project"
-  - "Data - Verify Data Saved to Database"
-  - "Data - Verify Column Normalization"
   - "Agent - Trigger Risk Analysis"
   - "Agent - Verify Risk Analysis Results"
   - "Agent - Trigger Economic Analysis"
@@ -295,8 +294,6 @@ complete_functional_suite:
   - "Agent - Trigger Full Report Generation"
   - "Agent - Verify Report Contains Real Data"
   - "Accuracy - Risk Score is Reasonable"
-  - "Accuracy - Budget Calculations are Correct"
-  - "Accuracy - Schedule Variance is Calculated"
   - "Accuracy - Team Health Score is Valid"
   - "E2E - Complete Analysis Flow"
   - "E2E - Chat with Analysis Context"
@@ -305,7 +302,13 @@ smoke_functional_suite:
   - "Data - Upload Excel with Test Project"
   - "Agent - Trigger Risk Analysis"
   - "Agent - Verify Report Contains Real Data"
-  - "E2E - Complete Analysis Flow"
+
+# Future suite for DB integration tests (requires SQL driver in FunctionalTestingAgent)
+# db_functional_suite:
+#   - "Data - Verify Data Saved to Database"
+#   - "Data - Verify Column Normalization"
+#   - "Accuracy - Budget Calculations are Correct"
+#   - "Accuracy - Schedule Variance is Calculated"
 
 # ============================================
 # AUTOMATION SCHEDULE
