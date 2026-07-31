@@ -2121,7 +2121,7 @@
         return;
       }
 
-      const chartHeight = Math.min(tasksWithDates.length * taskHeight + taskHeight, 350);
+      const chartHeight = tasksWithDates.length * taskHeight + taskHeight;
 
       // Create groups
       const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
