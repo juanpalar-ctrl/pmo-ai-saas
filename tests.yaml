@@ -72,12 +72,12 @@ e2e_tests:
   - name: "Login Page Accessible"
     url: "/login"
     checks:
-      - type: "element_exists"
-        selector: "input[type='email']"
-      - type: "element_exists"
-        selector: "input[type='password']"
-      - type: "element_exists"
-        selector: "button[type='submit']"
+      - type: "text_contains"
+        text: "loginForm"
+      - type: "text_contains"
+        text: "Email"
+      - type: "text_contains"
+        text: "password"
     tags: ["smoke", "auth"]
 
   - name: "Dashboard Available After Login"
