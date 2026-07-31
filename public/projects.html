@@ -522,7 +522,7 @@
       width: 100%; height: 600px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;
       overflow-x: auto; overflow-y: auto; position: relative;
     }
-    #gantt-svg { display: block; width: 2200px; height: 600px; margin: 0; padding: 0; }
+    #gantt-svg { display: block; width: 2300px; height: 600px; margin: 0; padding: 0; }
     .gantt-tooltip {
       position: absolute; background: #1f2937; color: white; padding: 8px 12px;
       border-radius: 6px; font-size: 11px; z-index: 100; pointer-events: none;
@@ -974,7 +974,7 @@
           </div>
 
           <div id="gantt-svg-container">
-            <svg id="gantt-svg" viewBox="0 0 2200 600" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg id="gantt-svg" viewBox="0 0 2300 600" xmlns="http://www.w3.org/2000/svg"></svg>
           </div>
           <div id="gantt-chart-legend" class="flex flex-wrap gap-4 mt-4 text-xs">
             <div class="flex items-center gap-2"><div class="w-4 h-4 bg-red-500 rounded"></div><span>En Riesgo</span></div>
@@ -2095,9 +2095,9 @@
       svg.innerHTML = ''; // Clear previous
 
       // SVG dimensions
-      const padding = { top: 30, right: 100, bottom: 50, left: 150 };
-      const viewBox = svg.getAttribute('viewBox') || '0 0 2200 600';
-      const svgWidth = parseFloat(viewBox.split(' ')[2]) || 2200;
+      const padding = { top: 30, right: 100, bottom: 50, left: 250 };
+      const viewBox = svg.getAttribute('viewBox') || '0 0 2300 600';
+      const svgWidth = parseFloat(viewBox.split(' ')[2]) || 2300;
       const svgHeight = parseFloat(viewBox.split(' ')[3]) || 600;
       const chartWidth = svgWidth - padding.left - padding.right;
       const taskHeight = 60;
