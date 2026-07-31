@@ -334,10 +334,11 @@
 
     /* ── KPI Card Consolidated (Mini-Card Health Snapshot) ── */
     .kpi-card-consolidated {
-      background: white; border-radius: 12px; padding: 18px;
+      background: white; border-radius: 12px; padding: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
       transition: transform 0.2s, box-shadow 0.2s;
+      align-items: center;
     }
     .kpi-card-consolidated:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
     .kpi-card-consolidated.green { border-color: #10b981; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
@@ -370,13 +371,16 @@
 
     /* Responsive: 1 col en móvil, 2 cols en tablet, 2x2 en desktop */
     @media (max-width: 640px) {
-      .kpi-card-consolidated { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+      .kpi-card-consolidated { grid-template-columns: 1fr; gap: 14px; padding: 16px; }
+      #kpi-cards-grid { gap: 5px; }
     }
     @media (min-width: 641px) and (max-width: 1024px) {
       .kpi-card-consolidated { grid-template-columns: 1fr 1fr; }
+      #kpi-cards-grid { gap: 5px; }
     }
     @media (min-width: 1025px) {
-      #kpi-cards-grid { grid-template-columns: repeat(2, 1fr); }
+      #kpi-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .kpi-card-consolidated { width: 100%; }
     }
 
     /* ── Sidebar Collapse Toggle ── */
@@ -782,7 +786,7 @@
               </div>
             </div>
 
-            <div id="kpi-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4"></div>
+            <div id="kpi-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full"></div>
           </div>
 
           <!-- Health Score Banner -->
