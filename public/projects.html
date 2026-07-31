@@ -754,19 +754,60 @@
           </button>
         </div>
 
-        <!-- Governance Views Tabs -->
+        <!-- Dashboard Tabs (Resumen | Riesgos y RAID | Cronograma) -->
         <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg border-l-4 border-teal-400">
-          <button onclick="switchGovView('risks')" id="tab-risks" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700 active-gov-tab">
-            <i class="fa-solid fa-triangle-exclamation text-teal-600"></i> Registro de Riesgos
+          <button onclick="switchDashboardTab('resumen')" id="tab-resumen" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700 bg-teal-100 border-teal-600 active-tab">
+            <i class="fa-solid fa-chart-line text-teal-600"></i> 📊 Resumen
           </button>
-          <button onclick="switchGovView('raid')" id="tab-raid" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
-            <i class="fa-solid fa-flag text-teal-600"></i> RAID Log
+          <button onclick="switchDashboardTab('riesgos')" id="tab-riesgos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
+            <i class="fa-solid fa-triangle-exclamation text-orange-600"></i> ⚠️ Riesgos y RAID
+          </button>
+          <button onclick="switchDashboardTab('cronograma')" id="tab-cronograma" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
+            <i class="fa-solid fa-timeline text-amber-600"></i> 📅 Cronograma
           </button>
         </div>
 
-        <!-- GOVERNANCE VIEWS SECTION -->
-        <!-- Risk Register View -->
-        <div id="gov-view-risks" class="bg-white rounded-xl p-6 shadow-lg space-y-4 active">
+        <!-- DASHBOARD TABS SECTION -->
+        <!-- Tab 1: Resumen (KPI Dashboard + Alertas) -->
+        <div id="dashboard-tab-resumen" class="space-y-4 active">
+          <!-- KPI Dashboard -->
+          <div id="kpi-dashboard" class="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-6 shadow-lg space-y-4">
+            <div class="flex items-center justify-between border-b border-teal-200 pb-4">
+              <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-chart-line text-teal-600 text-2xl"></i>
+                <div>
+                  <h3 class="font-bold text-lg text-gray-800">KPI Dashboard</h3>
+                  <p class="text-xs text-gray-500 mt-1">Indicadores clave de desempeño del proyecto</p>
+                </div>
+              </div>
+            </div>
+
+            <div id="kpi-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4"></div>
+          </div>
+
+          <!-- Health Score Banner -->
+          <div id="health-banner">
+            <div class="flex items-center gap-3">
+              <span id="health-icon" style="font-size:24px"></span>
+              <div>
+                <div id="health-label" style="font-weight:700;font-size:14px;"></div>
+                <div id="health-detail" style="font-size:11px;color:#64748b;margin-top:2px;"></div>
+              </div>
+            </div>
+            <div class="flex items-end gap-2">
+              <span class="health-score-num" id="health-score-num">—</span>
+              <span style="font-size:11px;color:#94a3b8;padding-bottom:4px;">/100</span>
+            </div>
+          </div>
+
+          <!-- Early Warning System panel -->
+          <div id="ews-panel" class="hidden"></div>
+        </div>
+
+        <!-- Tab 2: Riesgos y RAID Log -->
+        <div id="dashboard-tab-riesgos" class="space-y-4" style="display: none;">
+          <!-- Risk Register View -->
+          <div class="bg-white rounded-xl p-6 shadow-lg space-y-4">
           <div class="flex items-center justify-between mb-4 border-b border-teal-200 pb-4">
             <div class="flex items-center space-x-3">
               <i class="fa-solid fa-triangle-exclamation text-teal-600 text-2xl"></i>
@@ -797,8 +838,8 @@
           </div>
         </div>
 
-        <!-- RAID Log View -->
-        <div id="gov-view-raid" class="bg-white rounded-xl p-6 shadow-lg space-y-4">
+        <!-- RAID Log (combinado con Risk Register) -->
+        <div class="bg-white rounded-xl p-6 shadow-lg space-y-4 mt-4">
           <div class="flex items-center justify-between mb-4 border-b border-amber-200 pb-4">
             <div class="flex items-center space-x-3">
               <i class="fa-solid fa-flag text-amber-600 text-2xl"></i>
@@ -828,39 +869,27 @@
             </table>
           </div>
         </div>
+        </div><!-- Cierra dashboard-tab-riesgos -->
 
-        <!-- KPI Dashboard -->
-        <div id="kpi-dashboard" class="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl p-6 shadow-lg space-y-4">
-          <div class="flex items-center justify-between border-b border-teal-200 pb-4">
-            <div class="flex items-center space-x-3">
-              <i class="fa-solid fa-chart-line text-teal-600 text-2xl"></i>
-              <div>
-                <h3 class="font-bold text-lg text-gray-800">KPI Dashboard</h3>
-                <p class="text-xs text-gray-500 mt-1">Indicadores clave de desempeño del proyecto</p>
+        <!-- Tab 3: Cronograma (Gantt + Métricas) -->
+        <div id="dashboard-tab-cronograma" class="space-y-4" style="display: none;">
+          <div class="bg-white rounded-xl p-6 shadow-lg space-y-4">
+            <div class="flex items-center justify-between mb-4 border-b border-blue-200 pb-4">
+              <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-timeline text-blue-600 text-2xl"></i>
+                <div>
+                  <h3 class="font-bold text-lg text-gray-800">Cronograma</h3>
+                  <p class="text-xs text-gray-500 mt-1">Diagrama de Gantt y cronograma del proyecto</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div id="kpi-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4"></div>
-        </div>
-
-        <!-- Health Score Banner -->
-        <div id="health-banner">
-          <div class="flex items-center gap-3">
-            <span id="health-icon" style="font-size:24px"></span>
-            <div>
-              <div id="health-label" style="font-weight:700;font-size:14px;"></div>
-              <div id="health-detail" style="font-size:11px;color:#64748b;margin-top:2px;"></div>
+            <div id="gantt-container" class="text-gray-500 text-center py-8">
+              <i class="fa-solid fa-chart-gantt text-3xl mb-2"></i>
+              <p class="text-sm">Gantt chart placeholder</p>
             </div>
           </div>
-          <div class="flex items-end gap-2">
-            <span class="health-score-num" id="health-score-num">—</span>
-            <span style="font-size:11px;color:#94a3b8;padding-bottom:4px;">/100</span>
-          </div>
         </div>
 
-        <!-- Early Warning System panel -->
-        <div id="ews-panel" class="hidden"></div>
 
         <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
@@ -2814,20 +2843,24 @@
         }
       };
 
-      window.switchGovView = function(view) {
-        document.getElementById('gov-view-risks').classList.remove('active');
-        document.getElementById('gov-view-raid').classList.remove('active');
-        document.getElementById('tab-risks').classList.remove('bg-teal-100', 'border-teal-600');
-        document.getElementById('tab-raid').classList.remove('bg-orange-100', 'border-orange-600');
+      window.switchDashboardTab = function(tab) {
+        // Hide all tabs
+        document.getElementById('dashboard-tab-resumen').style.display = 'none';
+        document.getElementById('dashboard-tab-riesgos').style.display = 'none';
+        document.getElementById('dashboard-tab-cronograma').style.display = 'none';
 
-        if (view === 'risks') {
-          document.getElementById('gov-view-risks').classList.add('active');
-          document.getElementById('tab-risks').classList.add('bg-teal-100', 'border-teal-600');
-        } else {
-          document.getElementById('gov-view-raid').classList.add('active');
-          document.getElementById('tab-raid').classList.add('bg-orange-100', 'border-orange-600');
-        }
+        // Remove active styles from all buttons
+        document.getElementById('tab-resumen').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
+        document.getElementById('tab-riesgos').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
+        document.getElementById('tab-cronograma').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
+
+        // Show selected tab and highlight button
+        document.getElementById('dashboard-tab-' + tab).style.display = 'block';
+        document.getElementById('tab-' + tab).classList.add('bg-teal-100', 'border-teal-600', 'active-tab');
       };
+
+      // Backwards compatibility for old function name
+      window.switchGovView = window.switchDashboardTab;
 
       document.getElementById('riskModal').addEventListener('click', function(e) {
         if (e.target === this) closeRiskModal();
