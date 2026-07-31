@@ -307,7 +307,7 @@ export class FunctionalTestingAgent {
     const startTime = Date.now();
     const config = this.loadTestConfig();
 
-    const suiteTests = config[`${suiteName}_suite`] || [];
+    const suiteTests = config[suiteName] || config[`${suiteName}_suite`] || [];
 
     if (!suiteTests.length) {
       agentLogger.warn({ suite: suiteName }, 'No tests found for suite');
