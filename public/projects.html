@@ -1259,6 +1259,8 @@
       switchFramework(activeFramework);
       loadReports();
       renderTeamSummary();
+      await loadRisks();
+      await loadRAID();
     };
 
     function toggleAdminPanel() {
@@ -3375,9 +3377,6 @@
           </div>
         `).join('');
       };
-
-      loadRisks();
-      loadRAID();
 
       // Render KPI dashboard when analysis data is loaded
       if (analysisData) {
