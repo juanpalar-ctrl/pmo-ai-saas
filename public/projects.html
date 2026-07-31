@@ -355,22 +355,26 @@
 
     .kpi-metric {
       display: flex; flex-direction: column; gap: 3px;
+      min-height: 70px;
+      justify-content: flex-start;
     }
     .kpi-metric-label {
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.4px; color: #6b7280;
+      height: 16px;
     }
     .kpi-metric-value {
-      font-size: 20px; font-weight: 900; line-height: 1;
+      font-size: 24px; font-weight: 900; line-height: 1.1;
     }
     .kpi-metric-value.green { color: #10b981; }
     .kpi-metric-value.yellow { color: #f59e0b; }
     .kpi-metric-value.red { color: #ef4444; }
     .kpi-metric-detail {
-      font-size: 10px; color: #64748b; margin-top: 1px;
+      font-size: 11px; color: #64748b; margin-top: 2px;
+      height: 14px;
     }
 
-    /* Responsive: 1 col en móvil, 2 cols en tablet, 4 cols en desktop */
+    /* Responsive: 1 col en móvil, 2 cols en tablet, 4 columnas internas en desktop */
     @media (max-width: 640px) {
       .kpi-card-consolidated { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
       #kpi-cards-grid { gap: 5px; }
@@ -381,7 +385,8 @@
     }
     @media (min-width: 1025px) {
       #kpi-cards-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-      .kpi-card-consolidated { width: 100%; }
+      .kpi-card-consolidated { width: 100%; grid-template-columns: repeat(4, 1fr); }
+      .kpi-card-header { grid-column: 1 / -1; }
     }
 
     /* ── Sidebar Collapse Toggle ── */
