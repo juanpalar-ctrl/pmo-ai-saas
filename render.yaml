@@ -22,3 +22,6 @@ services:
       # Base pública para los enlaces de reseteo de contraseña (passwordResetService)
       - key: APP_BASE_URL
         sync: false
+      # Testing Agent Configuration
+      - key: RENDER_URL
+        value: https://pmo-ai-saas.onrender.com
