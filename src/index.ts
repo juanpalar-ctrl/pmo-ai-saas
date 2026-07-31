@@ -22,7 +22,7 @@ import chatRouter from './routes/chat';
 import portfolioRouter from './routes/portfolio';
 import teamRouter from './routes/team';
 import testingRouter from './routes/testing';
-import TestingAgent from './services/testingAgent';
+import TestingAgent from './agents/testingAgent';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
 import { runMigrations, seedAdminUser } from './db-migrate';
 import { mkdirSync } from 'fs';
@@ -35,6 +35,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const RENDER_URL = process.env.RENDER_URL || 'https://pmo-ai-saas.onrender.com';
 
 // Render (and most cloud providers) sit behind a reverse proxy
 app.set('trust proxy', 1);
@@ -135,33 +136,35 @@ app.get('/api/health', (_req, res) => {
 // PUBLIC WEBHOOK ENDPOINT FOR SCHEDULED TESTS
 // NO AUTH REQUIRED - For Upstash Cron / external webhooks
 // ============================================
-app.post('/webhook/run-tests', async (req: Request, res: Response) => {
-  try {
-    agentLogger.info({}, '🧪 WEBHOOK TEST RUN STARTED');
-    const startTime = Date.now();
-    const testingAgent = new TestingAgent(RENDER_URL);
-    const suiteResult = await testingAgent.runAll();
-    const duration = Date.now() - startTime;
-    const report = testingAgent.generateReport(suiteResult);
+app.post('/webhook/run-tests', (req, res) => {
+  (async () => {
+    try {
+      logger.info({ module: 'webhook' }, '🧪 WEBHOOK TEST RUN STARTED');
+      const startTime = Date.now();
+      const testingAgent = new TestingAgent(RENDER_URL);
+      const suiteResult = await testingAgent.runAll();
+      const duration = Date.now() - startTime;
+      const report = testingAgent.generateReport(suiteResult);
 
-    agentLogger.info(
-      { passed: suiteResult.passed, failed: suiteResult.failed, total: suiteResult.total, duration_ms: duration },
-      '✅ WEBHOOK TEST RUN COMPLETED'
-    );
+      logger.info(
+        { module: 'webhook', passed: suiteResult.passed, failed: suiteResult.failed, total: suiteResult.total, duration_ms: duration },
+        '✅ WEBHOOK TEST RUN COMPLETED'
+      );
 
-    res.json({
-      success: suiteResult.failed === 0,
-      message: suiteResult.failed === 0 ? `✅ ALL ${suiteResult.passed} TESTS PASSED` : `⚠️ ${suiteResult.failed} TESTS FAILED`,
-      passed: suiteResult.passed,
-      failed: suiteResult.failed,
-      total: suiteResult.total,
-      duration_ms: duration,
-      report,
-    });
-  } catch (error: any) {
-    agentLogger.error({ err: error.message }, '❌ WEBHOOK TEST RUN FAILED');
-    res.status(500).json({ success: false, error: error.message });
-  }
+      res.json({
+        success: suiteResult.failed === 0,
+        message: suiteResult.failed === 0 ? `✅ ALL ${suiteResult.passed} TESTS PASSED` : `⚠️ ${suiteResult.failed} TESTS FAILED`,
+        passed: suiteResult.passed,
+        failed: suiteResult.failed,
+        total: suiteResult.total,
+        duration_ms: duration,
+        report,
+      });
+    } catch (error: any) {
+      logger.error({ module: 'webhook', err: error.message }, '❌ WEBHOOK TEST RUN FAILED');
+      res.status(500).json({ success: false, error: error.message });
+    }
+  })();
 });
 
 
