@@ -131,59 +131,23 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// PUBLIC ENDPOINT: Scheduled test execution (for webhooks/Upstash Cron)
-// Must be at root level BEFORE /api/testing middleware to avoid auth requirement
-app.post('/api/run-scheduled-tests', async (req: Request, res: Response) => {
-  try {
-    const RENDER_URL = process.env.RENDER_URL || 'https://pmo-ai-saas.onrender.com';
-    const testingAgent = new TestingAgent(RENDER_URL);
-
-    logger.info({}, '🧪 SCHEDULED TEST RUN STARTED - Full exhaustive suite');
-    const startTime = Date.now();
-    const suiteResult = await testingAgent.runAll();
-    const duration = Date.now() - startTime;
-
-    const report = testingAgent.generateReport(suiteResult);
-
-    logger.info(
-      {
-        passed: suiteResult.passed,
-        failed: suiteResult.failed,
-        total: suiteResult.total,
-        duration,
-      },
-      report
-    );
-
-    const message =
-      suiteResult.failed === 0
-        ? `✅ ALL TESTS PASSED (${suiteResult.passed}/${suiteResult.total})`
-        : `⚠️ SOME TESTS FAILED (${suiteResult.failed} failures)`;
-
-    res.json({
-      success: suiteResult.failed === 0,
-      message,
-      suite: suiteResult,
-      report,
-    });
-  } catch (error: any) {
-    logger.error({ err: error.message }, '❌ Scheduled test run failed');
-    res.status(500).json({
-      success: false,
-      error: 'Scheduled test execution failed',
-      message: error.message,
-    });
-  }
-});
 
 app.use('/api/chat', requireAuth, chatLimiter, chatRouter);
 app.use('/api/portfolio', requireAuth, heavyLimiter, portfolioRouter);
 app.use('/api/analysis', requireAuth, heavyLimiter, analysisRouter);
 app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
 app.use('/api/team', requireAuth, heavyLimiter, teamRouter);
-// Testing routes: most require admin auth, except scheduled-run (for webhooks)
-app.post('/api/testing/scheduled-run', testingRouter);
-app.use('/api/testing', adminAuthMiddleware, testingRouter);
+
+// Testing routes: public scheduled-run endpoint (for webhooks), others require admin auth
+const testingAuthMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Allow /api/testing/scheduled-run without auth (for webhooks like Upstash Cron)
+  if (req.path === '/scheduled-run' && req.method === 'POST') {
+    return next();
+  }
+  // All other /api/testing/* routes require admin auth
+  return adminAuthMiddleware(req, res, next);
+};
+app.use('/api/testing', testingAuthMiddleware, testingRouter);
 app.use('/api/dev', adminAuthMiddleware, devRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 

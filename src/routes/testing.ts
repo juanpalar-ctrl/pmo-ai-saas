@@ -19,6 +19,51 @@ const RENDER_URL = process.env.RENDER_URL || 'https://pmo-ai-saas.onrender.com';
 const testingAgent = new TestingAgent(RENDER_URL);
 
 /**
+ * PUBLIC POST /api/testing/scheduled-run
+ * Execute complete test suite (for scheduled/automated runs - NO AUTH REQUIRED)
+ */
+router.post('/scheduled-run', async (req: Request, res: Response) => {
+  try {
+    agentLogger.info({}, '🧪 SCHEDULED TEST RUN STARTED - Full exhaustive suite');
+
+    const startTime = Date.now();
+    const suiteResult = await testingAgent.runAll();
+    const duration = Date.now() - startTime;
+
+    const report = testingAgent.generateReport(suiteResult);
+
+    agentLogger.info(
+      {
+        passed: suiteResult.passed,
+        failed: suiteResult.failed,
+        total: suiteResult.total,
+        duration,
+      },
+      report
+    );
+
+    const message =
+      suiteResult.failed === 0
+        ? `✅ ALL TESTS PASSED (${suiteResult.passed}/${suiteResult.total})`
+        : `⚠️ SOME TESTS FAILED (${suiteResult.failed} failures)`;
+
+    res.json({
+      success: suiteResult.failed === 0,
+      message,
+      suite: suiteResult,
+      report,
+    });
+  } catch (error: any) {
+    agentLogger.error({ err: error.message }, '❌ Scheduled test run failed');
+    res.status(500).json({
+      success: false,
+      error: 'Scheduled test execution failed',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/testing/config
  * Get the current test configuration
  */
