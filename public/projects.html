@@ -2974,21 +2974,9 @@
       loadChatContext();
 
       // ── RISK REGISTER FUNCTIONS ──
-      let mockRisks = [
-        { id: 1, description: 'Disponibilidad limitada del diseñador gráfico', probability: 60, impact: 'high', response: 'Reservar diseñador alterno; crear backlog de diseño en paralelo' },
-        { id: 2, description: 'Cambios en requisitos de integración con API externa', probability: 45, impact: 'high', response: 'Mantener comunicación semanal con proveedor; documentar API en detalle' },
-        { id: 3, description: 'Retrasos en aprobación de stakeholders', probability: 70, impact: 'medium', response: 'Establecer reuniones bi-semanales de revisión; escalada a PMO si excede 1 semana' },
-        { id: 4, description: 'Insuficiencia de recursos de testing', probability: 40, impact: 'medium', response: 'Automatizar tests unitarios; externalizar testing manual si es necesario' }
-      ];
       let currentRiskId = null;
-
-      let mockRaid = [
-        { id: 1, type: 'risk', description: 'Disponibilidad limitada del diseñador gráfico', owner: 'María García', status: 'open', impact: 'high' },
-        { id: 2, type: 'assumption', description: 'Asumimos que la API estará disponible 99.9% del tiempo', owner: 'Carlos López', status: 'open', impact: 'medium' },
-        { id: 3, type: 'issue', description: 'Retrasos en la aprobación de stakeholders afectando timeline', owner: 'Ana Martínez', status: 'in-progress', impact: 'high' },
-        { id: 4, type: 'dependency', description: 'Dependencia de la entrega del módulo de seguridad del equipo A', owner: 'Roberto Díaz', status: 'open', impact: 'medium' }
-      ];
       let currentRaidId = null;
+      const API_BASE = '/api';
 
       window.calculateRiskLevel = function(probability, impact) {
         const impactScore = { low: 1, medium: 2, high: 3 }[impact] || 1;
@@ -2998,9 +2986,22 @@
         return 'green';
       };
 
-      window.renderRisksTable = function renderRisksTable() {
+      window.loadRisks = async function() {
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const response = await fetch(`${API_BASE}/projects/${projectId}/risks`);
+          if (!response.ok) throw new Error('Failed to load risks');
+          const risks = await response.json();
+          renderRisksTable(risks);
+        } catch (error) {
+          console.error('Error loading risks:', error);
+          document.getElementById('risks-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-gray-500">Error al cargar riesgos</td></tr>';
+        }
+      };
+
+      window.renderRisksTable = function renderRisksTable(risks) {
         const tbody = document.getElementById('risks-table-body');
-        tbody.innerHTML = mockRisks.map(risk => {
+        tbody.innerHTML = risks.map(risk => {
           const level = calculateRiskLevel(risk.probability, risk.impact);
           const levelBadge = { red: 'ALTO', yellow: 'MEDIO', green: 'BAJO' }[level];
           return `
@@ -3044,50 +3045,72 @@
         currentRiskId = null;
       };
 
-      window.editRisk = function(id) {
-        const risk = mockRisks.find(r => r.id === id);
-        if (!risk) return;
-        currentRiskId = id;
-        document.getElementById('riskModalTitle').textContent = 'Editar Riesgo';
-        document.getElementById('riskDescription').value = risk.description;
-        document.getElementById('riskProbability').value = risk.probability;
-        document.getElementById('riskImpact').value = risk.impact;
-        document.getElementById('riskResponse').value = risk.response;
-        document.getElementById('riskModal').classList.add('open');
+      window.editRisk = async function(id) {
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const response = await fetch(`${API_BASE}/projects/${projectId}/risks/${id}`);
+          if (!response.ok) throw new Error('Failed to load risk');
+          const risk = await response.json();
+          currentRiskId = id;
+          document.getElementById('riskModalTitle').textContent = 'Editar Riesgo';
+          document.getElementById('riskDescription').value = risk.description;
+          document.getElementById('riskProbability').value = risk.probability;
+          document.getElementById('riskImpact').value = risk.impact;
+          document.getElementById('riskResponse').value = risk.response;
+          document.getElementById('riskModal').classList.add('open');
+        } catch (error) {
+          console.error('Error loading risk:', error);
+          alert('Error al cargar el riesgo');
+        }
       };
 
-      window.saveRisk = function() {
-        const description = document.getElementById('riskDescription').value.trim();
-        const probability = parseInt(document.getElementById('riskProbability').value);
-        const impact = document.getElementById('riskImpact').value;
-        const response = document.getElementById('riskResponse').value.trim();
+      window.saveRisk = async function() {
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const description = document.getElementById('riskDescription').value.trim();
+          const probability = parseInt(document.getElementById('riskProbability').value);
+          const impact = document.getElementById('riskImpact').value;
+          const response = document.getElementById('riskResponse').value.trim();
 
-        if (!description || !probability || !impact || !response) {
-          alert('Por favor, completa todos los campos');
-          return;
-        }
-
-        if (currentRiskId) {
-          const risk = mockRisks.find(r => r.id === currentRiskId);
-          if (risk) {
-            risk.description = description;
-            risk.probability = probability;
-            risk.impact = impact;
-            risk.response = response;
+          if (!description || !probability || !impact || !response) {
+            alert('Por favor, completa todos los campos');
+            return;
           }
-        } else {
-          const newId = Math.max(...mockRisks.map(r => r.id), 0) + 1;
-          mockRisks.push({ id: newId, description, probability, impact, response });
+
+          const data = { description, probability, impact, response };
+          const method = currentRiskId ? 'PATCH' : 'POST';
+          const url = currentRiskId
+            ? `${API_BASE}/projects/${projectId}/risks/${currentRiskId}`
+            : `${API_BASE}/projects/${projectId}/risks`;
+
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (!res.ok) throw new Error('Failed to save risk');
+
+          loadRisks();
+          closeRiskModal();
+        } catch (error) {
+          console.error('Error saving risk:', error);
+          alert('Error al guardar el riesgo');
         }
+      };
 
-        renderRisksTable();
-        closeRiskModal();
-      }
-
-      window.deleteRisk = function(id) {
-        if (confirm('¿Eliminar este riesgo?')) {
-          mockRisks = mockRisks.filter(r => r.id !== id);
-          renderRisksTable();
+      window.deleteRisk = async function(id) {
+        if (!confirm('¿Eliminar este riesgo?')) return;
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const response = await fetch(`${API_BASE}/projects/${projectId}/risks/${id}`, {
+            method: 'DELETE'
+          });
+          if (!response.ok) throw new Error('Failed to delete risk');
+          loadRisks();
+        } catch (error) {
+          console.error('Error deleting risk:', error);
+          alert('Error al eliminar el riesgo');
         }
       };
 
@@ -3113,9 +3136,22 @@
       });
 
       // ── RAID LOG FUNCTIONS ──
-      window.renderRaidTable = function renderRaidTable() {
+      window.loadRAID = async function() {
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const response = await fetch(`${API_BASE}/projects/${projectId}/raid`);
+          if (!response.ok) throw new Error('Failed to load RAID log');
+          const raidItems = await response.json();
+          renderRaidTable(raidItems);
+        } catch (error) {
+          console.error('Error loading RAID log:', error);
+          document.getElementById('raid-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-gray-500">Error al cargar RAID log</td></tr>';
+        }
+      };
+
+      window.renderRaidTable = function renderRaidTable(raidItems) {
         const tbody = document.getElementById('raid-table-body');
-        tbody.innerHTML = mockRaid.map(raid => {
+        tbody.innerHTML = raidItems.map(raid => {
           const typeEmoji = { risk: '🔴', assumption: '🟠', issue: '🟡', dependency: '🔵' }[raid.type];
           const typeName = { risk: 'Riesgo', assumption: 'Suposición', issue: 'Problema', dependency: 'Dependencia' }[raid.type];
           const statusLabel = { open: 'Abierto', 'in-progress': 'En Progreso', resolved: 'Resuelto' }[raid.status];
@@ -3128,7 +3164,7 @@
                 </span>
               </td>
               <td class="font-medium">${escapeHtml(raid.description)}</td>
-              <td>${escapeHtml(raid.owner)}</td>
+              <td>${escapeHtml(raid.owner || '')}</td>
               <td>
                 <span class="raid-status ${raid.status}">
                   ${statusLabel}
@@ -3166,55 +3202,76 @@
         currentRaidId = null;
       };
 
-      window.editRaid = function(id) {
-        const raid = mockRaid.find(r => r.id === id);
-        if (!raid) return;
-        currentRaidId = id;
-        document.getElementById('raidModalTitle').textContent = 'Editar RAID';
-        document.getElementById('raidType').value = raid.type;
-        document.getElementById('raidDescription').value = raid.description;
-        document.getElementById('raidOwner').value = raid.owner;
-        document.getElementById('raidStatus').value = raid.status;
-        document.getElementById('raidImpact').value = raid.impact;
-        document.getElementById('raidModal').classList.add('open');
-      }
-
-      window.saveRaid = function() {
-        const type = document.getElementById('raidType').value;
-        const description = document.getElementById('raidDescription').value.trim();
-        const owner = document.getElementById('raidOwner').value.trim();
-        const status = document.getElementById('raidStatus').value;
-        const impact = document.getElementById('raidImpact').value;
-
-        if (!type || !description || !owner || !status || !impact) {
-          alert('Por favor, completa todos los campos');
-          return;
+      window.editRaid = async function(id) {
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const response = await fetch(`${API_BASE}/projects/${projectId}/raid/${id}`);
+          if (!response.ok) throw new Error('Failed to load RAID item');
+          const raid = await response.json();
+          currentRaidId = id;
+          document.getElementById('raidModalTitle').textContent = 'Editar RAID';
+          document.getElementById('raidType').value = raid.type;
+          document.getElementById('raidDescription').value = raid.description;
+          document.getElementById('raidOwner').value = raid.owner || '';
+          document.getElementById('raidStatus').value = raid.status;
+          document.getElementById('raidImpact').value = raid.impact;
+          document.getElementById('raidModal').classList.add('open');
+        } catch (error) {
+          console.error('Error loading RAID item:', error);
+          alert('Error al cargar el RAID item');
         }
+      };
 
-        if (currentRaidId) {
-          const raid = mockRaid.find(r => r.id === currentRaidId);
-          if (raid) {
-            raid.type = type;
-            raid.description = description;
-            raid.owner = owner;
-            raid.status = status;
-            raid.impact = impact;
+      window.saveRaid = async function() {
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const type = document.getElementById('raidType').value;
+          const description = document.getElementById('raidDescription').value.trim();
+          const owner = document.getElementById('raidOwner').value.trim();
+          const status = document.getElementById('raidStatus').value;
+          const impact = document.getElementById('raidImpact').value;
+
+          if (!type || !description || !status || !impact) {
+            alert('Por favor, completa todos los campos');
+            return;
           }
-        } else {
-          const newId = Math.max(...mockRaid.map(r => r.id), 0) + 1;
-          mockRaid.push({ id: newId, type, description, owner, status, impact });
-        }
 
-        renderRaidTable();
-        closeRaidModal();
-      }
+          const data = { type, description, owner, status, impact };
+          const method = currentRaidId ? 'PATCH' : 'POST';
+          const url = currentRaidId
+            ? `${API_BASE}/projects/${projectId}/raid/${currentRaidId}`
+            : `${API_BASE}/projects/${projectId}/raid`;
 
-      window.deleteRaid = function(id) {
-        if (confirm('¿Eliminar este RAID?')) {
-          mockRaid = mockRaid.filter(r => r.id !== id);
-          renderRaidTable();
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (!res.ok) throw new Error('Failed to save RAID item');
+
+          loadRAID();
+          closeRaidModal();
+        } catch (error) {
+          console.error('Error saving RAID item:', error);
+          alert('Error al guardar el RAID item');
         }
-      }
+      };
+
+      window.deleteRaid = async function(id) {
+        if (!confirm('¿Eliminar este RAID?')) return;
+        try {
+          const projectId = new URLSearchParams(window.location.search).get('id');
+          const response = await fetch(`${API_BASE}/projects/${projectId}/raid/${id}`, {
+            method: 'DELETE'
+          });
+          if (!response.ok) throw new Error('Failed to delete RAID item');
+          loadRAID();
+        } catch (error) {
+          console.error('Error deleting RAID item:', error);
+          alert('Error al eliminar el RAID item');
+        }
+      };
 
       document.getElementById('raidModal').addEventListener('click', function(e) {
         if (e.target === this) closeRaidModal();
@@ -3317,8 +3374,8 @@
         `).join('');
       };
 
-      renderRisksTable();
-      renderRaidTable();
+      loadRisks();
+      loadRAID();
 
       // Render KPI dashboard when analysis data is loaded
       if (analysisData) {
