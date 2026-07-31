@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LARA — Mockup Sección de Beneficios v2</title>
+  <style>
+    :root {
+      --color-primary: #17B8A0;
+      --color-secondary: #0B7B8C;
+      --color-accent: #9ED900;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fafafa;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+    /* Section Header */
+    .section-intro {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      padding: 0 1rem;
+    }
+
+    .section-intro h2 {
+      font-size: 2rem;
+      color: var(--color-secondary);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .section-intro p {
+      font-size: 1rem;
+      color: #6b7280;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Benefits Grid */
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      margin-bottom: 4rem;
+    }
+
+    /* Benefit Card - ADJUSTED FOR LARGER IMAGE */
+    .benefit-card {
+      background: white;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 0;
+      min-height: 420px;
+    }
+
+    .benefit-card.reverse {
+      grid-template-columns: 1fr 1.3fr;
+    }
+
+    /* Image Section - LARGER */
+    .benefit-image {
+      background: linear-gradient(135deg, #f0f9f8 0%, #e0f2f0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 420px;
+      position: relative;
+      border-right: 1px solid #e5e7eb;
+      padding: 2rem;
+    }
+
+    .benefit-card.reverse .benefit-image {
+      border-right: none;
+      border-left: 1px solid #e5e7eb;
+      order: 2;
+    }
+
+    .benefit-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Content Section */
+    .benefit-content {
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .benefit-card.reverse .benefit-content {
+      order: 1;
+    }
+
+    /* Badge */
+    .benefit-badge {
+      display: inline-block;
+      background: #f0fffe;
+      color: var(--color-secondary);
+      padding: 0.4rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      border: 1px solid #d1e8e5;
+      width: fit-content;
+    }
+
+    /* Problem Section */
+    .problem-block {
+      margin-bottom: 2rem;
+    }
+
+    .problem-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .problem-text {
+      font-size: 0.95rem;
+      color: #6b7280;
+      line-height: 1.6;
+      font-style: italic;
+      padding-left: 0.8rem;
+      border-left: 3px solid var(--color-accent);
+    }
+
+    /* Solution Section */
+    .solution-block {
+      margin-bottom: 1.8rem;
+      padding-bottom: 1.8rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .solution-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .solution-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-secondary);
+      margin-bottom: 0.6rem;
+    }
+
+    .solution-text {
+      font-size: 0.95rem;
+      color: #374151;
+      line-height: 1.6;
+    }
+
+    /* Impact Section */
+    .impact-block h4 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+      margin-top: 0;
+    }
+
+    .impact-list {
+      list-style: none;
+    }
+
+    .impact-list li {
+      font-size: 0.9rem;
+      color: #374151;
+      margin-bottom: 0.8rem;
+      padding-left: 1.8rem;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .impact-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--color-accent);
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .impact-list li strong {
+      color: var(--color-secondary);
+      font-weight: 600;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      color: white;
+      padding: 3rem 2rem;
+      text-align: center;
+      border-radius: 1rem;
+      margin: 4rem 0;
+    }
+
+    .cta-section h3 {
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .cta-section p {
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.95;
+    }
+
+    .btn-primary {
+      background: var(--color-accent);
+      color: #14532d;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .benefit-card {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .benefit-card.reverse {
+        grid-template-columns: 1fr;
+      }
+
+      .benefit-image {
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        min-height: 280px;
+      }
+
+      .benefit-card.reverse .benefit-image {
+        border-left: none;
+        border-bottom: 1px solid #e5e7eb;
+        order: auto;
+      }
+
+      .benefit-content {
+        padding: 1.8rem 1.5rem;
+      }
+
+      .solution-title {
+        font-size: 1.1rem;
+      }
+    }
+
+    /* Comparison Note */
+    .comparison-note {
+      background: #f0fffe;
+      border-left: 4px solid var(--color-primary);
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--color-secondary);
+    }
+
+    .comparison-note strong {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="comparison-note">
+      <strong>📐 V2 — Imagen Ampliada:</strong> Las imágenes ahora ocupan más espacio (grid 1.3fr | 1fr). Min-height: 420px para que sean más visibles.
+    </div>
+
+    <!-- Section Header -->
+    <div class="section-intro">
+      <h2>Cómo LARA Resuelve Tus Mayores Desafíos</h2>
+      <p>No es una herramienta más. Es la diferencia entre descubrir problemas a tiempo vs. cuando ya es demasiado tarde.</p>
+    </div>
+
+    <!-- Benefits Grid -->
+    <div class="benefits-grid">
+      <!-- Benefit 1: Risk Analysis -->
+      <div class="benefit-card">
+        <div class="benefit-image">
+          <img src="/pagina/vista-portafolio.png" alt="Análisis de Riesgo">
+        </div>
+        <div class="benefit-content">
+          <span class="benefit-badge">🎯 Anticipación de Riesgos</span>
+
+          <div class="problem-block">
+            <div class="problem-label">El Problema Hoy</div>
+            <div class="problem-text">"Descubres las desviaciones de presupuesto cuando ya es demasiado tarde—en la junta de seguimiento o peor, cuando el cliente se da cuenta."</div>
+          </div>
+
+          <div class="solution-block">
+            <div class="solution-label">La Solución LARA</div>
+            <div class="solution-title">Análisis de Riesgo Predictivo</div>
+            <div class="solution-text">LARA analiza patrones históricos e indicadores clave en tiempo real para alertarte sobre posibles sobrecostos y retrasos semanas antes de que ocurran.</div>
+          </div>
+
+          <div class="impact-block">
+            <h4>El Impacto</h4>
+            <ul class="impact-list">
+              <li><strong>Ahorra 80%</strong> del tiempo en auditorías manuales</li>
+              <li><strong>Protege márgenes</strong> previniendo fugas de presupuesto</li>
+              <li><strong>Reduce imprevistos</strong> en comités de seguimiento</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benefit 2: EVM Metrics (REVERSED) -->
+      <div class="benefit-card reverse">
+        <div class="benefit-image">
+          <img src="/pagina/metricas.png" alt="Métricas EVM">
+        </div>
+        <div class="benefit-content">
+          <span class="benefit-badge">📈 Control Financiero Real</span>
+
+          <div class="problem-block">
+            <div class="problem-label">El Problema Hoy</div>
+            <div class="problem-text">"Tus reportes siempre están atrasados. No sabes si estás ganando o perdiendo dinero hasta que cierras el mes."</div>
+          </div>
+
+          <div class="solution-block">
+            <div class="solution-label">La Solución LARA</div>
+            <div class="solution-title">Earned Value Management en Tiempo Real</div>
+            <div class="solution-text">Obtén claridad absoluta sobre el desempeño real de tus proyectos con métricas de Valor Ganado (CPI, SPI, EAC) actualizadas automáticamente.</div>
+          </div>
+
+          <div class="impact-block">
+            <h4>El Impacto</h4>
+            <ul class="impact-list">
+              <li><strong>Visibilidad 360°</strong>: presupuesto vs. valor entregado en un panel</li>
+              <li><strong>Pronósticos precisos</strong>: costo final estimado (EAC) al instante</li>
+              <li><strong>Decisiones rápidas</strong>: reajusta recursos basándote en datos reales</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benefit 3: Team Health -->
+      <div class="benefit-card">
+        <div class="benefit-image">
+          <img src="/pagina/vista-personas.png" alt="Salud del Equipo">
+        </div>
+        <div class="benefit-content">
+          <span class="benefit-badge">❤️ Salud del Equipo</span>
+
+          <div class="problem-block">
+            <div class="problem-label">El Problema Hoy</div>
+            <div class="problem-text">"No sabes quién está al borde del burnout hasta que alguien renuncia. La carga está desigual y nadie lo ve."</div>
+          </div>
+
+          <div class="solution-block">
+            <div class="solution-label">La Solución LARA</div>
+            <div class="solution-title">Monitoreo de Personas e Indicadores</div>
+            <div class="solution-text">LARA monitorea automáticamente la carga por persona, detecta patrones de sobrecarga y te alerta antes de que se generen problemas de retención.</div>
+          </div>
+
+          <div class="impact-block">
+            <h4>El Impacto</h4>
+            <ul class="impact-list">
+              <li><strong>Evita burnout</strong> detectando sobrecarga antes de que sea crítico</li>
+              <li><strong>Optimiza asignación</strong> con visibilidad de capacidad real por persona</li>
+              <li><strong>Retiene talento</strong>: equipos felices = menos rotación</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="cta-section">
+      <h3>🚀 Todo esto, automatizado en 5 minutos</h3>
+      <p>Importa tu Excel, conecta tu herramienta actual, y LARA comienza a trabajar. Sin implementación larga.</p>
+      <button class="btn-primary">Agendar Demo Gratis</button>
+    </div>
+  </div>
+</body>
+</html>
