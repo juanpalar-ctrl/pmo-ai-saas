@@ -106,6 +106,15 @@ const heavyLimiter = rateLimit({
   message: { success: false, error: 'Demasiadas solicitudes. Espera unos minutos.' },
 });
 
+// Risks/RAID limiter: more lenient for interactive CRUD operations
+const riskLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Demasiadas solicitudes. Espera unos minutos.' },
+});
+
 // HTTP request logging (skips static assets to reduce noise)
 app.use(pinoHttp({
   logger,
@@ -176,7 +185,7 @@ app.use('/api/portfolio', requireAuth, heavyLimiter, portfolioRouter);
 app.use('/api/analysis', requireAuth, heavyLimiter, analysisRouter);
 app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
 app.use('/api/team', requireAuth, heavyLimiter, teamRouter);
-app.use('/api/projects', requireAuth, heavyLimiter, risksRouter);
+app.use('/api/projects', requireAuth, riskLimiter, risksRouter);
 
 // Testing routes: public scheduled-run endpoint (for webhooks), others require admin auth
 const testingAuthMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
