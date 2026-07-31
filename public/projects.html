@@ -2623,25 +2623,116 @@
         } catch (_) {}
       }
 
+      function generateDynamicWelcome() {
+        if (!projectContext) {
+          return {
+            message: '¡Hola! 👋 Soy **LARA Assistant**, experta en Project Management. Puedo ayudarte a entender métricas, riesgos y metodologías. ¿Qué quieres aprender hoy?',
+            suggestions: [
+              '¿Qué significa el CPI?',
+              '¿Cómo interpreto el SPI?',
+              '¿Cuáles son los mejores indicadores de salud?',
+              '¿Cómo identifico riesgos?'
+            ]
+          };
+        }
+
+        const ctx = projectContext;
+        const metrics = ctx.metrics || {};
+        const risk = ctx.risk || {};
+        const economic = ctx.economic || {};
+        const ew = ctx.earlyWarnings || {};
+
+        let message = `¡Hola! 👋 Tengo acceso a **${ctx.projectName}**. Veo tus datos reales:\n\n`;
+        let suggestions = [];
+
+        // Analyze CPI (cost performance)
+        const cpi = parseFloat(metrics.cpi);
+        if (cpi > 0) {
+          if (cpi < 0.9) {
+            message += `🔴 **Tu CPI es ${cpi.toFixed(2)}** — gastas **${((1 - cpi) * 100).toFixed(0)}% más** de lo planeado por cada dólar de trabajo.\n`;
+            suggestions.push(`¿Cómo reducir el gasto? Actualmente en ${cpi.toFixed(2)}`);
+          } else if (cpi < 1) {
+            message += `🟡 **Tu CPI es ${cpi.toFixed(2)}** — estás ligeramente sobre presupuesto.\n`;
+            suggestions.push(`¿Cómo mejora el CPI de ${cpi.toFixed(2)} a 1.0?`);
+          } else {
+            message += `🟢 **Tu CPI es ${cpi.toFixed(2)}** — gastas **menos** de lo planeado. ¡Excelente!\n`;
+          }
+        }
+
+        // Analyze SPI (schedule performance)
+        const spi = parseFloat(metrics.spi);
+        if (spi > 0) {
+          if (spi < 0.9) {
+            message += `🔴 **Tu SPI es ${spi.toFixed(2)}** — vas **${((1 - spi) * 100).toFixed(0)}% más lento** de lo planeado.\n`;
+            suggestions.push(`¿Riesgos por retraso? SPI es ${spi.toFixed(2)}`);
+          } else if (spi < 1) {
+            message += `🟡 **Tu SPI es ${spi.toFixed(2)}** — vas un poco retrasado.\n`;
+          } else {
+            message += `🟢 **Tu SPI es ${spi.toFixed(2)}** — vas **adelantado**. ¡Muy bien!\n`;
+          }
+        }
+
+        // Add economic insight
+        if (economic.cost_of_delay && parseFloat(economic.cost_of_delay) > 0) {
+          const costDelay = parseFloat(economic.cost_of_delay);
+          message += `💰 **Costo del retraso:** $${costDelay.toLocaleString()} por semana.\n`;
+          if (spi < 1) {
+            suggestions.push(`¿Cuál es el costo de nuestro retraso actual?`);
+          }
+        }
+
+        // Add risk insight
+        if (risk.topRisks && risk.topRisks.length > 0) {
+          message += `⚠️ **${risk.topRisks.length} riesgo(s) detectado(s)** en tu proyecto.\n`;
+          suggestions.push(`¿Cuáles son mis riesgos principales?`);
+        }
+
+        // Add critical alerts
+        if (ew.criticalCount > 0) {
+          message += `\n🚨 **${ew.criticalCount} ALERTA(S) CRÍTICA(S)** requieren atención inmediata:\n${ew.summary}`;
+          suggestions.push(`¿Qué acciones tomar ahora?`);
+        } else if (ew.warnings && ew.warnings.length > 0) {
+          message += `\n⚠️ Hay **${ew.warnings.length} alerta(s)** de atención.\n`;
+          suggestions.push(`Mostrar alertas del proyecto`);
+        } else {
+          message += `\n✅ Tus métricas se ven estables en este momento.`;
+        }
+
+        message += `\n\n¿En qué te puedo ayudar?`;
+
+        // Ensure at least 4 suggestions
+        if (suggestions.length < 4) {
+          const defaults = [
+            `Analizar estado general de ${ctx.projectName}`,
+            `¿Cómo mejoro mis métricas?`,
+            `¿Qué metodología es mejor para este proyecto?`,
+            `¿Cuáles son las mejores prácticas?`
+          ];
+          for (const def of defaults) {
+            if (!suggestions.includes(def) && suggestions.length < 4) {
+              suggestions.push(def);
+            }
+          }
+        }
+
+        return { message, suggestions: suggestions.slice(0, 4) };
+      }
+
       function toggleChat() {
         const panel = document.getElementById('chat-panel');
         const isOpen = panel.classList.toggle('open');
         if (isOpen && !chatInitialized) {
           chatInitialized = true;
-          const ew = projectContext?.earlyWarnings;
-          let welcomeMsg = '¡Hola! 👋 Soy **LARA Assistant**, tu guía experta en Project Management.\n\n';
-          if (projectContext) {
-            if (ew?.criticalCount > 0) {
-              welcomeMsg += `🚨 **Alerta:** Detecto **${ew.criticalCount} problema(s) CRÍTICO(S)** en **${projectContext.projectName}** que requieren atención inmediata.\n\n${ew.summary}\n\n¿Quieres que te explique qué hacer?`;
-            } else if (ew?.hasAlerts) {
-              welcomeMsg += `⚠️ Tengo acceso a las métricas de **${projectContext.projectName}**. Hay **${ew.warnings?.length} alerta(s)** que vale la pena revisar. ¿Empezamos por ahí?`;
-            } else {
-              welcomeMsg += `Tengo acceso a las métricas de **${projectContext.projectName}**. Todo parece estable. ¿En qué te puedo ayudar?`;
-            }
-          } else {
-            welcomeMsg += 'Puedo ayudarte a entender métricas, riesgos y metodologías. ¿Qué quieres aprender hoy?';
+          const welcome = generateDynamicWelcome();
+          addBotMessage(welcome.message);
+
+          // Update suggestions with dynamic ones
+          const suggestionsContainer = document.getElementById('chat-suggestions');
+          if (suggestionsContainer && welcome.suggestions.length > 0) {
+            suggestionsContainer.innerHTML = welcome.suggestions
+              .map(text => `<button class="suggestion-chip" onclick="sendSuggestion('${text.replace(/'/g, "\\'")}')">${escapeHtml(text)}</button>`)
+              .join('');
           }
-          addBotMessage(welcomeMsg);
         }
       }
       window.toggleChat = toggleChat;

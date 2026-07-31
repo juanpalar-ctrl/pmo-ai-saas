@@ -61,18 +61,18 @@ router.post('/', async (req: Request, res: Response) => {
 
     const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 
-    // Inject project context as first user message if available
+    // Inject project context as first user message if available (ALL messages, not just first 2)
     if (projectContext && history.length === 0) {
       const ctx = buildContextMessage(projectContext);
       if (ctx) {
         messages.push({ role: 'user', content: ctx });
-        const ew = projectContext.earlyWarnings;
-        const alertIntro = ew?.criticalCount > 0
-          ? `⚠️ **Atención:** Detecto ${ew.criticalCount} alerta(s) CRÍTICA(S) en tu proyecto. Te las explico en detalle cuando quieras. ¿Por dónde empezamos?`
-          : ew?.hasAlerts
-          ? `Hay ${ew.warnings?.length || 0} alerta(s) de atención en tu proyecto. Puedo explicarte cada una. ¿Qué necesitas?`
-          : '¡Perfecto! Ya tengo el contexto completo de tu proyecto. Puedo ver las métricas, riesgos y análisis económico. ¿En qué te puedo ayudar?';
-        messages.push({ role: 'assistant', content: alertIntro });
+      }
+    } else if (projectContext && history.length > 0) {
+      // Keep injecting context every conversation to ensure LLM always has access to real data
+      const ctx = buildContextMessage(projectContext);
+      if (ctx) {
+        // Insert context as system-level data (via user message) before current turn
+        messages.push({ role: 'user', content: `[CURRENT PROJECT DATA]\n${ctx}` });
       }
     }
 
