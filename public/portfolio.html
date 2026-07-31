@@ -18,6 +18,82 @@
        Combinado con formato compacto ($57.2M) mantiene los valores en una línea. */
     .kpi-number { font-size: clamp(1.2rem, 1.4vw + 0.6rem, 2rem); font-weight: 800; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
     @media (max-width: 639px) { .kpi-number { white-space: normal; } }
+
+    /* ── Chat Widget ── */
+    #chat-fab {
+      position: fixed; bottom: 28px; right: 28px; z-index: 1000;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      color: white; border: none; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(11,123,140,0.45);
+      font-size: 24px; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #chat-fab:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(11,123,140,0.55); }
+
+    #chat-panel {
+      position: fixed; bottom: 96px; right: 28px; z-index: 1000;
+      width: 380px; max-width: calc(100vw - 24px); max-height: 560px;
+      background: white; border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      display: none; flex-direction: column; overflow: hidden;
+    }
+    #chat-panel.open { display: flex; }
+
+    #chat-header {
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      color: white; padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    #chat-header .avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    #chat-header .info { flex: 1; }
+    #chat-header .info strong { display: block; font-size: 0.95em; }
+    #chat-header .info span { font-size: 0.75em; opacity: 0.85; }
+    #chat-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0 4px; }
+
+    #chat-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      background: #f9fafb;
+    }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 0.875em; line-height: 1.5; }
+    .msg.bot { background: white; border: 1px solid #e5e7eb; border-bottom-left-radius: 4px; align-self: flex-start; color: #1f2937; }
+    .msg.user { background: linear-gradient(135deg, #17B8A0, #0B7B8C); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
+    .msg.bot strong { color: #0B7B8C; }
+    .msg.typing { color: #9ca3af; font-style: italic; }
+
+    #chat-input-row {
+      display: flex; gap: 8px; padding: 12px 16px;
+      border-top: 1px solid #e5e7eb; background: white;
+    }
+    #chat-input {
+      flex: 1; padding: 10px 14px; border: 1.5px solid #e5e7eb;
+      border-radius: 24px; font-size: 0.875em; outline: none;
+      font-family: inherit; resize: none; max-height: 80px;
+      transition: border-color 0.2s;
+    }
+    #chat-input:focus { border-color: #17B8A0; }
+    #chat-send {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #17B8A0, #0B7B8C);
+      border: none; color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.2s;
+    }
+    #chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #chat-suggestions { padding: 0 16px 12px; display: flex; flex-wrap: wrap; gap: 6px; background: white; }
+    .suggestion-chip {
+      padding: 4px 12px; border-radius: 20px; font-size: 0.78em;
+      border: 1.5px solid #17B8A0; color: #0B7B8C; cursor: pointer;
+      background: white; transition: all 0.15s;
+    }
+    .suggestion-chip:hover { background: #17B8A0; color: white; }
   </style>
 </head>
 <body>
@@ -417,6 +493,238 @@
     }
 
     init();
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       LARA CHAT WIDGET (Portfolio/C-Level)
+  ══════════════════════════════════════════ -->
+  <button id="chat-fab" onclick="toggleChat()" title="Habla con LARA sobre tu portafolio">🤖</button>
+
+  <div id="chat-panel">
+    <div id="chat-header">
+      <div class="avatar">🤖</div>
+      <div class="info">
+        <strong>LARA Assistant</strong>
+        <span>Chief Portfolio Advisor</span>
+      </div>
+      <button id="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+
+    <div id="chat-messages"></div>
+
+    <div id="chat-suggestions">
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Cuál es la salud de mi portafolio?')">Salud portafolio</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué proyectos están en riesgo?')">Proyectos críticos</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Dónde están los riesgos?')">Riesgos concentrados</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué hago ahora?')">Acciones inmediatas</button>
+    </div>
+
+    <div id="chat-input-row">
+      <textarea id="chat-input" placeholder="Pregúntame sobre tu portafolio..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+      <button id="chat-send" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      let chatHistory = [];
+      let portfolioContext = null;
+      let chatInitialized = false;
+
+      // Load portfolio context
+      async function loadChatContext() {
+        try {
+          const res = await fetch(`/api/chat/context/portfolio`, { credentials: 'include' });
+          const data = await res.json();
+          if (data.success && data.context) portfolioContext = window.portfolioContext = data.context;
+        } catch (_) {}
+      }
+
+      function generateDynamicPortfolioWelcome() {
+        if (!portfolioContext) {
+          return {
+            message: '¡Hola! 👋 Soy **LARA Assistant**, Chief Portfolio Advisor. Puedo ayudarte a tomar decisiones estratégicas sobre tu portafolio. ¿Qué quieres saber?',
+            suggestions: [
+              '¿Cuál es la salud de mi portafolio?',
+              '¿Qué proyectos están en riesgo?',
+              '¿Dónde concentró riesgos?',
+              '¿Qué hago ahora?'
+            ]
+          };
+        }
+
+        const ctx = portfolioContext;
+        let message = `¡Hola! 👋 Tengo acceso a tu portafolio con **${ctx.projectCount} proyecto(s)**.\n\n`;
+        let suggestions = [];
+
+        // Portfolio health summary
+        const healthy = ctx.projectCount - (ctx.criticalCount || 0) - (ctx.atRiskCount || 0);
+        message += `🎯 **Estado:**\n`;
+        message += `- 🟢 ${healthy} saludable(s)\n`;
+        message += `- 🟡 ${ctx.atRiskCount || 0} en riesgo\n`;
+        message += `- 🔴 ${ctx.criticalCount || 0} crítico(s)\n\n`;
+
+        // Budget consolidation
+        if (ctx.totalBudget && ctx.totalSpent) {
+          const variance = ((ctx.totalSpent / ctx.totalBudget - 1) * 100).toFixed(1);
+          message += `💰 **Presupuesto:**\n`;
+          message += `- Total: $${(ctx.totalBudget / 1000).toFixed(0)}K presupuestado\n`;
+          message += `- Gastado: $${(ctx.totalSpent / 1000).toFixed(0)}K (${variance}% desviación)\n`;
+          message += `- CPI: ${ctx.portfolioCPI}\n\n`;
+
+          if (parseFloat(ctx.portfolioCPI) < 0.9) {
+            suggestions.push('¿Cómo reduzco el gasto del portafolio?');
+          }
+        }
+
+        // Risk concentration
+        if (ctx.topRisks && ctx.topRisks.length > 0) {
+          message += `⚠️ **Top ${Math.min(3, ctx.topRisks.length)} Riesgos**\n`;
+          ctx.topRisks.slice(0, 3).forEach(r => {
+            message += `- ${r.title || r.description}\n`;
+          });
+          suggestions.push('¿Cómo gestiono estos riesgos?');
+        }
+
+        // Overallocated resources
+        if (ctx.overallocatedResources && ctx.overallocatedResources.length > 0) {
+          message += `\n⚡ **Personas Sobrecargadas:**\n`;
+          ctx.overallocatedResources.slice(0, 2).forEach(r => {
+            message += `- ${r.name} (en ${r.projects.length} proyectos)\n`;
+          });
+          suggestions.push('¿Cómo redistribuyo recursos?');
+        }
+
+        message += `\n¿En qué te puedo ayudar?`;
+
+        if (suggestions.length < 4) {
+          const defaults = [
+            'Analizar decisiones estratégicas del portafolio',
+            '¿Cuál es el impacto en ROI?',
+            '¿Qué proyectos cancelar o escalar?',
+            'Prioritize misaligned projects'
+          ];
+          for (const def of defaults) {
+            if (!suggestions.includes(def) && suggestions.length < 4) {
+              suggestions.push(def);
+            }
+          }
+        }
+
+        return { message, suggestions: suggestions.slice(0, 4) };
+      }
+
+      function toggleChat() {
+        const panel = document.getElementById('chat-panel');
+        const isOpen = panel.classList.toggle('open');
+        if (isOpen && !chatInitialized) {
+          chatInitialized = true;
+          const welcome = generateDynamicPortfolioWelcome();
+          addBotMessage(welcome.message);
+
+          const suggestionsContainer = document.getElementById('chat-suggestions');
+          if (suggestionsContainer && welcome.suggestions.length > 0) {
+            suggestionsContainer.innerHTML = welcome.suggestions
+              .map(text => `<button class="suggestion-chip" onclick="sendSuggestion('${text.replace(/'/g, "\\'")}')">${escapeHtml(text)}</button>`)
+              .join('');
+          }
+        }
+      }
+      window.toggleChat = toggleChat;
+
+      function addBotMessage(text, isTyping = false) {
+        const msgs = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'msg bot' + (isTyping ? ' typing' : '');
+        div.innerHTML = isTyping ? '✦ Escribiendo...' : formatMarkdown(text);
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div;
+      }
+
+      function addUserMessage(text) {
+        const msgs = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'msg user';
+        div.textContent = text;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      function formatMarkdown(text) {
+        return escapeHtml(text)
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:0.9em">$1</code>')
+          .replace(/^### (.*$)/gm, '<strong style="color:#0B7B8C;display:block;margin-top:8px">$1</strong>')
+          .replace(/^## (.*$)/gm, '<strong style="color:#0B7B8C;font-size:1.05em;display:block;margin-top:8px">$1</strong>')
+          .replace(/^- (.*$)/gm, '&bull; $1<br>')
+          .replace(/\n/g, '<br>');
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+        addUserMessage(text);
+        chatHistory.push({ role: 'user', content: text });
+
+        const sendBtn = document.getElementById('chat-send');
+        sendBtn.disabled = true;
+        const typingDiv = addBotMessage('', true);
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text,
+              history: chatHistory.slice(-10),
+              projectContext: chatHistory.length <= 2 ? portfolioContext : null,
+              lang: (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es',
+            }),
+          });
+          const data = await res.json();
+          typingDiv.remove();
+
+          if (data.success) {
+            chatHistory.push({ role: 'assistant', content: data.reply });
+            addBotMessage(data.reply, false, data.actions || []);
+            document.getElementById('chat-suggestions').style.display = 'none';
+          } else {
+            addBotMessage('Lo siento, ocurrió un error. Por favor intenta de nuevo.');
+          }
+        } catch (_) {
+          typingDiv.remove();
+          addBotMessage('Error de conexión. Verifica tu internet e intenta de nuevo.');
+        } finally {
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      }
+      window.sendMessage = sendMessage;
+
+      function sendSuggestion(text) {
+        document.getElementById('chat-input').value = text;
+        sendMessage();
+      }
+      window.sendSuggestion = sendSuggestion;
+
+      // Initialize on page load
+      window.addEventListener('load', () => {
+        loadChatContext();
+      });
+    })();
   </script>
 </body>
 </html>

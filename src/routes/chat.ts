@@ -52,6 +52,33 @@ NO incluyas el bloque <actions> cuando el usuario solo hace preguntas conceptual
 ## Idioma
 Responde siempre en español, a menos que el usuario escriba en otro idioma.`;
 
+const PORTFOLIO_PROMPT = `Eres LARA Assistant, Chief Portfolio Advisor con 20 años de experiencia en gestión de carteras empresariales. Tu misión es ayudar a C-Level y PMO a tomar decisiones estratégicas sobre asignación de recursos, priorización de riesgos e impacto financiero.
+
+## Tu personalidad
+- Ejecutivo: hablas el lenguaje de ROI, revenue at stake, valor de negocio
+- Analítico: ves patrones y concentración de riesgos
+- Accionable: recomiendas qué HACER ahora, no solo qué está mal
+- Directo: no endulzas malas noticias, pero siempre ofreces alternativas
+
+## Aspectos que dominas
+- **Portfolio Health**: análisis consolidado de múltiples proyectos
+- **Risk Concentration**: detectar si todos los huevos están en una canasta
+- **Resource Contention**: personas sobrecargadas, cuellos de botella
+- **Critical Path**: qué proyecto bloquea a otros
+- **Budget Variance**: dónde se está desviando presupuesto
+- **ROI & Business Impact**: qué proyectos generan más valor
+- **Strategic Decisions**: cancelar, escalar, o replantear un proyecto
+
+## Cómo responder
+1. Abre con el número: "De tus 5 proyectos, 2 están en riesgo crítico"
+2. Contexto ejecutivo: "Esto representa $X revenue at stake"
+3. Recomendación: "Prioridad 1: Redeploy recursos de ProjectX a ProjectY"
+4. Impacto: "Esto mejora tu CPI global de 0.78 a 0.82"
+5. Máximo 300 palabras, sé directo
+
+## Idioma
+Responde siempre en español, a menos que el usuario escriba en otro idioma.`;
+
 const TEAM_HEALTH_PROMPT = `Eres LARA Assistant, especialista en Salud y Bienestar de Equipos con 15 años de experiencia en gestión de talento. Tu misión es ayudar a PMs y líderes a construir equipos saludables, evitar burnout y mejorar la moral.
 
 ## Tu personalidad
@@ -94,13 +121,20 @@ router.post('/', async (req: Request, res: Response) => {
 
     const messages: { role: 'user' | 'assistant'; content: string }[] = [];
 
-    // Detect context type: team or project
+    // Detect context type: portfolio, team, or project
+    const isPortfolioContext = projectContext && projectContext.type === 'portfolio';
     const isTeamContext = projectContext && (projectContext.teamHealth || projectContext.teamMembers);
-    const systemPrompt = isTeamContext ? TEAM_HEALTH_PROMPT : SYSTEM_PROMPT;
+    const systemPrompt = isPortfolioContext
+      ? PORTFOLIO_PROMPT
+      : isTeamContext
+      ? TEAM_HEALTH_PROMPT
+      : SYSTEM_PROMPT;
 
     // Inject project context as first user message if available (ALL messages, not just first 2)
     if (projectContext && history.length === 0) {
-      const ctx = isTeamContext
+      const ctx = isPortfolioContext
+        ? buildPortfolioContextMessage(projectContext)
+        : isTeamContext
         ? buildTeamContextMessage(projectContext)
         : buildContextMessage(projectContext);
       if (ctx) {
@@ -108,12 +142,15 @@ router.post('/', async (req: Request, res: Response) => {
       }
     } else if (projectContext && history.length > 0) {
       // Keep injecting context every conversation to ensure LLM always has access to real data
-      const ctx = isTeamContext
+      const ctx = isPortfolioContext
+        ? buildPortfolioContextMessage(projectContext)
+        : isTeamContext
         ? buildTeamContextMessage(projectContext)
         : buildContextMessage(projectContext);
       if (ctx) {
         // Insert context as system-level data (via user message) before current turn
-        messages.push({ role: 'user', content: `[CURRENT ${isTeamContext ? 'TEAM' : 'PROJECT'} DATA]\n${ctx}` });
+        const contextType = isPortfolioContext ? 'PORTFOLIO' : isTeamContext ? 'TEAM' : 'PROJECT';
+        messages.push({ role: 'user', content: `[CURRENT ${contextType} DATA]\n${ctx}` });
       }
     }
 
@@ -315,6 +352,97 @@ router.get('/context/:projectId', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/chat/context/portfolio — fetch portfolio-wide metrics to seed chat
+router.get('/context/portfolio', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthRequest).user!.id;
+
+    // Fetch all projects for this user with their latest analysis
+    const result = await pool.query(
+      `SELECT pd.id, pd.projectname, aa.output
+       FROM project_data pd
+       LEFT JOIN ai_analyses aa ON aa.projectid = pd.projectid AND aa.user_id = pd.user_id
+       WHERE pd.user_id = $1
+       ORDER BY aa.generatedat DESC`,
+      [userId]
+    );
+
+    if (!result.rows || result.rows.length === 0) {
+      return res.json({ success: true, context: null });
+    }
+
+    // Build portfolio-wide metrics
+    const projects = result.rows.map(row => ({
+      id: row.id,
+      name: row.projectname,
+      metrics: row.output?.metrics || {},
+      risk: row.output?.risk || {},
+      economic: row.output?.economic || {},
+      health: row.output?.health || {},
+      earlyWarnings: row.output?.earlyWarnings || null,
+    }));
+
+    // Aggregate portfolio data
+    const projectCount = projects.length;
+    const criticalCount = projects.filter(p => p.risk?.analysis?.overallRiskScore === 'CRITICAL').length;
+    const atRiskCount = projects.filter(p =>
+      parseFloat(p.metrics?.spi) < 0.9 || parseFloat(p.metrics?.cpi) < 0.9
+    ).length;
+
+    // Portfolio CPI (weighted average)
+    let totalAC = 0, totalPV = 0;
+    projects.forEach(p => {
+      totalAC += parseFloat(p.metrics?.ac) || 0;
+      totalPV += parseFloat(p.metrics?.pv) || 0;
+    });
+    const portfolioCPI = totalPV > 0 ? (totalAC / totalPV).toFixed(2) : 'N/A';
+
+    // Critical resources (people in burnout across projects)
+    const allTeamMembers = new Map();
+    projects.forEach(p => {
+      const members = p.health?.members || [];
+      members.forEach((m: any) => {
+        if (!allTeamMembers.has(m.id)) {
+          allTeamMembers.set(m.id, { ...m, projects: [p.name] });
+        } else {
+          allTeamMembers.get(m.id).projects.push(p.name);
+        }
+      });
+    });
+
+    const overallocatedResources = Array.from(allTeamMembers.values())
+      .filter((m: any) => m.projects.length > 1 && (m.burnoutRisk === 'high' || m.wellbeingScore < 0.5))
+      .slice(0, 5);
+
+    res.json({
+      success: true,
+      context: {
+        type: 'portfolio',
+        projectCount,
+        criticalCount,
+        atRiskCount,
+        portfolioCPI,
+        totalBudget: totalPV,
+        totalSpent: totalAC,
+        projects: projects.map(p => ({
+          name: p.name,
+          cpi: parseFloat(p.metrics?.cpi) || 0,
+          spi: parseFloat(p.metrics?.spi) || 0,
+          riskScore: p.risk?.analysis?.overallRiskScore || 'LOW',
+          status: parseFloat(p.metrics?.spi) < 0.9 ? 'delayed' :
+                  parseFloat(p.metrics?.cpi) < 0.9 ? 'over_budget' : 'on_track',
+        })),
+        overallocatedResources,
+        topRisks: projects
+          .flatMap(p => (p.risk?.analysis?.topRisks || []).map((r: any) => ({ ...r, project: p.name })))
+          .slice(0, 5),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: errorMessage(error) });
+  }
+});
+
 // GET /api/chat/context/team/:projectId — fetch team health data to seed chat
 router.get('/context/team/:projectId', async (req: Request, res: Response) => {
   try {
@@ -370,6 +498,63 @@ interface ChatAction {
   id: string;
   label: string;
   intent: string;
+}
+
+function buildPortfolioContextMessage(ctx: any | null | undefined): string {
+  if (!ctx) return '';
+  const parts: string[] = [`## Resumen de Portafolio`];
+
+  if (ctx.projectCount) {
+    parts.push(`\n### Estado Global
+- Total de proyectos: ${ctx.projectCount}
+- En riesgo crítico: ${ctx.criticalCount || 0}
+- Retrasados o sobrepresupuestados: ${ctx.atRiskCount || 0}`);
+  }
+
+  if (ctx.totalBudget && ctx.totalSpent) {
+    const variance = ((ctx.totalSpent / ctx.totalBudget - 1) * 100).toFixed(1);
+    parts.push(`\n### Presupuesto Consolidado
+- Presupuestado: $${(ctx.totalBudget / 1000).toFixed(0)}K
+- Gastado: $${(ctx.totalSpent / 1000).toFixed(0)}K
+- Desviación: ${variance}% ${parseFloat(variance) > 0 ? '(SOBRE)' : '(BAJO)'}
+- CPI Portfolio: ${ctx.portfolioCPI}`);
+  }
+
+  if (ctx.projects && ctx.projects.length > 0) {
+    parts.push(`\n### Proyectos por Estado`);
+    const onTrack = ctx.projects.filter((p: any) => p.status === 'on_track').length;
+    const delayed = ctx.projects.filter((p: any) => p.status === 'delayed').length;
+    const overBudget = ctx.projects.filter((p: any) => p.status === 'over_budget').length;
+
+    parts.push(`- ✅ Al día: ${onTrack}`);
+    parts.push(`- ⚠️ Retrasados: ${delayed}`);
+    parts.push(`- 🔴 Sobre presupuesto: ${overBudget}`);
+
+    const criticalProjects = ctx.projects.filter((p: any) => p.riskScore === 'CRITICAL');
+    if (criticalProjects.length > 0) {
+      parts.push(`\n### Proyectos en Riesgo Crítico`);
+      criticalProjects.slice(0, 3).forEach((p: any) => {
+        parts.push(`- **${p.name}**: CPI ${p.cpi.toFixed(2)}, SPI ${p.spi.toFixed(2)}`);
+      });
+    }
+  }
+
+  if (ctx.overallocatedResources && ctx.overallocatedResources.length > 0) {
+    parts.push(`\n### Recursos Críticos (Personas Sobrecargadas)`);
+    ctx.overallocatedResources.forEach((r: any) => {
+      parts.push(`- **${r.name}**: En ${r.projects.length} proyectos (${r.projects.join(', ')})`);
+    });
+  }
+
+  if (ctx.topRisks && ctx.topRisks.length > 0) {
+    parts.push(`\n### Top Riesgos Consolidados`);
+    ctx.topRisks.slice(0, 3).forEach((risk: any) => {
+      parts.push(`- ${risk.title || risk.description} (${risk.project})`);
+    });
+  }
+
+  parts.push('\nPor favor, úsalo como contexto para responder mis preguntas sobre decisiones estratégicas del portafolio.');
+  return parts.join('\n');
 }
 
 function buildTeamContextMessage(ctx: any | null | undefined): string {
