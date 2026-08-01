@@ -796,13 +796,7 @@
       </div>
       <!-- Stakeholders Hint - Vertical Text when collapsed -->
       <div class="stakeholders-hint flex-1">Stakeholders</div>
-      <!-- Sidebar Collapse Hint Message - Only visible when collapsed -->
-<<<<<<< HEAD
-      <div id="sidebar-hint-message" class="flex-1 flex items-center justify-center" style="min-height: 200px; transform-origin: center;">
-        <span style="font-weight: 700; font-size: 16px; letter-spacing: 2px; color: white; white-space: nowrap; transform: rotate(-90deg);">👥 STAKEHOLDERS</span>
-      </div>
-=======
->>>>>>> 6e80900 (style: add vertical stakeholders text to collapsed sidebar)
+      <!-- Button to add stakeholders -->
       <div class="p-4 border-t border-teal-200 flex-shrink-0">
         <button onclick="openAddStakeholderModal()" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white font-semibold text-sm py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-plus"></i> Agregar Stakeholder
@@ -851,9 +845,32 @@
             <button onclick="toggleAdminPanel()" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
           </div>
 
-          <div class="mb-6">
+          <!-- Admin Tabs -->
+          <div class="mb-6 border-b border-teal-200">
+            <div class="flex gap-2 mb-4">
+              <button onclick="switchAdminTab('pending')" id="admin-tab-pending" class="px-4 py-2 font-semibold text-sm rounded-lg bg-teal-100 border-b-2 border-teal-600 text-teal-700 transition">
+                ⏳ Pendientes
+              </button>
+              <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-4 py-2 font-semibold text-sm rounded-lg hover:bg-teal-50 text-gray-700 transition">
+                👥 Todos los Usuarios
+              </button>
+            </div>
+          </div>
+
+          <!-- Usuarios Pendientes Section -->
+          <div id="admin-pending-section" class="mb-6">
             <h3 class="font-semibold text-lg text-gray-800 mb-4">Usuarios Pendientes de Aprobación</h3>
             <div id="pending-users-list" class="space-y-3">
+              <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin"></i> Cargando...
+              </div>
+            </div>
+          </div>
+
+          <!-- Todos los Usuarios Section -->
+          <div id="admin-users-section" style="display: none;" class="mb-6">
+            <h3 class="font-semibold text-lg text-gray-800 mb-4">Gestionar Usuarios</h3>
+            <div id="all-users-list" class="space-y-3">
               <div class="text-center text-gray-500 py-8">
                 <i class="fas fa-spinner fa-spin"></i> Cargando...
               </div>
@@ -1450,6 +1467,86 @@
           loadPendingUsers();
         } else {
           alert('❌ Error: ' + (data.error || 'No se pudo rechazar'));
+        }
+      } catch (error) {
+        alert('❌ Error al procesar: ' + error.message);
+      }
+    }
+
+    function switchAdminTab(tab) {
+      // Actualizar estilos de tabs
+      const pendingTab = document.getElementById('admin-tab-pending');
+      const usersTab = document.getElementById('admin-tab-users');
+
+      if (tab === 'pending') {
+        pendingTab.classList.add('bg-teal-100', 'border-b-2', 'border-teal-600', 'text-teal-700');
+        pendingTab.classList.remove('bg-white', 'text-gray-700');
+        usersTab.classList.remove('bg-teal-100', 'border-b-2', 'border-teal-600', 'text-teal-700');
+        usersTab.classList.add('bg-white', 'text-gray-700');
+      } else {
+        usersTab.classList.add('bg-teal-100', 'border-b-2', 'border-teal-600', 'text-teal-700');
+        usersTab.classList.remove('bg-white', 'text-gray-700');
+        pendingTab.classList.remove('bg-teal-100', 'border-b-2', 'border-teal-600', 'text-teal-700');
+        pendingTab.classList.add('bg-white', 'text-gray-700');
+      }
+
+      // Mostrar/ocultar secciones
+      document.getElementById('admin-pending-section').style.display = tab === 'pending' ? 'block' : 'none';
+      document.getElementById('admin-users-section').style.display = tab === 'users' ? 'block' : 'none';
+
+      if (tab === 'users') {
+        loadAllUsers();
+      }
+    }
+
+    async function loadAllUsers() {
+      try {
+        const res = await fetch('/api/admin/all-users');
+        const data = await res.json();
+
+        if (!data.users || data.users.length === 0) {
+          document.getElementById('all-users-list').innerHTML =
+            '<p class="text-gray-500 text-center py-8">No hay usuarios</p>';
+          return;
+        }
+
+        const html = data.users.map(user => `
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-gray-800">${escapeHtml(user.email)}</p>
+              <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString('es-MX')} • Estado: <span class="${user.status === 'approved' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}">${user.status === 'approved' ? '✓ Aprobado' : '✕ Rechazado'}</span></p>
+            </div>
+            <button onclick="deleteUserConfirm('${user.id}', '${escapeHtml(user.email)}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+              🗑️ Eliminar
+            </button>
+          </div>
+        `).join('');
+
+        document.getElementById('all-users-list').innerHTML = html;
+      } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('all-users-list').innerHTML =
+          '<p class="text-red-500 text-center py-4">Error cargando usuarios</p>';
+      }
+    }
+
+    async function deleteUserConfirm(userId, userEmail) {
+      if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${userEmail}?\n\nEsta acción no se puede deshacer.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert('✓ Usuario eliminado correctamente');
+          loadAllUsers();
+        } else {
+          alert('❌ Error: ' + (data.error || 'No se pudo eliminar'));
         }
       } catch (error) {
         alert('❌ Error al procesar: ' + error.message);
