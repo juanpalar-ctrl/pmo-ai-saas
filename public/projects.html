@@ -439,6 +439,27 @@
     .collapse-btn { padding: 8px 6px !important; min-width: auto; }
     .collapse-btn-text { margin-left: 4px; font-size: 13px; }
 
+    /* ── Stakeholders Vertical Text (Collapsed Sidebar) ── */
+    .stakeholders-hint {
+      display: none;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      color: #17B8A0;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 16px 12px;
+      flex: 1;
+    }
+    #history-sidebar.collapsed .stakeholders-hint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 300px;
+    }
+
     @media (max-width: 767px) {
       #history-sidebar { width: calc(85vw); }
       #history-sidebar.collapsed { width: calc(85vw); display: none; }
@@ -773,10 +794,15 @@
       <div id="stakeholders-list" class="p-4 space-y-2 flex-1 overflow-y-auto">
         <div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
       </div>
+      <!-- Stakeholders Hint - Vertical Text when collapsed -->
+      <div class="stakeholders-hint flex-1">Stakeholders</div>
       <!-- Sidebar Collapse Hint Message - Only visible when collapsed -->
+<<<<<<< HEAD
       <div id="sidebar-hint-message" class="flex-1 flex items-center justify-center" style="min-height: 200px; transform-origin: center;">
         <span style="font-weight: 700; font-size: 16px; letter-spacing: 2px; color: white; white-space: nowrap; transform: rotate(-90deg);">👥 STAKEHOLDERS</span>
       </div>
+=======
+>>>>>>> 6e80900 (style: add vertical stakeholders text to collapsed sidebar)
       <div class="p-4 border-t border-teal-200 flex-shrink-0">
         <button onclick="openAddStakeholderModal()" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white font-semibold text-sm py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-plus"></i> Agregar Stakeholder
@@ -1337,8 +1363,11 @@
       switchFramework(activeFramework);
       loadReports();
       renderTeamSummary();
-      await loadRisks();
-      await loadRAID();
+      const projectId = new URLSearchParams(window.location.search).get('id');
+      if (projectId) {
+        await loadRisks();
+        await loadRAID();
+      }
     };
 
     function toggleAdminPanel() {
@@ -1488,11 +1517,6 @@
         } else {
           stakeholdersList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Sin stakeholders registrados.<br>Agrega el primero haciendo clic en el botón.</p>';
         }
-        // Show hint if sidebar is collapsed
-        const sidebar = document.getElementById('history-sidebar');
-        if (sidebar.classList.contains('collapsed')) {
-          showSidebarHint();
-        }
       } catch (err) {
         console.error('Error loading stakeholders:', err);
         document.getElementById('stakeholders-list').innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Error cargando stakeholders</p>';
@@ -1514,7 +1538,6 @@
 
     function toggleSidebarCollapse() {
       const sidebar = document.getElementById('history-sidebar');
-      const hintMsg = document.getElementById('sidebar-hint-message');
       const stakeholdersList = document.getElementById('stakeholders-list');
       const addBtn = sidebar.querySelector('button[onclick*="openAddStakeholder"]');
 
@@ -1522,30 +1545,18 @@
       const btn = document.querySelector('.collapse-btn i');
 
       if (sidebar.classList.contains('collapsed')) {
-        // Mostrar solo el mensaje vertical, ocultar lista
         btn.classList.remove('fa-angles-left');
         btn.classList.add('fa-angles-right');
         document.querySelector('.collapse-btn-text').textContent = 'Mostrar';
         stakeholdersList.style.display = 'none';
         if (addBtn) addBtn.parentElement.style.display = 'none';
-        hintMsg.classList.add('show');
       } else {
-        // Mostrar lista completa, ocultar mensaje
         btn.classList.add('fa-angles-left');
         btn.classList.remove('fa-angles-right');
         document.querySelector('.collapse-btn-text').textContent = 'Ocultar';
         stakeholdersList.style.display = '';
         if (addBtn) addBtn.parentElement.style.display = '';
-        hintMsg.classList.remove('show');
       }
-    }
-
-    function showSidebarHint() {
-      // Se maneja en toggleSidebarCollapse
-    }
-
-    function hideSidebarHint() {
-      // Se maneja en toggleSidebarCollapse
     }
 
     // Stakeholder Modal Functions
