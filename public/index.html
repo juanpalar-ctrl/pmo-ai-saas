@@ -20,27 +20,32 @@
       align-items: flex-start;
       gap: 24px;
       width: 100%;
-      max-width: 1020px;
-    }
-    @media (max-width: 860px) {
-      .layout { flex-direction: column; }
+      max-width: 1320px;
     }
     .box {
       background: white;
       padding: 50px;
       border-radius: 16px;
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
+      min-width: 320px;
+      flex: 0 0 auto;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow-y: auto;
+      max-height: 90vh;
     }
     .dashboard-panel {
       background: white;
       padding: 40px;
       border-radius: 16px;
       width: 100%;
-      max-width: 480px;
+      max-width: 520px;
+      min-width: 320px;
+      flex: 0 0 auto;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       display: none;
+      overflow-y: auto;
+      max-height: 90vh;
     }
     .dashboard-panel .top-row {
       display: flex;
@@ -467,7 +472,6 @@
       if (!res.ok) { window.location = '/login'; return; }
       const data = await res.json();
       document.getElementById('userName').textContent = data.user.email;
-      document.getElementById('welcomeHeading').textContent = `¡Bienvenido de nuevo, ${data.user.email}!`;
       document.getElementById('dashboardPanel').style.display = 'block';
       loadDashboardStats();
       loadExistingProjects();
