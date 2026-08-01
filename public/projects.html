@@ -834,6 +834,65 @@
         </div>
       </header>
 
+      <!-- PROJECT SOW MODAL -->
+      <div id="projectSOWModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto; align-items: center; justify-content: center;">
+        <div class="bg-white rounded-xl m-8 p-6 shadow-2xl max-w-500 mx-auto mt-20" style="max-width: 500px;">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6 border-b border-amber-200 pb-4">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-file-pdf text-amber-600 text-2xl"></i>
+              <h2 class="font-bold text-xl text-gray-800">Cargar SOW</h2>
+            </div>
+            <button onclick="closeProjectSOWModal()" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
+          </div>
+
+          <!-- Body -->
+          <div class="space-y-4">
+            <!-- Upload Zone -->
+            <div id="projectSOWUploadZone" style="border: 2px dashed #f59e0b; border-radius: 10px; padding: 32px; text-align: center; background: #fffbeb; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffbeb'">
+              <input type="file" id="projectSOWFile" accept=".pdf,.docx" style="display: none;" onchange="handleProjectSOWFileSelect(event)">
+              <div style="font-size: 48px; margin-bottom: 12px;">📤</div>
+              <p style="margin: 0; font-weight: 600; color: #333;">Arrastra tu SOW aquí</p>
+              <p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">o haz clic para seleccionar (PDF o Word)</p>
+              <p style="margin: 8px 0 0 0; font-size: 0.85em; color: #999;">Tamaño máximo: 20 MB</p>
+            </div>
+
+            <script>
+              document.getElementById('projectSOWUploadZone').addEventListener('click', () => document.getElementById('projectSOWFile').click());
+              document.getElementById('projectSOWUploadZone').addEventListener('dragover', e => {
+                e.preventDefault();
+                e.currentTarget.style.background = '#fef3c7';
+              });
+              document.getElementById('projectSOWUploadZone').addEventListener('dragleave', e => {
+                e.currentTarget.style.background = '#fffbeb';
+              });
+              document.getElementById('projectSOWUploadZone').addEventListener('drop', e => {
+                e.preventDefault();
+                if (e.dataTransfer.files[0]) handleProjectSOWFileSelect({ target: { files: e.dataTransfer.files } });
+              });
+            </script>
+
+            <!-- File Status -->
+            <div id="projectSOWFileStatus" style="display: none; padding: 16px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 24px;">✓</div>
+                <div style="flex: 1;">
+                  <p style="margin: 0; font-weight: 600; color: #065f46;" id="projectSOWFileName">archivo.pdf</p>
+                  <p style="margin: 4px 0 0 0; font-size: 0.85em; color: #666;" id="projectSOWFileSize">5.2 MB</p>
+                </div>
+                <button type="button" onclick="removeProjectPendingSOW()" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em;">Cambiar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="flex justify-end gap-3 border-t border-amber-200 pt-4 mt-6">
+            <button type="button" onclick="closeProjectSOWModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">Cancelar</button>
+            <button type="button" id="projectSOWSaveBtn" onclick="saveProjectSOW()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; opacity: 0.5;" disabled>Guardar SOW</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ADMIN PANEL (oculto por defecto) -->
       <div id="admin-panel-container" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; overflow-y: auto;">
         <div class="bg-white rounded-xl m-8 p-6 shadow-2xl max-w-2xl mx-auto mt-20">
@@ -948,6 +1007,9 @@
           <button onclick="switchDashboardTab('riesgos')" id="tab-riesgos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
             <i class="fa-solid fa-triangle-exclamation text-orange-600"></i> ⚠️ Riesgos y RAID
           </button>
+          <button onclick="switchDashboardTab('documentos')" id="tab-documentos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
+            <i class="fa-solid fa-file-pdf text-amber-600"></i> 📄 Documentos
+          </button>
         </div>
 
         <!-- DASHBOARD TABS SECTION -->
@@ -1054,7 +1116,72 @@
         </div>
         </div><!-- Cierra dashboard-tab-riesgos -->
 
+        <!-- Tab 3: Documentos (SOW Management) -->
+        <div id="dashboard-tab-documentos" class="space-y-4" style="display: none;">
+          <!-- SOW Section -->
+          <div class="bg-white rounded-xl p-6 shadow-lg">
+            <div class="flex items-center justify-between border-b border-teal-200 pb-4 mb-6">
+              <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-file-pdf text-amber-600 text-2xl"></i>
+                <div>
+                  <h3 class="font-bold text-lg text-gray-800">Statement of Work (SOW)</h3>
+                  <p class="text-xs text-gray-500 mt-1">Documento de alcance del proyecto</p>
+                </div>
+              </div>
+            </div>
 
+            <!-- Empty State -->
+            <div id="sowEmptyState" class="text-center py-12">
+              <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
+              <p class="text-gray-600 font-semibold mb-2">No hay SOW cargado</p>
+              <p class="text-gray-500 text-sm mb-6">Carga el documento de alcance para mejorar el análisis de IA</p>
+              <button type="button" onclick="openProjectSOWModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                + Cargar SOW
+              </button>
+            </div>
+
+            <!-- Loaded State -->
+            <div id="sowLoadedState" style="display: none;">
+              <div class="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-4 mb-4">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-start gap-3 flex-1">
+                    <div style="font-size: 28px;">📎</div>
+                    <div class="flex-1">
+                      <p class="font-semibold text-gray-800" id="sowFileName">archivo.pdf</p>
+                      <p class="text-sm text-gray-600 mt-1" id="sowFileInfo">Cargado el 01/08/2026 • 5.2 MB</p>
+                      <div style="margin-top: 8px; display: flex; gap: 8px;">
+                        <button type="button" onclick="viewSOWPreview()" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">👁️ Ver Preview</button>
+                        <button type="button" onclick="openProjectSOWModal()" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">🔄 Reemplazar</button>
+                        <button type="button" onclick="deleteProjectSOW()" class="text-red-600 hover:text-red-700 text-sm font-semibold">🗑️ Eliminar</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Use in Analysis Toggle -->
+              <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" id="projectSOWUseInAnalysis" checked onchange="toggleProjectSOWUsage()" style="width: 20px; height: 20px; cursor: pointer;">
+                  <div>
+                    <p class="font-semibold text-gray-800">Usar en análisis de IA</p>
+                    <p class="text-sm text-gray-600">Claude incluirá el SOW al generar análisis de riesgos</p>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Preview Section (hidden until clicked) -->
+              <div id="sowPreviewSection" style="display: none; margin-top: 16px;">
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <p class="text-sm font-semibold text-gray-700 mb-3">📋 Preview (primeros 500 caracteres):</p>
+                  <div id="sowPreviewContent" style="background: white; padding: 12px; border-radius: 6px; max-height: 300px; overflow-y: auto; font-size: 0.85em; line-height: 1.5; color: #666; border-left: 3px solid #f59e0b;">
+                    Cargando...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- Cierra dashboard-tab-documentos -->
 
         <div id="metrics-panel" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
@@ -3488,14 +3615,21 @@
         // Hide all tabs
         document.getElementById('dashboard-tab-resumen').style.display = 'none';
         document.getElementById('dashboard-tab-riesgos').style.display = 'none';
+        document.getElementById('dashboard-tab-documentos').style.display = 'none';
 
         // Remove active styles from all buttons
         document.getElementById('tab-resumen').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
         document.getElementById('tab-riesgos').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
+        document.getElementById('tab-documentos').classList.remove('bg-teal-100', 'border-teal-600', 'active-tab');
 
         // Show selected tab and highlight button
         document.getElementById('dashboard-tab-' + tab).style.display = 'block';
         document.getElementById('tab-' + tab).classList.add('bg-teal-100', 'border-teal-600', 'active-tab');
+
+        // Load SOW info when switching to documentos tab
+        if (tab === 'documentos') {
+          loadProjectSOWStatus();
+        }
       };
 
       // Backwards compatibility for old function name
@@ -3748,6 +3882,187 @@
       if (analysisData) {
         renderKPIDashboard();
       }
+
+      // ── SOW FUNCTIONS ──
+      let projectPendingSOWFile = null;
+      const projectId = new URLSearchParams(window.location.search).get('id');
+
+      window.openProjectSOWModal = function() {
+        document.getElementById('projectSOWModal').style.display = 'flex';
+      };
+
+      window.closeProjectSOWModal = function() {
+        document.getElementById('projectSOWModal').style.display = 'none';
+        projectPendingSOWFile = null;
+        document.getElementById('projectSOWFileStatus').style.display = 'none';
+        document.getElementById('projectSOWFile').value = '';
+      };
+
+      window.handleProjectSOWFileSelect = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const validExtensions = ['pdf', 'docx'];
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (!validExtensions.includes(ext)) {
+          alert('❌ Solo se permiten archivos PDF o Word (.docx)');
+          return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+          alert('❌ El archivo no debe superar 20 MB');
+          return;
+        }
+
+        projectPendingSOWFile = file;
+
+        const fileStatus = document.getElementById('projectSOWFileStatus');
+        document.getElementById('projectSOWFileName').textContent = file.name;
+        document.getElementById('projectSOWFileSize').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        fileStatus.style.display = 'block';
+
+        const saveBtn = document.getElementById('projectSOWSaveBtn');
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = '1';
+      };
+
+      window.removeProjectPendingSOW = function() {
+        projectPendingSOWFile = null;
+        document.getElementById('projectSOWFileStatus').style.display = 'none';
+        document.getElementById('projectSOWFile').value = '';
+
+        const saveBtn = document.getElementById('projectSOWSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.5';
+      };
+
+      window.saveProjectSOW = async function() {
+        if (!projectPendingSOWFile || !projectId) {
+          alert('❌ Error: Archivo o proyecto no válido');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', projectPendingSOWFile);
+
+        try {
+          const response = await fetch(`/api/projects/${projectId}/sow/upload`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            alert('❌ Error: ' + (data.error || 'No se pudo cargar el SOW'));
+            return;
+          }
+
+          alert('✅ SOW cargado exitosamente');
+          closeProjectSOWModal();
+          loadProjectSOWStatus();
+        } catch (error) {
+          alert('❌ Error al procesar: ' + error.message);
+        }
+      };
+
+      window.loadProjectSOWStatus = async function() {
+        if (!projectId) return;
+
+        try {
+          const response = await fetch(`/api/projects/${projectId}/sow`, {
+            credentials: 'include'
+          });
+          const data = await response.json();
+
+          if (!data.success || !data.file) {
+            document.getElementById('sowEmptyState').style.display = 'block';
+            document.getElementById('sowLoadedState').style.display = 'none';
+            return;
+          }
+
+          // Show loaded state
+          document.getElementById('sowEmptyState').style.display = 'none';
+          document.getElementById('sowLoadedState').style.display = 'block';
+
+          document.getElementById('sowFileName').textContent = data.file.filename;
+          const uploadDate = new Date(data.file.uploadedAt).toLocaleDateString('es-MX');
+          document.getElementById('sowFileInfo').textContent = `Cargado el ${uploadDate} • ${(data.file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+          document.getElementById('projectSOWUseInAnalysis').checked = data.file.useInAnalysis;
+        } catch (error) {
+          console.error('Error loading SOW status:', error);
+        }
+      };
+
+      window.viewSOWPreview = async function() {
+        if (!projectId) return;
+
+        const previewSection = document.getElementById('sowPreviewSection');
+        previewSection.style.display = previewSection.style.display === 'none' ? 'block' : 'none';
+
+        if (previewSection.style.display === 'none') return;
+
+        try {
+          const response = await fetch(`/api/projects/${projectId}/sow/content`, {
+            credentials: 'include'
+          });
+          const data = await response.json();
+
+          if (!data.success || !data.content) {
+            document.getElementById('sowPreviewContent').textContent = 'No hay contenido disponible';
+            return;
+          }
+
+          const preview = data.content.substring(0, 500);
+          document.getElementById('sowPreviewContent').textContent = preview + (data.content.length > 500 ? '...' : '');
+        } catch (error) {
+          document.getElementById('sowPreviewContent').textContent = 'Error al cargar preview';
+        }
+      };
+
+      window.toggleProjectSOWUsage = async function() {
+        if (!projectId) return;
+
+        const useInAnalysis = document.getElementById('projectSOWUseInAnalysis').checked;
+
+        try {
+          const response = await fetch(`/api/projects/${projectId}/sow/toggle`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useInAnalysis }),
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            alert('Error al actualizar preferencia');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      };
+
+      window.deleteProjectSOW = async function() {
+        if (!projectId || !confirm('¿Estás seguro de que deseas eliminar el SOW?')) return;
+
+        try {
+          const response = await fetch(`/api/projects/${projectId}/sow`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            alert('✅ SOW eliminado');
+            loadProjectSOWStatus();
+          } else {
+            alert('❌ Error al eliminar SOW');
+          }
+        } catch (error) {
+          alert('❌ Error: ' + error.message);
+        }
+      };
     })();
   </script>
 </body>

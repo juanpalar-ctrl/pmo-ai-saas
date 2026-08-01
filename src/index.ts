@@ -24,6 +24,7 @@ import teamRouter from './routes/team';
 import testingRouter from './routes/testing';
 import risksRouter from './routes/risks';
 import stakeholdersRouter from './routes/stakeholders';
+import sowRouter from './routes/sow';
 import TestingAgent from './agents/testingAgent';
 import FunctionalTestingAgent from './agents/functionalTestingAgent';
 import { scheduleCleanupJob } from './services/tempFileCleanup';
@@ -188,6 +189,7 @@ app.use('/api/data', requireAuth, heavyLimiter, dataRouter);
 app.use('/api/team', requireAuth, heavyLimiter, teamRouter);
 app.use('/api/projects', requireAuth, riskLimiter, risksRouter);
 app.use('/api/projects', requireAuth, riskLimiter, stakeholdersRouter);
+app.use('/api/projects', requireAuth, heavyLimiter, sowRouter);
 
 // Testing routes: public scheduled-run endpoint (for webhooks), others require admin auth
 const testingAuthMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {

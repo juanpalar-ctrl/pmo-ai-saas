@@ -8,6 +8,50 @@ import { detectWarnings } from './earlyWarning';
 import { teamService } from './teamService';
 import { routeLogger } from '../core/logger';
 
+/**
+ * Fetch SOW content for a project if it exists and is enabled for analysis
+ */
+async function getProjectSOW(projectId: string | number): Promise<{ content: string; fileName: string } | null> {
+  try {
+    const result = await pool.query(
+      `SELECT c.extracted_text, d.filename
+       FROM sow_content c
+       INNER JOIN sow_documents d ON c.sow_document_id = d.id
+       WHERE c.project_id = $1 AND d.use_in_analysis = true AND c.extraction_status = 'success'
+       LIMIT 1`,
+      [projectId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return {
+      content: result.rows[0].extracted_text,
+      fileName: result.rows[0].filename
+    };
+  } catch (error) {
+    routeLogger.warn({ err: error, projectId }, 'Failed to fetch SOW');
+    return null;
+  }
+}
+
+/**
+ * Enrich analysis input with SOW content if available
+ */
+function enrichInputWithSOW(input: any, sowData: { content: string; fileName: string } | null): void {
+  if (sowData) {
+    // Truncate to 3000 characters to stay within token budget
+    const truncatedContent = sowData.content.substring(0, 3000);
+    input.sowContent = truncatedContent;
+    input.sowFileName = sowData.fileName;
+    input.sowTruncated = sowData.content.length > 3000;
+  } else {
+    input.sowContent = null;
+    input.sowWarning = '⚠️ SOW no disponible: El análisis puede estar limitado en precisión respecto a duración, presupuesto y requisitos oficiales.';
+  }
+}
+
 export const orchestrator = {
   async analyzeProject(projectId: number, framework: string, userId: string, org?: string, lang: 'es' | 'en' = 'es') {
     const metrics = await calculateProjectMetrics(projectId, userId, framework);
@@ -50,6 +94,9 @@ export const orchestrator = {
       routeLogger.error({ err }, 'Failed to compute team disconnection alerts');
     }
 
+    // Fetch SOW if available
+    const sowData = await getProjectSOW(projectId);
+
     const input = {
       projectId,
       projectName: metrics.projectName,
@@ -58,6 +105,9 @@ export const orchestrator = {
       moraleAlerts,
       lang,
     };
+
+    // Enrich input with SOW content if available
+    enrichInputWithSOW(input, sowData);
 
     riskAgent.setFramework(framework);
     economicAgent.setFramework(framework);

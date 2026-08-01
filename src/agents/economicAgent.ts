@@ -21,17 +21,17 @@ export class EconomicAgent extends BaseAgent {
 - Cost per Sprint, Cost per Story Point
 - Sprint Velocity trends
 - Rework cost (defects discovered late)`,
-      
+
       kanban: `KANBAN Economics:
 - Cost per Item, Cost per Cycle Time unit
 - Throughput trends
 - WIP holding cost`,
-      
+
       waterfall: `WATERFALL Economics:
 - Cost per Phase, Phase Gate cost
 - Rework % (late changes)
 - Schedule variance impact`,
-      
+
       safe: `SAFe Economics:
 - Cost per PI, Cost per Objective
 - Team Sync cost
@@ -40,8 +40,26 @@ export class EconomicAgent extends BaseAgent {
     return metrics[this.framework] || metrics.scrum;
   }
 
+  private formatSOWSection(input: AgentInput): string {
+    if (!input.sowContent) {
+      const warning = input.sowWarning || '⚠️ SOW no disponible: El análisis puede estar limitado en precisión de presupuesto.';
+      return `\n${warning}\n`;
+    }
+
+    const truncatedNote = input.sowTruncated ? '\n[Nota: SOW truncado a 3000 caracteres por limitaciones de contexto]\n' : '';
+    return `\nDOCUMENTO DE ALCANCE (SOW): "${input.sowFileName}"
+---
+${input.sowContent}
+---${truncatedNote}
+Utiliza el SOW para validar el presupuesto planificado, recursos asignados y plazo estimado.\n`;
+  }
+
   buildPrompt(input: AgentInput): string {
     const lang = normalizeLang(input.lang);
+
+    // Format SOW content if available
+    const sowSection = this.formatSOWSection(input);
+
     return `${languageDirective(lang)}
 
 Eres experto en ANÁLISIS ECONÓMICO para proyectos ${this.framework.toUpperCase()}.
@@ -52,7 +70,7 @@ PROYECTO: "${input.projectName}"
 BUDGET TOTAL: $${input.budget?.total || 500000}
 GASTO ACTUAL: $${input.budget?.spent || 0}
 AVANCE: ${input.timeline?.percentageComplete || 0}%
-
+${sowSection}
 INSTRUCCIÓN CRÍTICA:
 - Retorna SIEMPRE un JSON válido (sin markdown)
 - Calcula economía realista basada en datos

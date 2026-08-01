@@ -95,6 +95,10 @@ export class ReportingAgent extends BaseAgent {
 
   private buildSeniorPrompt(input: AgentInput): string {
     const c = this.buildContext(input);
+    const sowNote = input.sowContent
+      ? `\nNota: Se consideró el documento de alcance (SOW) del proyecto en el análisis.`
+      : `\n⚠️ Nota: No se tenía disponible el documento de alcance (SOW). El análisis puede estar limitado en precisión respecto a requisitos y plazo.`;
+
     return `${languageDirective(c.lang)}
 
 Eres un PMO senior experto en comunicación ejecutiva. Genera un Executive Status Report para el stakeholder de este proyecto.
@@ -106,7 +110,7 @@ DATOS DEL PROYECTO:
 - Burn rate: ${c.burnRate}
 - Probabilidad de delay: ${c.delayProb}
 - Riesgo general: ${c.riskScore}
-- Estado de presupuesto: ${c.budgetStatus}
+- Estado de presupuesto: ${c.budgetStatus}${sowNote}
 - Costo del delay (si ocurre): ${c.costOfDelay}
 - Costo peor caso: ${c.worstCase}
 

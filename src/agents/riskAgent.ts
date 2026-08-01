@@ -56,8 +56,26 @@ export class RiskAgent extends BaseAgent {
     return `\nALERTAS DE DESCONEXIÓN DEL EQUIPO:\n${lines.join('\n')}\nConsidera estas alertas de moral del equipo en tus riesgos y recomendaciones si son relevantes.\n`;
   }
 
+  private formatSOWSection(input: AgentInput): string {
+    if (!input.sowContent) {
+      const warning = input.sowWarning || '⚠️ SOW no disponible: El análisis puede estar limitado en precisión.';
+      return `\n${warning}\n`;
+    }
+
+    const truncatedNote = input.sowTruncated ? '\n[Nota: SOW truncado a 3000 caracteres por limitaciones de contexto]\n' : '';
+    return `\nDOCUMENTO DE ALCANCE (SOW): "${input.sowFileName}"
+---
+${input.sowContent}
+---${truncatedNote}
+Utiliza la información del SOW para validar la duración esperada, presupuesto, alcance y requisitos del proyecto.\n`;
+  }
+
   buildPrompt(input: AgentInput): string {
     const lang = normalizeLang(input.lang);
+
+    // Format SOW content if available
+    const sowSection = this.formatSOWSection(input);
+
     return `${languageDirective(lang)}
 
 Eres experto en ANÁLISIS DE RIESGOS para proyectos ${this.framework.toUpperCase()}.
@@ -68,6 +86,7 @@ PROYECTO: "${input.projectName}"
 AVANCE: ${input.timeline?.percentageComplete || 0}%
 FRAMEWORK: ${this.framework.toUpperCase()}
 ${this.formatMoraleAlerts(input.moraleAlerts)}
+${sowSection}
 INSTRUCCIÓN CRÍTICA:
 - Retorna SIEMPRE un JSON válido (sin markdown)
 - GARANTIZA al menos 3 riesgos (pueden ser genéricos si no hay datos específicos)
