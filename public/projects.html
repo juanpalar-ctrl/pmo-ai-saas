@@ -406,17 +406,19 @@
 
     /* ── Sidebar Collapse Hint Message ── */
     #sidebar-hint-message {
-      position: fixed; left: 8px; top: 50%;
-      background: linear-gradient(to right, #17B8A0, #0B7B8C); border: none;
-      color: #ffffff; padding: 14px 10px; border-radius: 8px;
+      position: fixed; left: 16px; top: 50%;
+      background: none; border: none;
+      color: #ffffff; padding: 0; border-radius: 0;
       font-size: 12px; font-weight: 700; white-space: nowrap; text-align: center;
-      box-shadow: 0 4px 12px rgba(23, 184, 160, 0.3); z-index: 35;
+      box-shadow: none; z-index: 35;
       opacity: 0; pointer-events: none;
-      animation: slideInFromLeft 0.4s ease forwards;
       letter-spacing: 1px;
       display: flex; align-items: center; justify-content: center;
       transform: translateY(-50%) rotate(-90deg);
       transform-origin: center center;
+    }
+    #sidebar-hint-message.visible {
+      opacity: 1;
     }
     @keyframes slideInFromLeft {
       from { opacity: 0; transform: translateX(-30px) translateY(-50%); }
@@ -1513,32 +1515,37 @@
     function toggleSidebarCollapse() {
       const sidebar = document.getElementById('history-sidebar');
       const hintMsg = document.getElementById('sidebar-hint-message');
+      const stakeholdersList = document.getElementById('stakeholders-list');
+      const addBtn = sidebar.querySelector('button[onclick*="openAddStakeholder"]');
+
       sidebar.classList.toggle('collapsed');
       const btn = document.querySelector('.collapse-btn i');
+
       if (sidebar.classList.contains('collapsed')) {
+        // Mostrar solo el mensaje vertical, ocultar lista
         btn.classList.remove('fa-angles-left');
         btn.classList.add('fa-angles-right');
         document.querySelector('.collapse-btn-text').textContent = 'Mostrar';
-        showSidebarHint();
+        stakeholdersList.style.display = 'none';
+        if (addBtn) addBtn.style.display = 'none';
+        hintMsg.classList.add('visible');
       } else {
+        // Mostrar lista completa, ocultar mensaje
         btn.classList.add('fa-angles-left');
         btn.classList.remove('fa-angles-right');
         document.querySelector('.collapse-btn-text').textContent = 'Ocultar';
-        hideSidebarHint();
+        stakeholdersList.style.display = '';
+        if (addBtn) addBtn.style.display = '';
+        hintMsg.classList.remove('visible');
       }
     }
 
     function showSidebarHint() {
-      const hintMsg = document.getElementById('sidebar-hint-message');
-      hintMsg.classList.remove('hide');
-      // Keep visible while sidebar is collapsed
-      clearTimeout(hintMsg.hintTimeout);
+      // Se maneja en toggleSidebarCollapse
     }
 
     function hideSidebarHint() {
-      const hintMsg = document.getElementById('sidebar-hint-message');
-      hintMsg.classList.add('hide');
-      clearTimeout(hintMsg.hintTimeout);
+      // Se maneja en toggleSidebarCollapse
     }
 
     // Stakeholder Modal Functions
