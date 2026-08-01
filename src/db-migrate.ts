@@ -235,12 +235,29 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
+  // Stakeholders table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS stakeholders (
+      id SERIAL PRIMARY KEY,
+      projectid INTEGER NOT NULL,
+      nombre VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      rol VARCHAR(255) NOT NULL,
+      raci VARCHAR(1) NOT NULL,
+      createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Indices for fast lookups
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_risks_projectid ON risks(projectid)
   `);
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_raid_log_projectid ON raid_log(projectid)
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_stakeholders_projectid ON stakeholders(projectid)
   `);
 
   dbLogger.info('Database migrations complete');

@@ -406,16 +406,18 @@
 
     /* ── Sidebar Collapse Hint Message ── */
     #sidebar-hint-message {
-      position: fixed; left: 4.5rem; top: 50%; transform: translateY(-50%);
-      background: #ffffff; border: 2px solid #17B8A0;
-      color: #0B7B8C; padding: 12px 14px; border-radius: 8px;
-      font-size: 13px; font-weight: 600; white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 35;
+      position: fixed; left: 0.5rem; top: 50%; transform: translateY(-50%);
+      background: linear-gradient(to right, #17B8A0, #0B7B8C); border: none;
+      color: #ffffff; padding: 16px 8px; border-radius: 8px;
+      font-size: 12px; font-weight: 700; white-space: normal; text-align: center;
+      writing-mode: vertical-rl; text-orientation: mixed;
+      box-shadow: 0 4px 12px rgba(23, 184, 160, 0.3); z-index: 35;
       opacity: 0; pointer-events: none;
       animation: slideInFromLeft 0.4s ease forwards;
+      letter-spacing: 1px;
     }
     @keyframes slideInFromLeft {
-      from { opacity: 0; transform: translateX(-20px) translateY(-50%); }
+      from { opacity: 0; transform: translateX(-30px) translateY(-50%); }
       to { opacity: 1; transform: translateX(0) translateY(-50%); }
     }
     #sidebar-hint-message.hide {
@@ -423,7 +425,7 @@
     }
     @keyframes slideOutToLeft {
       from { opacity: 1; transform: translateX(0) translateY(-50%); }
-      to { opacity: 0; transform: translateX(-20px) translateY(-50%); }
+      to { opacity: 0; transform: translateX(-30px) translateY(-50%); }
     }
     @media (max-width: 768px) {
       #sidebar-hint-message { display: none; }
@@ -704,6 +706,35 @@
     .history-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateX(4px); }
     .history-card-title { font-weight: 600; color: #333; font-size: 0.9em; margin-bottom: 4px; }
     .history-card-meta { font-size: 0.75em; color: #666; line-height: 1.4; }
+
+    /* ── Stakeholder Card Styles ── */
+    .stakeholder-card { padding: 12px; background: white; border: 0.5px solid #e5e7eb; border-left: 3px solid #17B8A0; margin-bottom: 10px; border-radius: 6px; transition: all 0.2s; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .stakeholder-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .stakeholder-info { flex: 1; min-width: 0; }
+    .stakeholder-name { font-weight: 600; color: #333; font-size: 0.95em; margin-bottom: 4px; word-break: break-word; }
+    .stakeholder-email { font-size: 0.8em; color: #666; margin-bottom: 2px; word-break: break-word; }
+    .stakeholder-rol { font-size: 0.8em; color: #888; margin-bottom: 6px; word-break: break-word; }
+    .stakeholder-raci { display: inline-flex; align-items: center; justify-content: center; background: #dbeafe; color: #1e40af; font-size: 0.7em; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+    .stakeholder-delete-btn { background: transparent; border: none; color: #d1d5db; cursor: pointer; font-size: 14px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; flex-shrink: 0; padding: 0; }
+    .stakeholder-delete-btn:hover { color: #dc2626; }
+
+    /* ── Stakeholder Modal ── */
+    .stakeholder-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .stakeholder-modal.open { display: flex; }
+    .stakeholder-modal-content { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 450px; width: 90%; overflow-y: auto; max-height: 90vh; }
+    .stakeholder-modal-header { background: linear-gradient(135deg, #17B8A0, #0B7B8C); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
+    .stakeholder-modal-header h2 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+    .stakeholder-modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+    .stakeholder-modal-body { padding: 20px; }
+    .stakeholder-form-group { margin-bottom: 16px; }
+    .stakeholder-form-group label { display: block; font-weight: 600; font-size: 0.875rem; color: #374151; margin-bottom: 6px; }
+    .stakeholder-form-group input, .stakeholder-form-group select { width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 6px; font-size: 0.875rem; font-family: inherit; box-sizing: border-box; transition: border-color 0.15s; }
+    .stakeholder-form-group input:focus, .stakeholder-form-group select:focus { outline: none; border-color: #17B8A0; }
+    .stakeholder-modal-footer { padding: 16px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; gap: 12px; justify-content: flex-end; border-radius: 0 0 12px 12px; }
+    .btn-stakeholder-save { padding: 10px 24px; background: linear-gradient(135deg, #17B8A0, #0B7B8C); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    .btn-stakeholder-save:hover { opacity: 0.9; }
+    .btn-stakeholder-cancel { padding: 10px 24px; border: 1.5px solid #e5e7eb; background: white; border-radius: 6px; font-weight: 600; cursor: pointer; color: #6b7280; transition: all 0.15s; }
+    .btn-stakeholder-cancel:hover { border-color: #d1d5db; background: #f3f4f6; }
     .markdown-report h2 { color: #0B7B8C; font-weight: 800; font-size: 1.4em; margin: 20px 0 12px; }
     .markdown-report h3 { color: #0B7B8C; font-weight: 700; font-size: 1.15em; margin: 18px 0 8px; }
     .markdown-report p { color: #333; line-height: 1.6; margin-bottom: 10px; }
@@ -725,8 +756,8 @@
     <div id="history-sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-80 max-w-[85vw] bg-white shadow-lg overflow-y-auto border-r border-teal-200 no-print transform -translate-x-full md:translate-x-0 transition-transform duration-200">
       <div class="sticky top-0 bg-gradient-to-r from-teal-500 to-teal-700 text-white p-4 z-10 flex items-center justify-between gap-2">
         <div>
-          <h3 class="font-bold text-sm">📋 Historial Reciente</h3>
-          <p class="text-xs opacity-90 mt-1">Últimos 10 proyectos analizados</p>
+          <h3 class="font-bold text-sm">👥 Stakeholders</h3>
+          <p class="text-xs opacity-90 mt-1">Gestiona tus stakeholders</p>
         </div>
         <div class="flex items-center gap-1">
           <button onclick="toggleSidebarCollapse()" class="hidden md:block collapse-btn text-white text-lg leading-none px-2" title="Contraer/Expandir">
@@ -736,13 +767,18 @@
           <button onclick="toggleHistorySidebar(false)" class="md:hidden text-white text-xl leading-none px-2" title="Cerrar">✕</button>
         </div>
       </div>
-      <div id="history-list" class="p-4 space-y-2">
+      <div id="stakeholders-list" class="p-4 space-y-2 flex-1 overflow-y-auto">
         <div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+      </div>
+      <div class="p-4 border-t border-teal-200 flex-shrink-0">
+        <button onclick="openAddStakeholderModal()" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white font-semibold text-sm py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> Agregar Stakeholder
+        </button>
       </div>
     </div>
 
     <!-- Sidebar Collapse Hint Message -->
-    <div id="sidebar-hint-message">📋 Mira tu historial de proyectos</div>
+    <div id="sidebar-hint-message">👥 STAKEHOLDERS</div>
 
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
       <header class="border-b border-teal-600 bg-white/95 px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 shadow-lg no-print">
@@ -798,6 +834,44 @@
             <button onclick="toggleAdminPanel()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">
               Cerrar
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stakeholder Modal -->
+      <div id="stakeholder-modal" class="stakeholder-modal">
+        <div class="stakeholder-modal-content">
+          <div class="stakeholder-modal-header">
+            <h2>Agregar Stakeholder</h2>
+            <button onclick="closeAddStakeholderModal()" class="stakeholder-modal-close">✕</button>
+          </div>
+          <div class="stakeholder-modal-body">
+            <div class="stakeholder-form-group">
+              <label for="stakeholder-nombre">Nombre <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="stakeholder-nombre" placeholder="Ej: Juan García" />
+            </div>
+            <div class="stakeholder-form-group">
+              <label for="stakeholder-email">Email <span style="color: #dc2626;">*</span></label>
+              <input type="email" id="stakeholder-email" placeholder="juan@empresa.com" />
+            </div>
+            <div class="stakeholder-form-group">
+              <label for="stakeholder-rol">Rol <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="stakeholder-rol" placeholder="Ej: Project Manager" />
+            </div>
+            <div class="stakeholder-form-group">
+              <label for="stakeholder-raci">Rol RACI <span style="color: #dc2626;">*</span></label>
+              <select id="stakeholder-raci">
+                <option value="">Selecciona una opción</option>
+                <option value="R">R - Responsible (Responsable)</option>
+                <option value="A">A - Accountable (Encargado)</option>
+                <option value="C">C - Consulted (Consultado)</option>
+                <option value="I">I - Informed (Informado)</option>
+              </select>
+            </div>
+          </div>
+          <div class="stakeholder-modal-footer">
+            <button onclick="closeAddStakeholderModal()" class="btn-stakeholder-cancel">Cancelar</button>
+            <button onclick="saveStakeholder()" class="btn-stakeholder-save">Guardar</button>
           </div>
         </div>
       </div>
@@ -1255,7 +1329,7 @@
       }
 
       await loadAnalysis();
-      await loadHistory();
+      await loadStakeholders();
       switchFramework(activeFramework);
       loadReports();
       renderTeamSummary();
@@ -1384,32 +1458,31 @@
 
     }
 
-    async function loadHistory() {
+    async function loadStakeholders() {
       try {
-        const res = await fetch('/api/data/projects/history/latest');
-        const data = await res.json();
-        
-        const historyList = document.getElementById('history-list');
-        if (data.success && data.data.length > 0) {
-          latestHistory = data.data;
-          historyList.innerHTML = data.data.map(project => `
-            <div class="history-card" style="position:relative;" onclick="navigateToProject(${project.projectId}, '${project.framework}')">
-              <button onclick="event.stopPropagation(); deleteHistoryProject(${project.projectId})"
-                      style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; color:#ccc;"
-                      onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#ccc'" title="Eliminar proyecto">
-                <i class="fa-solid fa-trash-can" style="font-size:0.8em;"></i>
-              </button>
-              <div class="history-card-title" style="padding-right:20px;">${escapeHtml(project.projectName)}</div>
-              <div class="history-card-meta">
-                <div>🏢 ${escapeHtml(project.org)}</div>
-                <div>📅 ${new Date(project.timestamp).toLocaleDateString('es-MX')}</div>
-                <div>🎯 ${project.framework.toUpperCase()}</div>
-                <div>💰 $${(project.totalBudget || 0).toLocaleString('es-MX')}</div>
+        const projectId = new URLSearchParams(location.search).get('id');
+        if (!projectId) return;
+
+        const res = await fetch(`/api/projects/${projectId}/stakeholders`, { credentials: 'include' });
+        const stakeholders = await res.json();
+
+        const stakeholdersList = document.getElementById('stakeholders-list');
+        if (Array.isArray(stakeholders) && stakeholders.length > 0) {
+          stakeholdersList.innerHTML = stakeholders.map(sh => `
+            <div class="stakeholder-card">
+              <div class="stakeholder-info">
+                <div class="stakeholder-name">${escapeHtml(sh.nombre)}</div>
+                <div class="stakeholder-email">${escapeHtml(sh.email)}</div>
+                <div class="stakeholder-rol">${escapeHtml(sh.rol)}</div>
+                <div class="stakeholder-raci">${escapeHtml(sh.raci)}</div>
               </div>
+              <button onclick="deleteStakeholder(${sh.id})" class="stakeholder-delete-btn" title="Eliminar stakeholder">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
             </div>
           `).join('');
         } else {
-          historyList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Sin análisis recientes.<br>Sube un Excel para comenzar.</p>';
+          stakeholdersList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Sin stakeholders registrados.<br>Agrega el primero haciendo clic en el botón.</p>';
         }
         // Show hint if sidebar is collapsed
         const sidebar = document.getElementById('history-sidebar');
@@ -1417,8 +1490,8 @@
           showSidebarHint();
         }
       } catch (err) {
-        console.error('Error loading history:', err);
-        document.getElementById('history-list').innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Error cargando historial</p>';
+        console.error('Error loading stakeholders:', err);
+        document.getElementById('stakeholders-list').innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Error cargando stakeholders</p>';
       }
     }
 
@@ -1456,11 +1529,8 @@
     function showSidebarHint() {
       const hintMsg = document.getElementById('sidebar-hint-message');
       hintMsg.classList.remove('hide');
-      // Auto-hide after 4 seconds
+      // Keep visible while sidebar is collapsed
       clearTimeout(hintMsg.hintTimeout);
-      hintMsg.hintTimeout = setTimeout(() => {
-        hideSidebarHint();
-      }, 4000);
     }
 
     function hideSidebarHint() {
@@ -1468,6 +1538,94 @@
       hintMsg.classList.add('hide');
       clearTimeout(hintMsg.hintTimeout);
     }
+
+    // Stakeholder Modal Functions
+    function openAddStakeholderModal() {
+      document.getElementById('stakeholder-modal').classList.add('open');
+      document.getElementById('stakeholder-nombre').value = '';
+      document.getElementById('stakeholder-email').value = '';
+      document.getElementById('stakeholder-rol').value = '';
+      document.getElementById('stakeholder-raci').value = '';
+    }
+
+    function closeAddStakeholderModal() {
+      document.getElementById('stakeholder-modal').classList.remove('open');
+    }
+
+    async function saveStakeholder() {
+      const nombre = document.getElementById('stakeholder-nombre').value.trim();
+      const email = document.getElementById('stakeholder-email').value.trim();
+      const rol = document.getElementById('stakeholder-rol').value.trim();
+      const raci = document.getElementById('stakeholder-raci').value.trim();
+
+      if (!nombre || !email || !rol || !raci) {
+        alert('Por favor completa todos los campos.');
+        return;
+      }
+
+      const projectId = new URLSearchParams(location.search).get('id');
+      if (!projectId) {
+        alert('No se pudo determinar el proyecto.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/stakeholders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ nombre, email, rol, raci })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Error guardando stakeholder.');
+          return;
+        }
+
+        closeAddStakeholderModal();
+        await loadStakeholders();
+      } catch (err) {
+        console.error('Error saving stakeholder:', err);
+        alert('Error guardando stakeholder.');
+      }
+    }
+
+    async function deleteStakeholder(id) {
+      if (!confirm('¿Eliminar este stakeholder? Esta acción no se puede deshacer.')) return;
+
+      const projectId = new URLSearchParams(location.search).get('id');
+      if (!projectId) {
+        alert('No se pudo determinar el proyecto.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/stakeholders/${id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Error eliminando stakeholder.');
+          return;
+        }
+
+        await loadStakeholders();
+      } catch (err) {
+        console.error('Error deleting stakeholder:', err);
+        alert('Error eliminando stakeholder.');
+      }
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('stakeholder-modal');
+      if (event.target === modal) {
+        closeAddStakeholderModal();
+      }
+    });
 
     async function deleteHistoryProject(id) {
       const proj = latestHistory.find(p => p.projectId === id);
