@@ -406,15 +406,18 @@
 
     /* ── Sidebar Collapse Hint Message ── */
     #sidebar-hint-message {
-      position: fixed; left: 0.5rem; top: 50%; transform: translateY(-50%);
+      position: fixed; left: 2px; top: 50%; transform: translateY(-50%);
       background: linear-gradient(to right, #17B8A0, #0B7B8C); border: none;
-      color: #ffffff; padding: 16px 8px; border-radius: 8px;
-      font-size: 12px; font-weight: 700; white-space: normal; text-align: center;
-      writing-mode: vertical-rl; text-orientation: mixed;
+      color: #ffffff; padding: 20px 10px; border-radius: 8px;
+      font-size: 13px; font-weight: 700; white-space: pre-line; text-align: center;
+      writing-mode: vertical-rl; text-orientation: upright;
       box-shadow: 0 4px 12px rgba(23, 184, 160, 0.3); z-index: 35;
       opacity: 0; pointer-events: none;
       animation: slideInFromLeft 0.4s ease forwards;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+      display: flex; align-items: center; justify-content: center;
+      min-width: 3rem;
     }
     @keyframes slideInFromLeft {
       from { opacity: 0; transform: translateX(-30px) translateY(-50%); }
