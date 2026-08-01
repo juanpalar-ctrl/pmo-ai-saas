@@ -406,20 +406,16 @@
 
     /* ── Sidebar Collapse Hint Message ── */
     #sidebar-hint-message {
-      position: fixed; left: 18px; top: 50%;
-      background: none; border: none;
-      color: #ffffff; padding: 8px 0; border-radius: 0;
-      font-size: 14px; font-weight: 700; white-space: nowrap; text-align: center;
-      box-shadow: none; z-index: 35;
-      opacity: 0; pointer-events: none;
-      letter-spacing: 2px;
-      display: flex; align-items: center; justify-content: center;
-      transform: translateY(-50%) rotate(-90deg);
-      transform-origin: center center;
-      min-height: 50px;
+      display: none;
+      background: none;
+      border: none;
+      color: #ffffff;
+      box-shadow: none;
+      z-index: 35;
+      min-height: 100px;
     }
-    #sidebar-hint-message.visible {
-      opacity: 1;
+    #sidebar-hint-message.show {
+      display: flex !important;
     }
     @keyframes slideInFromLeft {
       from { opacity: 0; transform: translateX(-30px) translateY(-50%); }
@@ -775,15 +771,18 @@
       <div id="stakeholders-list" class="p-4 space-y-2 flex-1 overflow-y-auto">
         <div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
       </div>
+      <!-- Sidebar Collapse Hint Message - Only visible when collapsed -->
+      <div id="sidebar-hint-message" class="flex-1 flex items-center justify-center px-4 hidden">
+        <div style="transform: rotate(-90deg); white-space: nowrap; font-weight: 700; font-size: 14px; letter-spacing: 2px; text-align: center;">
+          👥 STAKEHOLDERS
+        </div>
+      </div>
       <div class="p-4 border-t border-teal-200 flex-shrink-0">
         <button onclick="openAddStakeholderModal()" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white font-semibold text-sm py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-plus"></i> Agregar Stakeholder
         </button>
       </div>
     </div>
-
-    <!-- Sidebar Collapse Hint Message -->
-    <div id="sidebar-hint-message">👥 STAKEHOLDERS</div>
 
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
       <header class="border-b border-teal-600 bg-white/95 px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 shadow-lg no-print">
@@ -1528,16 +1527,16 @@
         btn.classList.add('fa-angles-right');
         document.querySelector('.collapse-btn-text').textContent = 'Mostrar';
         stakeholdersList.style.display = 'none';
-        if (addBtn) addBtn.style.display = 'none';
-        hintMsg.classList.add('visible');
+        if (addBtn) addBtn.parentElement.style.display = 'none';
+        hintMsg.classList.add('show');
       } else {
         // Mostrar lista completa, ocultar mensaje
         btn.classList.add('fa-angles-left');
         btn.classList.remove('fa-angles-right');
         document.querySelector('.collapse-btn-text').textContent = 'Ocultar';
         stakeholdersList.style.display = '';
-        if (addBtn) addBtn.style.display = '';
-        hintMsg.classList.remove('visible');
+        if (addBtn) addBtn.parentElement.style.display = '';
+        hintMsg.classList.remove('show');
       }
     }
 
