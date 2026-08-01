@@ -406,16 +406,17 @@
 
     /* ── Sidebar Collapse Hint Message ── */
     #sidebar-hint-message {
-      position: fixed; left: 16px; top: 50%;
+      position: fixed; left: 18px; top: 50%;
       background: none; border: none;
-      color: #ffffff; padding: 0; border-radius: 0;
-      font-size: 12px; font-weight: 700; white-space: nowrap; text-align: center;
+      color: #ffffff; padding: 8px 0; border-radius: 0;
+      font-size: 14px; font-weight: 700; white-space: nowrap; text-align: center;
       box-shadow: none; z-index: 35;
       opacity: 0; pointer-events: none;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
       display: flex; align-items: center; justify-content: center;
       transform: translateY(-50%) rotate(-90deg);
       transform-origin: center center;
+      min-height: 50px;
     }
     #sidebar-hint-message.visible {
       opacity: 1;
