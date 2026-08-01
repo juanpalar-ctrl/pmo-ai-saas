@@ -264,7 +264,7 @@
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         const me = await res.json();
         if (!me.success) { window.location = '/login'; return; }
-        document.getElementById('userEmail').textContent = me.email || '';
+        document.getElementById('userEmail').textContent = me.user?.email || '';
       } catch { window.location = '/login'; return; }
       loadPortfolio();
     }
