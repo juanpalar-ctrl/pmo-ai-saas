@@ -268,55 +268,55 @@
   <div class="layout">
     <div class="dashboard-panel" id="dashboardPanel">
       <div class="top-row">
-        <p class="greeting">👋 Bienvenido, <strong id="userName"></strong></p>
-        <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+        <p class="greeting">👋 <span data-i18n="welcome">Bienvenido</span>, <strong id="userName"></strong></p>
+        <button class="logout-btn" onclick="logout()" data-i18n="logout">Cerrar sesión</button>
       </div>
 
       <!-- Greeting Section -->
       <div style="margin-bottom: 30px;">
-        <h2 style="font-size: 1.4em; color: #0B7B8C; margin: 0 0 8px;">¡Hola, Juan!</h2>
-        <p style="color: #555; font-size: 0.95em; margin: 0; line-height: 1.5;">Bienvenido a LARA, tu Autonomous Program Manager.</p>
+        <h2 style="font-size: 1.4em; color: #0B7B8C; margin: 0 0 8px;" data-i18n="greeting_title">¡Hola, Juan!</h2>
+        <p style="color: #555; font-size: 0.95em; margin: 0; line-height: 1.5;" data-i18n="greeting_subtitle">Bienvenido a LARA, tu Autonomous Program Manager.</p>
         <p style="color: #0B7B8C; font-size: 0.9em; margin: 12px 0 0; background: #E1F5EE; padding: 12px; border-radius: 8px; border-left: 3px solid #17B8A0;">
-          <strong>✨</strong> LARA analiza tus proyectos y te entrega insights accionables con IA en segundos.
+          <strong>✨</strong> <span data-i18n="greeting_desc">LARA analiza tus proyectos y te entrega insights accionables con IA en segundos.</span>
         </p>
       </div>
 
       <!-- Quick Start Section -->
       <div style="margin-bottom: 30px;">
-        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 16px; font-weight: 600;">🚀 Quick Start</h3>
+        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 16px; font-weight: 600;" data-i18n="quickstart_title">🚀 Quick Start</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
           <div style="background: #E1F5EE; padding: 16px; border-radius: 10px; text-align: center;">
             <div style="background: #17B8A0; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin: 0 auto 8px;">1</div>
-            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;">Importa tu plan</p>
-            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">Excel o Google Sheets</p>
+            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;" data-i18n="step1_title">Importa tu plan</p>
+            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;" data-i18n="step1_desc">Excel o Google Sheets</p>
           </div>
           <div style="background: #FEF3C7; padding: 16px; border-radius: 10px; text-align: center;">
             <div style="background: #F59E0B; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin: 0 auto 8px;">2</div>
-            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;">LARA analiza</p>
-            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">IA detecta riesgos</p>
+            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;" data-i18n="step2_title">LARA analiza</p>
+            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;" data-i18n="step2_desc">IA detecta riesgos</p>
           </div>
           <div style="background: #F0F9FF; padding: 16px; border-radius: 10px; text-align: center;">
             <div style="background: #378ADD; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin: 0 auto 8px;">3</div>
-            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;">Recibe insights</p>
-            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">Reports y recomendaciones</p>
+            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;" data-i18n="step3_title">Recibe insights</p>
+            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;" data-i18n="step3_desc">Reports y recomendaciones</p>
           </div>
         </div>
       </div>
 
       <!-- Statistics Section -->
       <div style="margin-bottom: 30px;">
-        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 16px; font-weight: 600;">📊 Tus estadísticas</h3>
+        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 16px; font-weight: 600;" data-i18n="stats_title">📊 Tus estadísticas</h3>
         <div class="stat-cards" id="statCards"></div>
       </div>
 
       <!-- Quick Actions -->
       <div>
-        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 12px; font-weight: 600;">⚡ Accesos rápidos</h3>
+        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 12px; font-weight: 600;" data-i18n="actions_title">⚡ Accesos rápidos</h3>
         <button onclick="window.location='/portfolio'" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: white; border: 1px solid #E0F2F1; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin-bottom: 8px;">
           <span style="font-size: 1.3em;">📁</span>
           <div style="text-align: left; flex: 1;">
-            <p style="margin: 0; font-weight: 600; color: #333; font-size: 0.95em;">Ver proyectos existentes</p>
-            <p style="margin: 2px 0 0; font-size: 0.8em; color: #666;">Accede a tus análisis anteriores</p>
+            <p style="margin: 0; font-weight: 600; color: #333; font-size: 0.95em;" data-i18n="portfolio_title">Ver proyectos existentes</p>
+            <p style="margin: 2px 0 0; font-size: 0.8em; color: #666;" data-i18n="portfolio_desc">Accede a tus análisis anteriores</p>
           </div>
           <span style="color: #0B7B8C;">→</span>
         </button>
@@ -330,30 +330,30 @@
           <p>Intelligence Accelerated</p>
         </div>
       </div>
-      <h2 style="font-size: 1.3em; color: #333; margin-bottom: 20px;">Inicio</h2>
+      <h2 style="font-size: 1.3em; color: #333; margin-bottom: 20px;" data-i18n="form_title">Inicio</h2>
       <form id="form">
         <div class="form-group">
-          <label for="existing-project">Proyecto</label>
+          <label for="existing-project" data-i18n="form_project">Proyecto</label>
           <select id="existing-project" onchange="onExistingProjectChange()">
-            <option value="">➕ Crear proyecto nuevo</option>
+            <option value="" data-i18n="form_new_project">➕ Crear proyecto nuevo</option>
           </select>
-          <small id="existing-hint" style="display:none; color:#0B7B8C; font-size:0.8em; margin-top:4px;">Se agregará como una nueva carga del proyecto seleccionado, bajo el mismo histórico.</small>
+          <small id="existing-hint" style="display:none; color:#0B7B8C; font-size:0.8em; margin-top:4px;" data-i18n="form_hint">Se agregará como una nueva carga del proyecto seleccionado, bajo el mismo histórico.</small>
         </div>
         <div class="form-group">
-          <label for="org">Nombre Organización</label>
+          <label for="org" data-i18n="form_org">Nombre Organización</label>
           <input type="text" id="org" placeholder="Acme Corp" required>
         </div>
         <div class="form-group">
-          <label for="file">Archivo con Proyectos (Excel .xlsx o CSV)</label>
+          <label for="file" data-i18n="form_file">Archivo con Proyectos (Excel .xlsx o CSV)</label>
           <input type="file" id="file" accept=".xlsx,.csv">
         </div>
         <div class="form-group">
-          <label for="gsheet-url">…o importa desde Google Sheets</label>
-          <input type="text" id="gsheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
-          <small style="display:block; color:#0B7B8C; font-size:0.8em; margin-top:4px;">La hoja debe estar compartida como "Cualquiera con el enlace puede ver".</small>
+          <label for="gsheet-url" data-i18n="form_gsheet">…o importa desde Google Sheets</label>
+          <input type="text" id="gsheet-url" placeholder="https://docs.google.com/spreadsheets/d/..." data-i18n-ph="form_gsheet_ph">
+          <small style="display:block; color:#0B7B8C; font-size:0.8em; margin-top:4px;" data-i18n="form_gsheet_hint">La hoja debe estar compartida como "Cualquiera con el enlace puede ver".</small>
         </div>
         <div class="form-group">
-          <label for="fw">Metodología</label>
+          <label for="fw" data-i18n="form_method">Metodología</label>
           <select id="fw" required>
             <option value="scrum">Scrum</option>
             <option value="kanban">Kanban</option>
@@ -364,16 +364,16 @@
         <!-- SOW Upload Zone (Integrated) -->
         <div class="form-group">
           <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-            <span>📄 Statement of Work (Opcional)</span>
-            <small style="font-weight: normal; color: #0B7B8C;">Mejora el análisis</small>
+            <span data-i18n="form_sow">📄 Statement of Work (Opcional)</span>
+            <small style="font-weight: normal; color: #0B7B8C;" data-i18n="form_sow_hint">Mejora el análisis</small>
           </label>
 
           <div id="sowUploadZone" style="border: 2px dashed #f59e0b; border-radius: 10px; padding: 32px; text-align: center; background: #fffbeb; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffbeb'">
             <input type="file" id="sowFile" accept=".pdf,.docx" style="display: none;" onchange="handleSOWFileSelect(event)">
             <div style="font-size: 40px; margin-bottom: 12px; animation: bounce 2s infinite;">📤</div>
-            <p style="margin: 0; font-weight: 600; color: #333;">Arrastra tu SOW aquí</p>
-            <p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">o haz clic para seleccionar (PDF o Word)</p>
-            <p style="margin: 8px 0 0 0; font-size: 0.85em; color: #999;">Máx 20 MB</p>
+            <p style="margin: 0; font-weight: 600; color: #333;" data-i18n="form_sow_drag">Arrastra tu SOW aquí</p>
+            <p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;" data-i18n="form_sow_click">o haz clic para seleccionar (PDF o Word)</p>
+            <p style="margin: 8px 0 0 0; font-size: 0.85em; color: #999;" data-i18n="form_sow_size">Máx 20 MB</p>
           </div>
 
           <!-- File Status -->
@@ -384,12 +384,12 @@
                 <p style="margin: 0; font-weight: 600; color: #065f46;" id="sowFileName">archivo.pdf</p>
                 <p style="margin: 4px 0 0 0; font-size: 0.85em; color: #666;" id="sowFileSize">5.2 MB</p>
               </div>
-              <button type="button" onclick="removePendingSOW()" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.3s;">Cambiar</button>
+              <button type="button" onclick="removePendingSOW()" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.3s;" data-i18n="form_change">Cambiar</button>
             </div>
 
             <!-- Progress Bar -->
             <div id="sowProgressContainer" style="display: none; margin-top: 12px;">
-              <div style="font-size: 0.8em; color: #666; margin-bottom: 8px;">Procesando archivo...</div>
+              <div style="font-size: 0.8em; color: #666; margin-bottom: 8px;" data-i18n="form_processing">Procesando archivo...</div>
               <div style="background: #e5e7eb; border-radius: 4px; height: 6px; overflow: hidden;">
                 <div id="sowProgressBar" style="background: linear-gradient(90deg, #17B8A0, #0B7B8C); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
               </div>
@@ -399,7 +399,7 @@
           <!-- Size Validation Message -->
           <div id="sowSizeWarning" style="display: none; margin-top: 12px; padding: 12px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
             <p style="margin: 0; font-size: 0.9em; color: #92400e;">
-              <strong>⚠️</strong> El archivo es muy grande. Máximo 20 MB.
+              <strong>⚠️</strong> <span data-i18n="form_size_error">El archivo es muy grande. Máximo 20 MB.</span>
             </p>
           </div>
 
@@ -407,12 +407,12 @@
           <div id="sowToggleSection" style="display: none; margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 8px; animation: slideInUp 0.3s ease-out;">
             <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
               <input type="checkbox" id="sowUseInAnalysis" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: #17B8A0;">
-              <span style="font-weight: 500; color: #333;">Usar en análisis de IA</span>
+              <span style="font-weight: 500; color: #333;" data-i18n="form_use_sow">Usar en análisis de IA</span>
             </label>
-            <p style="margin: 8px 0 0 0; font-size: 0.85em; color: #666;">Claude tendrá acceso al SOW para análisis más precisos</p>
+            <p style="margin: 8px 0 0 0; font-size: 0.85em; color: #666;" data-i18n="form_use_sow_desc">Claude tendrá acceso al SOW para análisis más precisos</p>
           </div>
         </div>
-        <button type="submit" id="btn">🚀 EJECUTAR ANÁLISIS</button>
+        <button type="submit" id="btn" data-i18n="form_submit">🚀 EJECUTAR ANÁLISIS</button>
         <div class="loading" id="loading">
           <div style="border: 4px solid #f3f3f3; border-top: 4px solid #17B8A0; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 10px auto;"></div>
           <p style="color: #17B8A0; font-weight: 600; margin-top: 10px;">Procesando...</p>
@@ -898,6 +898,76 @@
         }
       });
     }
+  </script>
+
+  <!-- i18n: español por defecto; cambia a inglés si navigator.language es inglés o si ?lang=en en URL -->
+  <script>
+    (function () {
+      // Detectar idioma: primero chequear parámetro ?lang=en, luego navigator.language
+      var urlParams = new URLSearchParams(window.location.search);
+      var lang = urlParams.get('lang') ||
+                 ((navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es');
+      document.documentElement.lang = lang;
+      if (lang === 'es') return; // español es el default, no hace falta traducir
+
+      var t = {
+        welcome: "Welcome",
+        logout: "Sign Out",
+        greeting_title: "Hello, Juan!",
+        greeting_subtitle: "Welcome to LARA, your Autonomous Program Manager.",
+        greeting_desc: "LARA analyzes your projects and delivers actionable insights with AI in seconds.",
+        quickstart_title: "🚀 Quick Start",
+        step1_title: "Import your plan",
+        step1_desc: "Excel or Google Sheets",
+        step2_title: "LARA analyzes",
+        step2_desc: "AI detects risks",
+        step3_title: "Get insights",
+        step3_desc: "Reports and recommendations",
+        stats_title: "📊 Your statistics",
+        actions_title: "⚡ Quick actions",
+        portfolio_title: "View existing projects",
+        portfolio_desc: "Access your previous analyses",
+        form_title: "Start",
+        form_project: "Project",
+        form_new_project: "➕ Create new project",
+        form_hint: "It will be added as a new upload of the selected project, under the same history.",
+        form_org: "Organization Name",
+        form_file: "File with Projects (Excel .xlsx or CSV)",
+        form_gsheet: "…or import from Google Sheets",
+        form_gsheet_ph: "https://docs.google.com/spreadsheets/d/...",
+        form_gsheet_hint: "The sheet must be shared as \"Anyone with the link can view\".",
+        form_method: "Methodology",
+        form_sow: "📄 Statement of Work (Optional)",
+        form_sow_hint: "Improves analysis",
+        form_sow_drag: "Drag your SOW here",
+        form_sow_click: "or click to select (PDF or Word)",
+        form_sow_size: "Max 20 MB",
+        form_change: "Change",
+        form_processing: "Processing file...",
+        form_size_error: "File is too large. Maximum 20 MB.",
+        form_use_sow: "Use in AI analysis",
+        form_use_sow_desc: "Claude will have access to the SOW for more accurate analysis",
+        form_submit: "🚀 RUN ANALYSIS"
+      };
+
+      // Reemplazar todos los elementos con data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+      });
+
+      // Reemplazar placeholders
+      document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        if (t[key]) el.placeholder = t[key];
+      });
+
+      // Reemplazar innerHTML (para HTML con tags internos)
+      document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-html');
+        if (t[key]) el.innerHTML = t[key];
+      });
+    })();
   </script>
 
 </body>
