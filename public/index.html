@@ -264,9 +264,66 @@
         <p class="greeting">👋 Bienvenido, <strong id="userName"></strong></p>
         <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
       </div>
-      <h2 id="welcomeHeading">¡Bienvenido de nuevo!</h2>
-      <div class="stat-cards" id="statCards"></div>
-      <button onclick="window.location='/portfolio'" style="background:white; color:#0B7B8C; border:2px solid #17B8A0;">📁 Ver proyectos existentes</button>
+
+      <!-- Greeting Section -->
+      <div style="margin-bottom: 30px;">
+        <h2 style="font-size: 1.4em; color: #0B7B8C; margin: 0 0 8px;">¡Hola, Juan!</h2>
+        <p style="color: #555; font-size: 0.95em; margin: 0; line-height: 1.5;">Bienvenido a LARA, tu Autonomous Program Manager.</p>
+        <p style="color: #0B7B8C; font-size: 0.9em; margin: 12px 0 0; background: #E1F5EE; padding: 12px; border-radius: 8px; border-left: 3px solid #17B8A0;">
+          <strong>✨</strong> LARA analiza tus proyectos y te entrega insights accionables con IA en segundos.
+        </p>
+      </div>
+
+      <!-- Quick Start Section -->
+      <div style="margin-bottom: 30px;">
+        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 16px; font-weight: 600;">🚀 Quick Start</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div style="background: #E1F5EE; padding: 16px; border-radius: 10px; text-align: center;">
+            <div style="background: #17B8A0; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin: 0 auto 8px;">1</div>
+            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;">Importa tu plan</p>
+            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">Excel o Google Sheets</p>
+          </div>
+          <div style="background: #FEF3C7; padding: 16px; border-radius: 10px; text-align: center;">
+            <div style="background: #F59E0B; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin: 0 auto 8px;">2</div>
+            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;">LARA analiza</p>
+            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">IA detecta riesgos</p>
+          </div>
+          <div style="background: #F0F9FF; padding: 16px; border-radius: 10px; text-align: center;">
+            <div style="background: #378ADD; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin: 0 auto 8px;">3</div>
+            <p style="margin: 0; font-weight: 600; font-size: 0.9em; color: #333;">Recibe insights</p>
+            <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">Reports y recomendaciones</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Section -->
+      <div style="margin-bottom: 30px;">
+        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 16px; font-weight: 600;">📊 Tus estadísticas</h3>
+        <div class="stat-cards" id="statCards"></div>
+      </div>
+
+      <!-- Tip Section -->
+      <div style="margin-bottom: 24px; padding: 16px; background: #FFFBEB; border-radius: 10px; border-left: 4px solid #F59E0B;">
+        <p style="margin: 0 0 8px; font-weight: 600; color: #92400E; font-size: 0.95em;">💡 Tip del día</p>
+        <p style="margin: 0; font-size: 0.9em; color: #78350F; line-height: 1.5;">LARA identifica riesgos y dependencias que suelen pasar desapercibidos.</p>
+      </div>
+
+      <!-- Quick Actions -->
+      <div>
+        <h3 style="font-size: 1.1em; color: #333; margin: 0 0 12px; font-weight: 600;">⚡ Accesos rápidos</h3>
+        <button onclick="window.location='/portfolio'" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: white; border: 1px solid #E0F2F1; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin-bottom: 8px;">
+          <span style="font-size: 1.3em;">📁</span>
+          <div style="text-align: left; flex: 1;">
+            <p style="margin: 0; font-weight: 600; color: #333; font-size: 0.95em;">Ver proyectos existentes</p>
+            <p style="margin: 2px 0 0; font-size: 0.8em; color: #666;">Accede a tus análisis anteriores</p>
+          </div>
+          <span style="color: #0B7B8C;">→</span>
+        </button>
+        <div style="padding: 12px; background: #F5FBFA; border-radius: 8px; border-left: 3px solid #17B8A0;">
+          <p style="margin: 0; font-size: 0.9em; color: #0B7B8C; font-weight: 500;">📋 Plantilla de ejemplo</p>
+          <p style="margin: 4px 0 0; font-size: 0.8em; color: #666;">Descarga una plantilla Excel para empezar</p>
+        </div>
+      </div>
     </div>
     <div class="box">
       <div class="header">
