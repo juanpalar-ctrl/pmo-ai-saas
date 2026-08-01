@@ -95,3 +95,65 @@ describe('POST /api/admin/update-status', () => {
     expect(res.status).toBe(500);
   });
 });
+
+describe('GET /api/admin/all-users', () => {
+  it('returns the list of all approved and rejected users', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        { id: 1, email: 'approved@b.com', created_at: '2026-01-01', status: 'approved' },
+        { id: 2, email: 'rejected@b.com', created_at: '2026-01-02', status: 'rejected' },
+      ],
+    });
+
+    const res = await request(app).get('/api/admin/all-users');
+
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBe(2);
+    expect(res.body.users[0].email).toBe('approved@b.com');
+    expect(res.body.users[1].email).toBe('rejected@b.com');
+  });
+
+  it('returns an empty list when there are no users', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get('/api/admin/all-users');
+
+    expect(res.status).toBe(200);
+    expect(res.body.users).toEqual([]);
+    expect(res.body.count).toBe(0);
+  });
+
+  it('returns 500 when the query fails', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+
+    const res = await request(app).get('/api/admin/all-users');
+
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('DELETE /api/admin/users/:userId', () => {
+  it('returns 400 when userId is missing', async () => {
+    const res = await request(app).delete('/api/admin/users/');
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 404 when the user does not exist', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).delete('/api/admin/users/999');
+    expect(res.status).toBe(404);
+  });
+
+  it('deletes a user and returns the deleted row', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 1, email: 'deleted@b.com' }] });
+    const res = await request(app).delete('/api/admin/users/1');
+    expect(res.status).toBe(200);
+    expect(res.body.user.email).toBe('deleted@b.com');
+  });
+
+  it('returns 500 when the delete query fails', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).delete('/api/admin/users/1');
+    expect(res.status).toBe(500);
+  });
+});
