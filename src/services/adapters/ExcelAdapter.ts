@@ -20,6 +20,10 @@ export interface ReadResult {
   rejectedRows: RejectedRow[];
 }
 
+export interface ReadResultWithRawData extends ReadResult {
+  rawData: any[];
+}
+
 export class ExcelAdapter implements IDataAdapter {
   name = '📊 Excel Adapter';
   
@@ -169,6 +173,63 @@ export class ExcelAdapter implements IDataAdapter {
     return parsed;
   }
   
+  /**
+   * READ WITH DETAILS AND RAW DATA - For resource assignment extraction
+   * Returns validProjects, rejectedRows, AND raw normalized data
+   */
+  async readWithDetailsAndRawData(): Promise<ReadResultWithRawData> {
+    serviceLogger.info(`\n📂 ${this.name}: Leyendo con detalles y raw data ${this.filePath}`);
+
+    if (!fs.existsSync(this.filePath)) {
+      throw new Error(`❌ Archivo no encontrado: ${this.filePath}`);
+    }
+
+    try {
+      const workbook = XLSX.readFile(this.filePath);
+
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error('❌ Excel no tiene hojas');
+      }
+
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      let rawData: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+      serviceLogger.info(`📄 Se leyeron ${rawData.length} filas del Excel`);
+
+      rawData = rawData.map(row => this.parseJsonFields(row));
+
+      const validProjects: ProjectData[] = [];
+      const rejectedRows: RejectedRow[] = [];
+
+      for (let index = 0; index < rawData.length; index++) {
+        const row = rawData[index];
+        const validationResult = await this.validateWithErrors(row);
+
+        if (validationResult.valid) {
+          validProjects.push(row as ProjectData);
+        } else {
+          rejectedRows.push({
+            rowIndex: index + 2,
+            errors: validationResult.errors,
+          });
+        }
+      }
+
+      serviceLogger.info(`✅ ${validProjects.length} válidos | ❌ ${rejectedRows.length} rechazados`);
+
+      return {
+        validProjects,
+        rejectedRows,
+        rawData,
+      };
+
+    } catch (error: any) {
+      serviceLogger.error(`❌ Error leyendo Excel: ${error.message}`);
+      throw error;
+    }
+  }
+
   /**
    * VALIDATE - Original method (backwards compatible)
    */

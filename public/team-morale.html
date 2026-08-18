@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LARA — Team Morale</title>
+  <title>LARA — People & Capacity</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -110,6 +110,30 @@
       background: white; transition: all 0.15s;
     }
     .suggestion-chip:hover { background: #17B8A0; color: white; }
+
+    /* ── Resource Allocation Gantt Styles ── */
+    .resource-gantt-container { overflow-x: auto; background: white; border-radius: 8px; margin-top: 12px; }
+    .resource-gantt-svg { display: block; }
+    .alloc-under80 { fill: #10b981; } /* Green <80% */
+    .alloc-80to100 { fill: #f59e0b; } /* Amber 80-100% */
+    .alloc-over100 { fill: #ef4444; } /* Red >100% */
+    .person-label { font-size: 12px; font-weight: 600; fill: #374151; }
+    .week-header { font-size: 11px; fill: #6b7280; text-anchor: middle; }
+    .allocation-bar { transition: opacity 0.2s; cursor: pointer; }
+    .allocation-bar:hover { opacity: 0.8; }
+
+    .conflict-alert {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fee2e2; color: #991b1b; padding: 10px 14px;
+      border-radius: 6px; font-size: 0.85em; margin: 6px 0;
+      border-left: 3px solid #dc2626;
+    }
+    .conflict-alert i { font-size: 1.1em; }
+
+    .shared-resources-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+    .shared-resources-table th { background: #f3f4f6; padding: 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #e5e7eb; }
+    .shared-resources-table td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    .shared-resources-table tr:hover { background: #f9fafb; }
   </style>
 </head>
 <body>
@@ -121,7 +145,7 @@
         <img src="logo.jpeg" alt="LARA" class="h-10 w-10 rounded-lg object-cover">
         <div>
           <h1 class="font-bold text-lg sm:text-xl text-gray-800">LARA Portfolio</h1>
-          <p class="text-xs text-teal-600 font-semibold">Team Morale</p>
+          <p class="text-xs text-teal-600 font-semibold">People & Capacity Management</p>
         </div>
       </div>
       <div class="flex items-center gap-3 sm:gap-4 flex-wrap">
@@ -179,6 +203,51 @@
 
         <div id="team-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         <p id="no-results" class="hidden text-center text-gray-400 text-sm py-8">Ningún miembro coincide con este filtro.</p>
+
+        <!-- RESOURCE ALLOCATION SECTION -->
+        <div id="resource-section" class="glass rounded-2xl p-5 shadow-lg hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-lg text-gray-800">
+              <i class="fa-solid fa-chart-gantt text-teal-600 mr-2"></i>Distribución de Recursos
+            </h2>
+            <span id="resource-summary" class="text-sm font-semibold text-gray-500"></span>
+          </div>
+
+          <!-- Overbooking Alerts -->
+          <div id="overbooking-alerts" class="mb-4 hidden">
+            <p class="text-sm font-semibold text-red-700 mb-2">⚠️ Personas Sobreasignadas</p>
+            <div id="conflicts-list"></div>
+          </div>
+
+          <!-- Resource Gantt -->
+          <div class="resource-gantt-container hidden" id="gantt-container">
+            <svg id="resource-gantt" class="resource-gantt-svg" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet"></svg>
+            <p class="text-xs text-gray-400 mt-2 px-4 pb-2">🟩 <80% | 🟨 80-100% | 🟥 >100% (riesgo)</p>
+          </div>
+
+          <!-- Shared Resources Dependencies -->
+          <div id="dependencies-section" class="mt-6 hidden">
+            <p class="text-sm font-semibold text-gray-700 mb-3">
+              <i class="fa-solid fa-link text-teal-600 mr-2"></i>Dependencias entre Proyectos
+            </p>
+            <div class="overflow-x-auto">
+              <table class="shared-resources-table">
+                <thead>
+                  <tr>
+                    <th>Proyecto A</th>
+                    <th>Proyecto B</th>
+                    <th>Personas Compartidas</th>
+                    <th>Semanas Overlap</th>
+                    <th>Riesgo</th>
+                  </tr>
+                </thead>
+                <tbody id="dependencies-list"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <p id="resource-loading" class="text-center text-gray-400 text-sm py-4">Cargando distribución de recursos...</p>
+        </div>
 
       </div>
     </main>
@@ -302,6 +371,7 @@
         currentProjectId = requestedId && projects.some(p => String(p.projectId) === requestedId) ? requestedId : 'all';
         document.getElementById('project-select').value = currentProjectId;
         render();
+        loadResourceConflicts();
       } catch (e) {
         document.getElementById('loading').innerHTML = '<p class="text-white text-lg">Error cargando el equipo. Intenta de nuevo.</p>';
       }
@@ -603,6 +673,151 @@
       } catch (_) {
         alert('Error de conexión.');
       }
+    }
+
+    async function loadResourceConflicts() {
+      try {
+        const r = await fetch('/api/portfolio/resource-conflicts', { credentials: 'include' });
+        const json = await r.json();
+
+        if (!json.success || !json.data) {
+          document.getElementById('resource-section').classList.add('hidden');
+          return;
+        }
+
+        const report = json.data;
+        const hasConflicts = report.conflicts && report.conflicts.length > 0;
+        const hasDependencies = report.cross_project_dependencies && report.cross_project_dependencies.length > 0;
+
+        // Show section only if there are conflicts or dependencies
+        if (!hasConflicts && !hasDependencies) {
+          document.getElementById('resource-section').classList.add('hidden');
+          return;
+        }
+
+        document.getElementById('resource-section').classList.remove('hidden');
+        document.getElementById('resource-loading').classList.add('hidden');
+
+        // Update summary
+        const summary = report.summary || {};
+        document.getElementById('resource-summary').innerHTML =
+          `👥 ${summary.total_people} personas | ⚠️ ${summary.people_overbooked} sobreasignadas`;
+
+        // Render overbooking alerts
+        if (hasConflicts) {
+          document.getElementById('overbooking-alerts').classList.remove('hidden');
+          const list = document.getElementById('conflicts-list');
+          list.innerHTML = report.conflicts.map(c => `
+            <div class="conflict-alert">
+              <i class="fa-solid fa-exclamation-circle"></i>
+              <span><strong>${escapeHtml(c.person_name)}</strong> • ${c.week_start} • ${c.total_allocation_percent}%
+              (${c.projects.map(p => p.projectname).join(' + ')})</span>
+            </div>
+          `).join('');
+          renderResourceGantt(report.conflicts);
+        } else {
+          document.getElementById('overbooking-alerts').classList.add('hidden');
+          document.getElementById('gantt-container').classList.add('hidden');
+        }
+
+        // Render dependencies table
+        if (hasDependencies) {
+          document.getElementById('dependencies-section').classList.remove('hidden');
+          const tbody = document.getElementById('dependencies-list');
+          tbody.innerHTML = report.cross_project_dependencies.map(dep => `
+            <tr>
+              <td>${escapeHtml(dep.project_a_name)}</td>
+              <td>${escapeHtml(dep.project_b_name)}</td>
+              <td>${dep.shared_people.map(p => p.person_name).join(', ')}</td>
+              <td>${dep.timeline_overlap_weeks} semanas</td>
+              <td><span class="rag-badge ${dep.risk_level === 'high' ? 'red' : dep.risk_level === 'medium' ? 'yellow' : 'green'}">
+                ${dep.risk_level.toUpperCase()}
+              </span></td>
+            </tr>
+          `).join('');
+        } else {
+          document.getElementById('dependencies-section').classList.add('hidden');
+        }
+      } catch (e) {
+        document.getElementById('resource-section').classList.add('hidden');
+      }
+    }
+
+    function renderResourceGantt(conflicts) {
+      document.getElementById('gantt-container').classList.remove('hidden');
+      const svg = document.getElementById('resource-gantt');
+      if (!svg || conflicts.length === 0) return;
+
+      // Simple SVG gantt: Y = people, X = weeks
+      const uniqueWeeks = [...new Set(conflicts.map(c => c.week_start))].sort();
+      const people = [...new Set(conflicts.map(c => c.person_id))];
+
+      const height = Math.max(200, people.length * 40);
+      const width = Math.max(600, uniqueWeeks.length * 100);
+
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.innerHTML = '';
+
+      const yBase = 30;
+      const rowHeight = height / (people.length + 1);
+      const colWidth = (width - 150) / uniqueWeeks.length;
+
+      // Headers (weeks)
+      uniqueWeeks.forEach((week, idx) => {
+        const x = 150 + idx * colWidth;
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', x + colWidth / 2);
+        text.setAttribute('y', 20);
+        text.setAttribute('class', 'week-header');
+        text.setAttribute('text-anchor', 'middle');
+        text.textContent = week.slice(5);
+        svg.appendChild(text);
+      });
+
+      // Rows (people with allocation bars)
+      people.forEach((personId, pidx) => {
+        const personConflicts = conflicts.filter(c => c.person_id === personId);
+        const y = yBase + pidx * rowHeight;
+
+        // Person label
+        const personName = personConflicts[0]?.person_name || `Person ${personId}`;
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', 5);
+        label.setAttribute('y', y + rowHeight / 2 + 5);
+        label.setAttribute('class', 'person-label');
+        label.textContent = personName.slice(0, 20);
+        svg.appendChild(label);
+
+        // Allocation bars
+        personConflicts.forEach(conflict => {
+          const weekIdx = uniqueWeeks.indexOf(conflict.week_start);
+          const x = 150 + weekIdx * colWidth + 2;
+          const barWidth = colWidth - 4;
+          const alloc = conflict.total_allocation_percent;
+
+          const barClass = alloc > 100 ? 'alloc-over100' : alloc >= 80 ? 'alloc-80to100' : 'alloc-under80';
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', x);
+          rect.setAttribute('y', y + 5);
+          rect.setAttribute('width', barWidth);
+          rect.setAttribute('height', rowHeight - 10);
+          rect.setAttribute('class', `allocation-bar ${barClass}`);
+          rect.setAttribute('rx', 2);
+          rect.setAttribute('title', `${alloc}% (${conflict.projects.map(p => p.projectname).join(' + ')})`);
+          svg.appendChild(rect);
+
+          // Allocation label
+          const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          textLabel.setAttribute('x', x + barWidth / 2);
+          textLabel.setAttribute('y', y + rowHeight / 2 + 3);
+          textLabel.setAttribute('class', 'allocation-label');
+          textLabel.setAttribute('text-anchor', 'middle');
+          textLabel.setAttribute('fill', 'white');
+          textLabel.setAttribute('font-size', '10');
+          textLabel.textContent = `${alloc}%`;
+          svg.appendChild(textLabel);
+        });
+      });
     }
 
     function logout() {

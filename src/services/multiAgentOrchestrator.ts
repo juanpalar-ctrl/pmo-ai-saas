@@ -6,6 +6,7 @@ import { calculateProjectMetrics } from './metricsCalculator';
 import { calculateFrameworkMetrics } from './frameworkMetrics';
 import { detectWarnings } from './earlyWarning';
 import { teamService } from './teamService';
+import { detectResourceConflicts } from './resourceConflictDetector';
 import { routeLogger } from '../core/logger';
 
 /**
@@ -94,6 +95,21 @@ export const orchestrator = {
       routeLogger.error({ err }, 'Failed to compute team disconnection alerts');
     }
 
+    // Fetch resource allocation conflicts if available (Hito 6)
+    let resourceAlerts: any = null;
+    try {
+      const conflictReport = await detectResourceConflicts(projectId, userId);
+      if (conflictReport.conflicts.length > 0 || conflictReport.bottlenecks.length > 0) {
+        resourceAlerts = {
+          overbooked: conflictReport.conflicts,
+          bottlenecks: conflictReport.bottlenecks,
+          sharedDependencies: conflictReport.cross_project_dependencies
+        };
+      }
+    } catch (err) {
+      routeLogger.error({ err }, 'Failed to compute resource allocation conflicts');
+    }
+
     // Fetch SOW if available
     const sowData = await getProjectSOW(projectId);
 
@@ -103,6 +119,7 @@ export const orchestrator = {
       timeline: { percentageComplete: parseFloat(metrics.percentComplete as string), daysRemaining: metrics.daysRemaining },
       budget: { total: parseFloat(metrics.pv as string), spent: parseFloat(metrics.ac as string) },
       moraleAlerts,
+      resourceAlerts,
       lang,
     };
 

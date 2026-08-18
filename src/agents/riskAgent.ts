@@ -70,11 +70,50 @@ ${input.sowContent}
 Utiliza la información del SOW para validar la duración esperada, presupuesto, alcance y requisitos del proyecto.\n`;
   }
 
+  // Hito 6: resource allocation alerts (overbooking, bottlenecks, dependencies)
+  // feed into risk analysis. Empty/absent resourceAlerts renders to '' — no-op
+  // for projects without resource assignments.
+  private formatResourceAlerts(alerts: any | undefined): string {
+    if (!alerts) return '';
+
+    const sections: string[] = [];
+
+    if (alerts.overbooked && alerts.overbooked.length > 0) {
+      const lines = alerts.overbooked.map((c: any) => {
+        const projects = c.projects?.map((p: any) => `${p.projectname} (${p.allocation}%)`).join(' + ') || '';
+        return `- Semana ${c.week_start}: ${c.person_name} ${c.total_allocation_percent}% (${projects})`;
+      });
+      sections.push(`PERSONAS SOBREASIGNADAS (>100% en misma semana):\n${lines.join('\n')}\nRiesgo: context-switching, fatiga, burnout, reducción de productividad (20-40% típico).`);
+    }
+
+    if (alerts.bottlenecks && alerts.bottlenecks.length > 0) {
+      const lines = alerts.bottlenecks.map((b: any) =>
+        `- ${b.person_name}: ${b.project_count} proyectos simultáneamente (${b.weeks_overbooked} semanas sobreasignadas)`
+      );
+      sections.push(`CUELLOS DE BOTELLA (personas críticas en 3+ proyectos):\n${lines.join('\n')}\nRiesgo: puntos únicos de fallo; si se ausentan, múltiples proyectos fallan.`);
+    }
+
+    if (alerts.sharedDependencies && alerts.sharedDependencies.length > 0) {
+      const lines = alerts.sharedDependencies
+        .filter((d: any) => d.risk_level !== 'low')
+        .map((d: any) => {
+          const people = d.shared_people?.map((p: any) => p.person_name).join(', ') || '';
+          return `- ${d.project_a_name} ↔ ${d.project_b_name}: comparten ${d.shared_count} personas (${d.timeline_overlap_weeks} semanas overlap)`;
+        });
+      if (lines.length > 0) {
+        sections.push(`DEPENDENCIAS DE RECURSOS (proyectos que comparten personas):\n${lines.join('\n')}\nRiesgo de cascada: si Project A falla, personas se reasignan de Project B.`);
+      }
+    }
+
+    return sections.length > 0 ? `\nALERTAS DE ASIGNACIÓN DE RECURSOS:\n${sections.join('\n\n')}\nConsidera estos alertas de capacidad de recursos en tus riesgos y recomendaciones.\n` : '';
+  }
+
   buildPrompt(input: AgentInput): string {
     const lang = normalizeLang(input.lang);
 
     // Format SOW content if available
     const sowSection = this.formatSOWSection(input);
+    const resourceSection = this.formatResourceAlerts(input.resourceAlerts);
 
     return `${languageDirective(lang)}
 
@@ -86,6 +125,7 @@ PROYECTO: "${input.projectName}"
 AVANCE: ${input.timeline?.percentageComplete || 0}%
 FRAMEWORK: ${this.framework.toUpperCase()}
 ${this.formatMoraleAlerts(input.moraleAlerts)}
+${resourceSection}
 ${sowSection}
 INSTRUCCIÓN CRÍTICA:
 - Retorna SIEMPRE un JSON válido (sin markdown)

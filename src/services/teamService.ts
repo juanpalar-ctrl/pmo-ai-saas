@@ -83,7 +83,7 @@ function looksLikePersonName(value: string): boolean {
   return true;
 }
 
-async function autoPopulateTeam(projectId: number, userId: string, taskRows: TransformedRow[]): Promise<void> {
+export async function autoPopulateTeam(projectId: number, userId: string, taskRows: TransformedRow[]): Promise<void> {
   const names = new Set<string>();
   for (const row of taskRows) {
     const name = (row.assignee || '').trim();

@@ -6,6 +6,7 @@ import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
 import { ExcelAdapter } from '../services/adapters/ExcelAdapter';
 import { dataIngestService } from '../services/dataIngestService';
+import { resourceAssignmentIngestService } from '../services/resourceAssignmentIngestService';
 import { projectRepository } from '../repositories/projectRepository';
 import { pool } from '../db';
 import { UPLOAD_MESSAGES } from '../config/messages';
@@ -14,6 +15,7 @@ import { routeLogger } from '../core/logger';
 import { computeHealthScore } from '../services/portfolioService';
 import { TransformedRow } from '../services/frameworkMetrics';
 import { AuthRequest } from '../middleware/requireAuth';
+import { autoPopulateTeam } from '../services/teamService';
  
 const router = express.Router();
  
@@ -62,36 +64,97 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
         error: UPLOAD_MESSAGES.INVALID_FORMAT,
       });
     }
-    
+
     const adapter = new ExcelAdapter(req.file.path);
     const userId = (req as AuthRequest).user!.id;
-    const result = await dataIngestService.ingestFromAdapterWithDetails(adapter, userId);
-    
+
+    // Read Excel with both project data and raw data for resource extraction
+    const adapterWithRawData = adapter as any;
+    const { validProjects, rejectedRows, rawData } =
+      await adapterWithRawData.readWithDetailsAndRawData();
+
     fs.unlinkSync(req.file.path);
-    
-    if (result.count === 0) {
+
+    if (validProjects.length === 0) {
       return res.status(400).json({
         success: false,
         error: "No se encontraron filas válidas en el archivo.",
-        rejected: result.rejected,
-        rejectionReasons: result.rejectionReasons,
+        rejected: rejectedRows.length,
+        rejectionReasons: rejectedRows.flatMap((item: any) =>
+          item.errors.map((error: string) => `Fila ${item.rowIndex}: ${error}`)
+        ),
       });
     }
-    
+
+    // Save projects to database
+    for (const project of validProjects) {
+      await projectRepository.saveProject(project, userId);
+    }
+
+    // Extract and ingest resource assignments (Phase 3)
+    let resourceWarnings: any[] = [];
+    if (rawData && rawData.length > 0) {
+      try {
+        // Get project end date from first valid project for reference
+        const projectEndDate = validProjects[0]?.timeline?.endDate;
+        const projectId = validProjects[0]?.projectId;
+
+        if (projectId) {
+          // Transform rawData to have 'assignee' field for autoPopulateTeam
+          // Detect the assignee/person column name
+          const headerSample = rawData[0];
+          const assigneeCol = Object.keys(headerSample).find(k =>
+            /^(assignee|asignado|responsible|owner|person|team.member)/i.test(k) ||
+            /^team.member$/i.test(k)
+          );
+
+          // Auto-populate team members before ingesting assignments
+          if (assigneeCol) {
+            const taskRows = rawData.map((row: any) => ({
+              assignee: row[assigneeCol],
+            })) as TransformedRow[];
+
+            await autoPopulateTeam(projectId, userId, taskRows);
+          }
+
+          // Now ingest resource assignments
+          const resourceResult = await resourceAssignmentIngestService.ingestResourceAssignments(
+            rawData,
+            projectId,
+            userId,
+            projectEndDate
+          );
+          resourceWarnings = resourceResult.warnings || [];
+        }
+      } catch (err) {
+        routeLogger.warn({ err }, 'Resource assignment ingestion failed, continuing');
+        // Don't fail the upload if resource assignment fails - it's a secondary feature
+      }
+    }
+
+    // Combine all warnings
+    const allWarnings = [
+      ...rejectedRows.flatMap((item: any) =>
+        item.errors.map((error: string) => `Fila ${item.rowIndex}: ${error}`)
+      ),
+      ...resourceWarnings.map(w => `[Recursos] ${w.message}`),
+    ];
+
     res.json({
       success: true,
       message: UPLOAD_MESSAGES.UPLOAD_SUCCESS,
-      count: result.count,
-      rejected: result.rejected,
-      rejectionReasons: result.rejected > 0 ? result.rejectionReasons : [],
+      count: validProjects.length,
+      rejected: rejectedRows.length,
+      resourceAssigned: resourceWarnings.length === 0 ? undefined : true,
+      warnings: allWarnings.length > 0 ? allWarnings : [],
       filename: req.file.filename,
     });
-    
+
   } catch (error) {
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    
+
     res.status(500).json({
       success: false,
       error: errorMessage(error),

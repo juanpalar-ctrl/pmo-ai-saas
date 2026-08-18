@@ -260,6 +260,40 @@ export async function runMigrations(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_stakeholders_projectid ON stakeholders(projectid)
   `);
 
+  // Resource Assignments table (Hito 6: Resource Distribution Gantt)
+  // Tracks individual person assignments to projects with weekly allocation.
+  // Used for overbooking detection and cross-project dependency analysis.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS resource_assignments (
+      id SERIAL PRIMARY KEY,
+      project_id INTEGER NOT NULL,
+      user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+      person_id INTEGER NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+      task_name VARCHAR(255),
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      hours_per_week NUMERIC(5,2) NOT NULL,
+      allocation_percent INTEGER GENERATED ALWAYS AS (CAST(hours_per_week / 40.0 * 100 AS INTEGER)) STORED,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_resource_assignments_person_weeks
+    ON resource_assignments(person_id, start_date, end_date)
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_resource_assignments_project_dates
+    ON resource_assignments(project_id, start_date, end_date)
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_resource_assignments_user_id
+    ON resource_assignments(user_id)
+  `);
+
   dbLogger.info('Database migrations complete');
 }
 
