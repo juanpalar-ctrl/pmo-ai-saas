@@ -289,6 +289,21 @@ export async function runMigrations(): Promise<void> {
     dbLogger.debug('Unique constraint already exists or other constraint creation issue, continuing');
   });
 
+  // Clean up duplicate assignments: keep only the most recent one per (project_id, person_id, start_date)
+  await pool.query(`
+    WITH ranked AS (
+      SELECT id, ROW_NUMBER() OVER (PARTITION BY project_id, person_id, start_date ORDER BY updated_at DESC) as rn
+      FROM resource_assignments
+    )
+    DELETE FROM resource_assignments
+    WHERE id IN (SELECT id FROM ranked WHERE rn > 1)
+  `).then((result) => {
+    dbLogger.info({ deletedCount: result.rowCount || 0 }, 'Cleaned up duplicate resource assignments');
+  }).catch((err) => {
+    // Query might fail if there are no duplicates or other issues, continue anyway
+    dbLogger.debug({ err }, 'Duplicate cleanup completed or skipped');
+  });
+
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_resource_assignments_person_weeks
     ON resource_assignments(person_id, start_date, end_date)
