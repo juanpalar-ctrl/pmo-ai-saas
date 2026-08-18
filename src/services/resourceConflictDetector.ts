@@ -514,51 +514,183 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
       };
     }
 
-    // Same detection logic, but across all projects
-    // (reuse detectResourceConflicts logic on portfolio level)
-    // For now, we'll run per-project and aggregate
+    // Fetch project names and person names for enrichment
+    const allProjectIds = new Set(allAssignments.map(a => a.project_id));
+    const allPersonIds = new Set(allAssignments.map(a => a.person_id));
 
-    const projectIds = new Set(allAssignments.map(a => a.project_id));
-    let aggregated: ResourceConflictReport = {
-      summary: { total_people: 0, people_overbooked: 0, project_pairs_sharing: 0, critical_bottlenecks: 0 },
-      conflicts: [],
-      bottlenecks: [],
-      cross_project_dependencies: []
-    };
+    const { pool } = require('../db');
+    const projectNameMap = new Map<number, string>();
+    const personNameMap = new Map<number, string>();
 
-    for (const projectId of projectIds) {
-      const report = await detectResourceConflicts(projectId, userId);
-      aggregated.conflicts.push(...report.conflicts);
-      aggregated.bottlenecks.push(...report.bottlenecks);
-      aggregated.cross_project_dependencies.push(...report.cross_project_dependencies);
+    if (allProjectIds.size > 0) {
+      const projectIds = Array.from(allProjectIds);
+      const projectResult = await pool.query(
+        `SELECT projectid, projectname FROM project_data WHERE projectid = ANY($1)`,
+        [projectIds]
+      );
+      projectResult.rows.forEach((row: any) => {
+        projectNameMap.set(row.projectid, row.projectname);
+      });
     }
 
-    // Deduplicate and recalculate summary
-    aggregated.conflicts = Array.from(
-      new Map(aggregated.conflicts.map(c => [`${c.person_id}-${c.week_start}`, c])).values()
-    );
+    if (allPersonIds.size > 0) {
+      const personIds = Array.from(allPersonIds);
+      const personResult = await pool.query(
+        `SELECT id, name FROM team_members WHERE id = ANY($1)`,
+        [personIds]
+      );
+      personResult.rows.forEach((row: any) => {
+        personNameMap.set(row.id, row.name);
+      });
+    }
 
-    aggregated.bottlenecks = Array.from(
-      new Map(aggregated.bottlenecks.map(b => [b.person_id, b])).values()
-    );
+    // Group assignments by (person_id, start_date) to detect cross-project overbooking
+    const personWeekMap = new Map<string, ResourceAssignment[]>();
+    for (const assignment of allAssignments) {
+      const key = `${assignment.person_id}-${assignment.start_date}`;
+      if (!personWeekMap.has(key)) {
+        personWeekMap.set(key, []);
+      }
+      personWeekMap.get(key)!.push(assignment);
+    }
 
-    aggregated.cross_project_dependencies = Array.from(
-      new Map(
-        aggregated.cross_project_dependencies.map(c =>
-          [`${Math.min(c.project_a_id, c.project_b_id)}-${Math.max(c.project_a_id, c.project_b_id)}`, c]
-        )
-      ).values()
-    );
+    // Detect overbooking at portfolio level (person-week granularity)
+    const conflicts: ResourceConflict[] = [];
+    const conflictedPeople = new Set<number>();
 
-    const uniquePeople = new Set(aggregated.conflicts.map(c => c.person_id));
-    aggregated.summary = {
-      total_people: uniquePeople.size,
-      people_overbooked: uniquePeople.size,
-      project_pairs_sharing: aggregated.cross_project_dependencies.length,
-      critical_bottlenecks: aggregated.bottlenecks.filter(b => b.risk_level === 'critical').length
+    for (const [key, weekAssignments] of personWeekMap.entries()) {
+      const totalAllocation = weekAssignments.reduce((sum, a) => sum + (a.allocation_percent || 0), 0);
+
+      if (totalAllocation > 100) {
+        const [personIdStr] = key.split('-');
+        const personId = parseInt(personIdStr, 10);
+        conflictedPeople.add(personId);
+
+        conflicts.push({
+          person_id: personId,
+          person_name: personNameMap.get(personId) || `Person ${personId}`,
+          week_start: weekAssignments[0].start_date,
+          total_allocation_percent: totalAllocation,
+          projects: weekAssignments.map(a => ({
+            projectid: a.project_id,
+            projectname: projectNameMap.get(a.project_id) || `Project ${a.project_id}`,
+            allocation: a.allocation_percent || 0,
+            task_name: a.task_name
+          })),
+          risk_level: totalAllocation > 150 ? 'critical' : 'high'
+        });
+      }
+    }
+
+    // Detect bottlenecks: people in 3+ projects during the same period
+    const personProjectMap = new Map<number, Set<number>>();
+    for (const assignment of allAssignments) {
+      if (!personProjectMap.has(assignment.person_id)) {
+        personProjectMap.set(assignment.person_id, new Set());
+      }
+      personProjectMap.get(assignment.person_id)!.add(assignment.project_id);
+    }
+
+    const bottlenecks: Bottleneck[] = [];
+    for (const [personId, projectIds] of personProjectMap.entries()) {
+      if (projectIds.size >= 3) {
+        const overbooked = conflicts.filter(c => c.person_id === personId).length;
+        bottlenecks.push({
+          person_id: personId,
+          person_name: personNameMap.get(personId) || `Person ${personId}`,
+          project_count: projectIds.size,
+          weeks_overbooked: overbooked,
+          projects: Array.from(projectIds).map(pid => ({
+            projectid: pid,
+            projectname: projectNameMap.get(pid) || `Project ${pid}`,
+            project_count_concurrent: 0
+          })),
+          risk_level: overbooked > 0 ? 'critical' : 'high'
+        });
+      }
+    }
+
+    // Detect shared resources between project pairs
+    const sharedResources: SharedResourcePair[] = [];
+    const projectArray = Array.from(allProjectIds).sort((a, b) => a - b);
+
+    for (let i = 0; i < projectArray.length; i++) {
+      for (let j = i + 1; j < projectArray.length; j++) {
+        const projA = projectArray[i];
+        const projB = projectArray[j];
+
+        const assignmentsA = allAssignments.filter(a => a.project_id === projA);
+        const assignmentsB = allAssignments.filter(a => a.project_id === projB);
+
+        const peopleA = new Set(assignmentsA.map(a => a.person_id));
+        const peopleB = new Set(assignmentsB.map(a => a.person_id));
+
+        const shared = Array.from(peopleA).filter(id => peopleB.has(id));
+
+        if (shared.length > 0) {
+          const startA = assignmentsA.map(a => new Date(a.start_date));
+          const endA = assignmentsA.map(a => new Date(a.end_date));
+          const startB = assignmentsB.map(a => new Date(a.start_date));
+          const endB = assignmentsB.map(a => new Date(a.end_date));
+
+          const projAStart = new Date(Math.min(...startA.map(d => d.getTime())));
+          const projAEnd = new Date(Math.max(...endA.map(d => d.getTime())));
+          const projBStart = new Date(Math.min(...startB.map(d => d.getTime())));
+          const projBEnd = new Date(Math.max(...endB.map(d => d.getTime())));
+
+          const overlapWeeks = countOverlappingWeeks(
+            projAStart.toISOString().split('T')[0],
+            projAEnd.toISOString().split('T')[0],
+            projBStart.toISOString().split('T')[0],
+            projBEnd.toISOString().split('T')[0]
+          );
+
+          const sharedPeopleDetails = shared.map(personId => {
+            const assignA = assignmentsA.find(a => a.person_id === personId);
+            const assignB = assignmentsB.find(a => a.person_id === personId);
+            const isConflicted = conflicts.some(
+              c => c.person_id === personId &&
+                   c.projects.some(p => p.projectid === projA || p.projectid === projB)
+            );
+            return {
+              person_id: personId,
+              person_name: personNameMap.get(personId) || `Person ${personId}`,
+              allocation_a: assignA?.allocation_percent || 0,
+              allocation_b: assignB?.allocation_percent || 0,
+              is_conflicted: isConflicted
+            };
+          });
+
+          const hasConflicts = sharedPeopleDetails.some(p => p.is_conflicted);
+          const riskLevel: 'low' | 'medium' | 'high' =
+            hasConflicts ? 'high' : shared.length >= 3 ? 'medium' : 'low';
+
+          sharedResources.push({
+            project_a_id: projA,
+            project_a_name: projectNameMap.get(projA) || `Project ${projA}`,
+            project_b_id: projB,
+            project_b_name: projectNameMap.get(projB) || `Project ${projB}`,
+            shared_people: sharedPeopleDetails,
+            shared_count: shared.length,
+            timeline_overlap_weeks: overlapWeeks,
+            risk_level: riskLevel
+          });
+        }
+      }
+    }
+
+    const uniquePeople = new Set(conflicts.map(c => c.person_id));
+    return {
+      summary: {
+        total_people: uniquePeople.size,
+        people_overbooked: uniquePeople.size,
+        project_pairs_sharing: sharedResources.length,
+        critical_bottlenecks: bottlenecks.filter(b => b.risk_level === 'critical').length
+      },
+      conflicts,
+      bottlenecks,
+      cross_project_dependencies: sharedResources
     };
-
-    return aggregated;
   } catch (error) {
     routeLogger.error({ err: error, userId }, 'detectPortfolioResourceConflicts failed');
     throw error;
