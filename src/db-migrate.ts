@@ -275,9 +275,19 @@ export async function runMigrations(): Promise<void> {
       hours_per_week NUMERIC(5,2) NOT NULL,
       allocation_percent INTEGER GENERATED ALWAYS AS (CAST(hours_per_week / 40.0 * 100 AS INTEGER)) STORED,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(project_id, person_id, start_date)
     )
   `);
+
+  // Add unique constraint if it doesn't exist (for upsert operations)
+  await pool.query(`
+    ALTER TABLE resource_assignments
+    ADD CONSTRAINT unique_resource_assignment UNIQUE (project_id, person_id, start_date)
+  `).catch(() => {
+    // Constraint might already exist, ignore error
+    dbLogger.debug('Unique constraint already exists or other constraint creation issue, continuing');
+  });
 
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_resource_assignments_person_weeks

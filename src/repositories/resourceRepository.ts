@@ -162,6 +162,11 @@ export const resourceRepository = {
         `INSERT INTO resource_assignments
          (project_id, user_id, person_id, task_name, start_date, end_date, hours_per_week, created_at, updated_at)
          VALUES ${values}
+         ON CONFLICT (project_id, person_id, start_date) DO UPDATE
+         SET task_name = EXCLUDED.task_name,
+             end_date = EXCLUDED.end_date,
+             hours_per_week = EXCLUDED.hours_per_week,
+             updated_at = NOW()
          RETURNING id, project_id, user_id, person_id, task_name, start_date, end_date,
                    hours_per_week, allocation_percent, created_at, updated_at`,
         flatParams

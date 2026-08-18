@@ -110,6 +110,8 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
           }
         }
 
+        routeLogger.info({ totalRows: validProjects.length, uniqueProjects: uniqueProjectIds.size, projectIds: Array.from(uniqueProjectIds.keys()) }, 'Processing resources');
+
         // Process resources for unique projects only
         for (const [projectId, project] of uniqueProjectIds) {
           const projectEndDate = project.timeline?.endDate;
