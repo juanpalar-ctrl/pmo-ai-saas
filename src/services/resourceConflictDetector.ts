@@ -290,13 +290,46 @@ export async function detectResourceConflicts(projectId: number, userId: string)
       };
     }
 
+    // Fetch project names and person names from database
+    const allProjectIds = new Set(assignments.map(a => a.project_id));
+    const allPersonIds = new Set(assignments.map(a => a.person_id));
+
+    const projectNameMap = new Map<number, string>();
+    const personNameMap = new Map<number, string>();
+
+    // Get project names
+    if (allProjectIds.size > 0) {
+      const { pool } = require('../db');
+      const projectIds = Array.from(allProjectIds);
+      const projectResult = await pool.query(
+        `SELECT projectid, projectname FROM project_data WHERE projectid = ANY($1)`,
+        [projectIds]
+      );
+      projectResult.rows.forEach((row: any) => {
+        projectNameMap.set(row.projectid, row.projectname);
+      });
+    }
+
+    // Get person names
+    if (allPersonIds.size > 0) {
+      const { pool } = require('../db');
+      const personIds = Array.from(allPersonIds);
+      const personResult = await pool.query(
+        `SELECT id, name FROM team_members WHERE id = ANY($1)`,
+        [personIds]
+      );
+      personResult.rows.forEach((row: any) => {
+        personNameMap.set(row.id, row.name);
+      });
+    }
+
     // Build person lookup
     const personMap = new Map<number, any>();
     assignments.forEach(a => {
       if (!personMap.has(a.person_id)) {
         personMap.set(a.person_id, {
           id: a.person_id,
-          // Will be enriched from team_members data if available
+          name: personNameMap.get(a.person_id) || `Person ${a.person_id}`
         });
       }
     });
@@ -330,12 +363,12 @@ export async function detectResourceConflicts(projectId: number, userId: string)
           conflictedPeople.add(personId);
           conflicts.push({
             person_id: personId,
-            person_name: weekAssignments[0]?.task_name || `Person ${personId}`, // Placeholder
+            person_name: personNameMap.get(personId) || `Person ${personId}`,
             week_start: weekStart,
             total_allocation_percent: totalAllocation,
             projects: weekAssignments.map(a => ({
               projectid: a.project_id,
-              projectname: `Project ${a.project_id}`, // Will be enriched
+              projectname: projectNameMap.get(a.project_id) || `Project ${a.project_id}`,
               allocation: a.allocation_percent || 0,
               task_name: a.task_name
             })),
@@ -360,12 +393,12 @@ export async function detectResourceConflicts(projectId: number, userId: string)
 
         bottlenecks.push({
           person_id: personId,
-          person_name: personAssignments[0]?.task_name || `Person ${personId}`,
+          person_name: personNameMap.get(personId) || `Person ${personId}`,
           project_count: projectIds.size,
           weeks_overbooked: overbooked,
           projects: Array.from(projectIds).map(pid => ({
             projectid: pid,
-            projectname: `Project ${pid}`,
+            projectname: projectNameMap.get(pid) || `Project ${pid}`,
             project_count_concurrent: 0 // To be computed if needed
           })),
           risk_level: overbooked > 0 ? 'critical' : 'high'
@@ -419,7 +452,7 @@ export async function detectResourceConflicts(projectId: number, userId: string)
             );
             return {
               person_id: personId,
-              person_name: assignA?.task_name || `Person ${personId}`,
+              person_name: personNameMap.get(personId) || `Person ${personId}`,
               allocation_a: assignA?.allocation_percent || 0,
               allocation_b: assignB?.allocation_percent || 0,
               is_conflicted: isConflicted
@@ -432,9 +465,9 @@ export async function detectResourceConflicts(projectId: number, userId: string)
 
           sharedResources.push({
             project_a_id: projA,
-            project_a_name: `Project ${projA}`,
+            project_a_name: projectNameMap.get(projA) || `Project ${projA}`,
             project_b_id: projB,
-            project_b_name: `Project ${projB}`,
+            project_b_name: projectNameMap.get(projB) || `Project ${projB}`,
             shared_people: sharedPeopleDetails,
             shared_count: shared.length,
             timeline_overlap_weeks: overlapWeeks,

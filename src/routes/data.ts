@@ -93,38 +93,52 @@ router.post('/upload-excel', upload.single('file'), async (req: Request, res: Re
 
     // Extract and ingest resource assignments (Phase 3)
     let resourceWarnings: any[] = [];
-    if (rawData && rawData.length > 0) {
+    if (rawData && rawData.length > 0 && validProjects.length > 0) {
       try {
-        // Get project end date from first valid project for reference
-        const projectEndDate = validProjects[0]?.timeline?.endDate;
-        const projectId = validProjects[0]?.projectId;
+        // Detect the assignee/person column name once
+        const headerSample = rawData[0];
+        const assigneeCol = Object.keys(headerSample).find(k =>
+          /^(assignee|asignado|responsible|owner|person|team.member)/i.test(k) ||
+          /^team.member$/i.test(k)
+        );
 
-        if (projectId) {
-          // Transform rawData to have 'assignee' field for autoPopulateTeam
-          // Detect the assignee/person column name
-          const headerSample = rawData[0];
-          const assigneeCol = Object.keys(headerSample).find(k =>
-            /^(assignee|asignado|responsible|owner|person|team.member)/i.test(k) ||
-            /^team.member$/i.test(k)
-          );
+        // Get unique project IDs from validProjects (avoid processing duplicates)
+        const uniqueProjectIds = new Map<number, any>();
+        for (const project of validProjects) {
+          if (!uniqueProjectIds.has(project.projectId)) {
+            uniqueProjectIds.set(project.projectId, project);
+          }
+        }
 
-          // Auto-populate team members before ingesting assignments
+        // Process resources for unique projects only
+        for (const [projectId, project] of uniqueProjectIds) {
+          const projectEndDate = project.timeline?.endDate;
+
+          // Auto-populate team members for each project
           if (assigneeCol) {
             const taskRows = rawData.map((row: any) => ({
               assignee: row[assigneeCol],
             })) as TransformedRow[];
 
-            await autoPopulateTeam(projectId, userId, taskRows);
+            try {
+              await autoPopulateTeam(projectId, userId, taskRows);
+            } catch (err) {
+              routeLogger.warn({ err, projectId }, 'autoPopulateTeam failed, continuing');
+            }
           }
 
-          // Now ingest resource assignments
-          const resourceResult = await resourceAssignmentIngestService.ingestResourceAssignments(
-            rawData,
-            projectId,
-            userId,
-            projectEndDate
-          );
-          resourceWarnings = resourceResult.warnings || [];
+          // Ingest resource assignments for this project
+          try {
+            const resourceResult = await resourceAssignmentIngestService.ingestResourceAssignments(
+              rawData,
+              projectId,
+              userId,
+              projectEndDate
+            );
+            resourceWarnings.push(...(resourceResult.warnings || []));
+          } catch (err) {
+            routeLogger.warn({ err, projectId }, 'Resource ingest failed for project, continuing');
+          }
         }
       } catch (err) {
         routeLogger.warn({ err }, 'Resource assignment ingestion failed, continuing');

@@ -58,18 +58,40 @@ export async function extractResourceAssignments(
     return { assigned_count: 0, warnings, skipped_rows: skipped };
   }
 
+  // Filter rows for this specific project
+  const projectCol = Object.keys(headerSample).find(k => k.toLowerCase() === 'projectid');
+  serviceLogger.info({ projectId, projectCol, totalRows: normalizedRows.length }, 'Filtering rows for project');
+
+  const rowsForProject = projectCol
+    ? normalizedRows.filter(row => {
+        const rowProjectId = row[projectCol];
+        const matches = rowProjectId === projectId || Number(rowProjectId) === projectId;
+        if (!matches) {
+          serviceLogger.debug({ rowProjectId, targetProjectId: projectId }, 'Row skipped (different project)');
+        }
+        return matches;
+      })
+    : normalizedRows;
+
+  serviceLogger.info({ projectId, rowsForProject: rowsForProject.length }, 'Rows filtered for project');
+
+  if (rowsForProject.length === 0) {
+    serviceLogger.info({ projectId }, 'No rows found for this project');
+    return { assigned_count: 0, warnings, skipped_rows: skipped };
+  }
+
   // Get all team members for this project to link person_id
   let projectMembers: any[] = [];
   try {
-    const teamResult = await teamService.getTeamBoard(projectId, userId, normalizedRows);
+    const teamResult = await teamService.getTeamBoard(projectId, userId, rowsForProject);
     projectMembers = teamResult?.members || [];
   } catch (err) {
     serviceLogger.warn({ err }, 'Could not fetch team members for linking');
   }
 
   // Process each row
-  for (let i = 0; i < normalizedRows.length; i++) {
-    const row = normalizedRows[i];
+  for (let i = 0; i < rowsForProject.length; i++) {
+    const row = rowsForProject[i];
     const personName = row[assigneeCol]?.toString().trim();
 
     if (!personName) {
