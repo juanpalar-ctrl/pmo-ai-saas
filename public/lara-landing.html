@@ -448,14 +448,14 @@
         </div>
 
         <div class="carousel-dots">
-          <button class="dot active" onclick="currentSlide(0)" aria-label="Slide 1"></button>
-          <button class="dot" onclick="currentSlide(1)" aria-label="Slide 2"></button>
-          <button class="dot" onclick="currentSlide(2)" aria-label="Slide 3"></button>
+          <button class="dot active" data-slide="0" aria-label="Slide 1"></button>
+          <button class="dot" data-slide="1" aria-label="Slide 2"></button>
+          <button class="dot" data-slide="2" aria-label="Slide 3"></button>
         </div>
 
         <div class="carousel-controls">
-          <button class="carousel-btn" onclick="prevSlide()" aria-label="Previous slide">←</button>
-          <button class="carousel-btn" onclick="nextSlide()" aria-label="Next slide">→</button>
+          <button class="carousel-btn" id="carouselPrev" aria-label="Previous slide">←</button>
+          <button class="carousel-btn" id="carouselNext" aria-label="Next slide">→</button>
         </div>
       </div>
     </div>
@@ -834,17 +834,19 @@
         });
       }
 
-      window.nextSlide = function() {
+      document.getElementById('carouselNext').addEventListener('click', function() {
         showSlide(currentIndex + 1);
-      };
+      });
 
-      window.prevSlide = function() {
+      document.getElementById('carouselPrev').addEventListener('click', function() {
         showSlide(currentIndex - 1);
-      };
+      });
 
-      window.currentSlide = function(n) {
-        showSlide(n);
-      };
+      dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+          showSlide(parseInt(dot.getAttribute('data-slide'), 10));
+        });
+      });
 
       setInterval(function() {
         showSlide(currentIndex + 1);

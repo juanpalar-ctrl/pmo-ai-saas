@@ -269,7 +269,7 @@
     <div class="dashboard-panel" id="dashboardPanel">
       <div class="top-row">
         <p class="greeting">👋 <span data-i18n="welcome">Bienvenido</span>, <strong id="userName"></strong></p>
-        <button class="logout-btn" onclick="logout()" data-i18n="logout">Cerrar sesión</button>
+        <button class="logout-btn" id="logoutBtn" data-i18n="logout">Cerrar sesión</button>
       </div>
 
       <!-- Greeting Section -->
@@ -312,7 +312,7 @@
       <!-- Quick Actions -->
       <div>
         <h3 style="font-size: 1.1em; color: #333; margin: 0 0 12px; font-weight: 600;" data-i18n="actions_title">⚡ Accesos rápidos</h3>
-        <button onclick="window.location='/portfolio'" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: white; border: 1px solid #E0F2F1; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin-bottom: 8px;">
+        <button id="goToPortfolioBtn" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: white; border: 1px solid #E0F2F1; border-radius: 8px; cursor: pointer; transition: all 0.3s; margin-bottom: 8px;">
           <span style="font-size: 1.3em;">📁</span>
           <div style="text-align: left; flex: 1;">
             <p style="margin: 0; font-weight: 600; color: #333; font-size: 0.95em;" data-i18n="portfolio_title">Ver proyectos existentes</p>
@@ -334,7 +334,7 @@
       <form id="form">
         <div class="form-group">
           <label for="existing-project" data-i18n="form_project">Proyecto</label>
-          <select id="existing-project" onchange="onExistingProjectChange()">
+          <select id="existing-project">
             <option value="" data-i18n="form_new_project">➕ Crear proyecto nuevo</option>
           </select>
           <small id="existing-hint" style="display:none; color:#0B7B8C; font-size:0.8em; margin-top:4px;" data-i18n="form_hint">Se agregará como una nueva carga del proyecto seleccionado, bajo el mismo histórico.</small>
@@ -368,8 +368,8 @@
             <small style="font-weight: normal; color: #0B7B8C;" data-i18n="form_sow_hint">Mejora el análisis</small>
           </label>
 
-          <div id="sowUploadZone" style="border: 2px dashed #f59e0b; border-radius: 10px; padding: 32px; text-align: center; background: #fffbeb; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffbeb'">
-            <input type="file" id="sowFile" accept=".pdf,.docx" style="display: none;" onchange="handleSOWFileSelect(event)">
+          <div id="sowUploadZone" style="border: 2px dashed #f59e0b; border-radius: 10px; padding: 32px; text-align: center; background: #fffbeb; cursor: pointer; transition: all 0.3s;">
+            <input type="file" id="sowFile" accept=".pdf,.docx" style="display: none;">
             <div style="font-size: 40px; margin-bottom: 12px; animation: bounce 2s infinite;">📤</div>
             <p style="margin: 0; font-weight: 600; color: #333;" data-i18n="form_sow_drag">Arrastra tu SOW aquí</p>
             <p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;" data-i18n="form_sow_click">o haz clic para seleccionar (PDF o Word)</p>
@@ -384,7 +384,7 @@
                 <p style="margin: 0; font-weight: 600; color: #065f46;" id="sowFileName">archivo.pdf</p>
                 <p style="margin: 4px 0 0 0; font-size: 0.85em; color: #666;" id="sowFileSize">5.2 MB</p>
               </div>
-              <button type="button" onclick="removePendingSOW()" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.3s;" data-i18n="form_change">Cambiar</button>
+              <button type="button" id="removePendingSOWBtn" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.3s;" data-i18n="form_change">Cambiar</button>
             </div>
 
             <!-- Progress Bar -->
@@ -434,8 +434,8 @@
         <div id="validationMessage" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.9em; margin-top: 16px;"></div>
       </div>
       <div style="background: #f5f5f5; padding: 16px 24px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; gap: 12px;">
-        <button onclick="closeMappingModal()" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
-        <button onclick="confirmMapping()" id="confirmMappingBtn" style="background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar</button>
+        <button id="closeMappingModalBtn" style="background: #ccc; color: #333; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
+        <button id="confirmMappingBtn" style="background: linear-gradient(135deg, #17B8A0 0%, #0B7B8C 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar</button>
       </div>
     </div>
   </div>
@@ -458,6 +458,14 @@
     };
 
     let existingProjects = [];
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('goToPortfolioBtn').addEventListener('click', () => { window.location = '/portfolio'; });
+    document.getElementById('existing-project').addEventListener('change', onExistingProjectChange);
+    document.getElementById('sowFile').addEventListener('change', handleSOWFileSelect);
+    document.getElementById('removePendingSOWBtn').addEventListener('click', removePendingSOW);
+    document.getElementById('closeMappingModalBtn').addEventListener('click', closeMappingModal);
+    document.getElementById('confirmMappingBtn').addEventListener('click', confirmMapping);
 
     window.onload = async () => {
       const res = await fetch('/api/auth/me');
@@ -874,6 +882,9 @@
       const fileInput = document.getElementById('sowFile');
 
       zone.addEventListener('click', () => fileInput.click());
+
+      zone.addEventListener('mouseover', () => { zone.style.background = '#fef3c7'; });
+      zone.addEventListener('mouseout', () => { zone.style.background = '#fffbeb'; });
 
       zone.addEventListener('dragover', (e) => {
         e.preventDefault();

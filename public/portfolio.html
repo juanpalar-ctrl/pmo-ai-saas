@@ -120,7 +120,7 @@
           <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Nuevo Análisis</span>
         </a>
         <span id="userEmail" class="inline text-xs sm:text-sm text-gray-600 font-medium"></span>
-        <button onclick="logout()" class="bg-gradient-to-r from-teal-500 to-teal-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold shadow">
+        <button id="logoutBtn" class="bg-gradient-to-r from-teal-500 to-teal-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold shadow">
           Cerrar sesión
         </button>
       </div>
@@ -226,10 +226,10 @@
               <i class="fa-solid fa-table-cells text-teal-600 mr-2"></i>Proyectos del Portafolio
             </h2>
             <div class="flex flex-wrap gap-2 text-xs">
-              <button onclick="filterHealth('all')" id="filter-all" class="px-3 py-1.5 rounded-full font-semibold bg-teal-600 text-white">Todos</button>
-              <button onclick="filterHealth('CRITICAL')" id="filter-CRITICAL" class="px-3 py-1.5 rounded-full font-semibold bg-gray-100 text-gray-600 hover:bg-red-100">Críticos</button>
-              <button onclick="filterHealth('AT_RISK')" id="filter-AT_RISK" class="px-3 py-1.5 rounded-full font-semibold bg-gray-100 text-gray-600 hover:bg-amber-100">En Riesgo</button>
-              <button onclick="filterHealth('HEALTHY')" id="filter-HEALTHY" class="px-3 py-1.5 rounded-full font-semibold bg-gray-100 text-gray-600 hover:bg-green-100">Saludables</button>
+              <button data-filter="all" id="filter-all" class="px-3 py-1.5 rounded-full font-semibold bg-teal-600 text-white">Todos</button>
+              <button data-filter="CRITICAL" id="filter-CRITICAL" class="px-3 py-1.5 rounded-full font-semibold bg-gray-100 text-gray-600 hover:bg-red-100">Críticos</button>
+              <button data-filter="AT_RISK" id="filter-AT_RISK" class="px-3 py-1.5 rounded-full font-semibold bg-gray-100 text-gray-600 hover:bg-amber-100">En Riesgo</button>
+              <button data-filter="HEALTHY" id="filter-HEALTHY" class="px-3 py-1.5 rounded-full font-semibold bg-gray-100 text-gray-600 hover:bg-green-100">Saludables</button>
             </div>
           </div>
           <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
@@ -258,6 +258,25 @@
     }
     let allProjects = [];
     let activeFilter = 'all';
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => filterHealth(btn.dataset.filter));
+    });
+
+    document.getElementById('projects-grid').addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('.delete-project-btn');
+      if (deleteBtn) {
+        e.stopPropagation();
+        deleteProject(Number(deleteBtn.dataset.projectId));
+        return;
+      }
+      const card = e.target.closest('.project-card');
+      if (card) {
+        window.location = `/projects?id=${card.dataset.projectId}`;
+      }
+    });
 
     async function init() {
       try {
@@ -380,7 +399,7 @@
 
         return `
           <div class="project-card bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden cursor-pointer"
-               onclick="window.location='/projects?id=${p.id}'">
+               data-project-id="${p.id}">
             <!-- color bar -->
             <div class="h-1.5 ${cfg.bar}"></div>
             <div class="p-4">
@@ -396,8 +415,7 @@
                 </div>
                 <div class="shrink-0 flex items-center gap-2">
                   <span class="text-lg font-black text-gray-700">${p.healthScore}</span>
-                  <button onclick="event.stopPropagation(); deleteProject(${p.id})"
-                          class="text-gray-300 hover:text-red-600 transition" title="Eliminar proyecto">
+                  <button class="delete-project-btn text-gray-300 hover:text-red-600 transition" data-project-id="${p.id}" title="Eliminar proyecto">
                     <i class="fa-solid fa-trash-can text-sm"></i>
                   </button>
                 </div>
@@ -498,7 +516,7 @@
   <!-- ══════════════════════════════════════════
        LARA CHAT WIDGET (Portfolio/C-Level)
   ══════════════════════════════════════════ -->
-  <button id="chat-fab" onclick="toggleChat()" title="Habla con LARA sobre tu portafolio">🤖</button>
+  <button id="chat-fab" title="Habla con LARA sobre tu portafolio">🤖</button>
 
   <div id="chat-panel">
     <div id="chat-header">
@@ -507,22 +525,21 @@
         <strong>LARA Assistant</strong>
         <span>Chief Portfolio Advisor</span>
       </div>
-      <button id="chat-close" onclick="toggleChat()">✕</button>
+      <button id="chat-close">✕</button>
     </div>
 
     <div id="chat-messages"></div>
 
     <div id="chat-suggestions">
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Cuál es la salud de mi portafolio?')">Salud portafolio</button>
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué proyectos están en riesgo?')">Proyectos críticos</button>
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Dónde están los riesgos?')">Riesgos concentrados</button>
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué hago ahora?')">Acciones inmediatas</button>
+      <button class="suggestion-chip" data-suggestion="¿Cuál es la salud de mi portafolio?">Salud portafolio</button>
+      <button class="suggestion-chip" data-suggestion="¿Qué proyectos están en riesgo?">Proyectos críticos</button>
+      <button class="suggestion-chip" data-suggestion="¿Dónde están los riesgos?">Riesgos concentrados</button>
+      <button class="suggestion-chip" data-suggestion="¿Qué hago ahora?">Acciones inmediatas</button>
     </div>
 
     <div id="chat-input-row">
-      <textarea id="chat-input" placeholder="Pregúntame sobre tu portafolio..." rows="1"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-      <button id="chat-send" onclick="sendMessage()">
+      <textarea id="chat-input" placeholder="Pregúntame sobre tu portafolio..." rows="1"></textarea>
+      <button id="chat-send">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -536,6 +553,20 @@
       let chatHistory = [];
       let portfolioContext = null;
       let chatInitialized = false;
+
+      document.getElementById('chat-fab').addEventListener('click', toggleChat);
+      document.getElementById('chat-close').addEventListener('click', toggleChat);
+      document.getElementById('chat-send').addEventListener('click', sendMessage);
+      document.getElementById('chat-input').addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+      document.getElementById('chat-suggestions').addEventListener('click', (e) => {
+        const chip = e.target.closest('.suggestion-chip');
+        if (chip) sendSuggestion(chip.dataset.suggestion);
+      });
 
       // Load portfolio context
       async function loadChatContext() {
@@ -631,7 +662,7 @@
           const suggestionsContainer = document.getElementById('chat-suggestions');
           if (suggestionsContainer && welcome.suggestions.length > 0) {
             suggestionsContainer.innerHTML = welcome.suggestions
-              .map(text => `<button class="suggestion-chip" onclick="sendSuggestion('${text.replace(/'/g, "\\'")}')">${escapeHtml(text)}</button>`)
+              .map(text => `<button class="suggestion-chip" data-suggestion="${escapeHtml(text)}">${escapeHtml(text)}</button>`)
               .join('');
           }
         }

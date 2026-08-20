@@ -396,7 +396,7 @@
                 <a href="/lara-landing.html#comparison">Comparativa</a>
                 <a href="/lara-landing.html#contact">Contacto</a>
                 <span style="opacity: 0.5;">|</span>
-                <a href="#" onclick="return false">Ingresa</a>
+                <a href="#" id="navLoginLink">Ingresa</a>
                 <a href="/lara-landing.html#contact" class="btn-header">Agendar Demo Gratis</a>
             </nav>
         </div>
@@ -495,6 +495,8 @@
 
     <!-- ===== LÓGICA DE LOGIN ===== -->
     <script>
+        document.getElementById('navLoginLink').addEventListener('click', (e) => e.preventDefault());
+
         const form = document.getElementById('loginForm');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
