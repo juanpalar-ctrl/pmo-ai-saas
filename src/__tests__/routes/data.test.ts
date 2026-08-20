@@ -18,6 +18,12 @@ jest.mock('../../services/dataIngestService', () => ({
 jest.mock('../../core/logger', () => ({
   routeLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
+// marked and sanitize-html (via htmlparser2) ship ESM-only — Jest can't
+// parse either straight from node_modules. Both are only used by the
+// PDF-export route, which none of these tests exercise, so mock them away
+// instead of teaching Jest to transform node_modules.
+jest.mock('marked', () => ({ marked: jest.fn() }));
+jest.mock('sanitize-html', () => jest.fn());
 
 import { pool } from '../../db';
 import { projectRepository } from '../../repositories/projectRepository';

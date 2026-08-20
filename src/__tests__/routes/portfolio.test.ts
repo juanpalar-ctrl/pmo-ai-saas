@@ -10,6 +10,11 @@ jest.mock('../../services/portfolioService', () => ({
 }));
 jest.mock('../../core/logger', () => ({
   routeLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  // portfolioRouter pulls in resourceConflictDetector -> resourceRepository
+  // -> the real (unmocked) src/db.ts, which calls dbLogger.info() at module
+  // load time — an incomplete mock here crashed the whole suite before any
+  // test ran.
+  dbLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
 import { getPortfolioData } from '../../services/portfolioService';
