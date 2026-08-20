@@ -45,13 +45,20 @@ const RENDER_URL = process.env.RENDER_URL || 'https://pmo-ai-saas.onrender.com';
 app.set('trust proxy', 1);
 
 // Security headers + Content-Security-Policy.
-// Las páginas usan ~60 handlers on* inline y bloques <script> inline, así que
-// 'unsafe-inline' es necesario (migrarlo todo a addEventListener sería un
-// refactor grande y arriesgado). Aun con 'unsafe-inline', el allowlist de hosts
-// bloquea el vector real de la mayoría de los XSS: cargar <script src> de un
-// dominio atacante o exfiltrar datos vía fetch/img a un host externo
-// (connect-src 'self'). object-src 'none' + base-uri/frame-ancestors 'self'
-// cierran otros vectores. Hosts permitidos = los CDNs que ya usa el front.
+// 2026-08-20: los ~127 handlers on* inline ya se migraron a addEventListener
+// en los 6 archivos de public/*.html (login, lara-landing, index, portfolio,
+// team-morale, projects). 'unsafe-inline' en script-src SIGUE siendo
+// necesario porque cada página también tiene bloques <script> inline con
+// lógica real (no solo wiring de eventos) — quitar 'unsafe-inline' hoy
+// rompería la app entera, no solo el vector XSS. Para quitarlo de verdad hay
+// que mover ese JS a archivos .js externos o generar un nonce por request
+// (esto último choca con la decisión deliberada de servir HTML estático sin
+// templating por request — ver dossier). Aun con 'unsafe-inline', el
+// allowlist de hosts bloquea el vector real de la mayoría de los XSS: cargar
+// <script src> de un dominio atacante o exfiltrar datos vía fetch/img a un
+// host externo (connect-src 'self'). object-src 'none' + base-uri/
+// frame-ancestors 'self' cierran otros vectores. Hosts permitidos = los CDNs
+// que ya usa el front.
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
