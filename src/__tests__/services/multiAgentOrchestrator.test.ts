@@ -20,6 +20,9 @@ jest.mock('../../services/earlyWarning', () => ({
 jest.mock('../../services/teamService', () => ({
   teamService: { getDisconnectionAlertsForRiskAgent: jest.fn() },
 }));
+jest.mock('../../services/resourceConflictDetector', () => ({
+  detectResourceConflicts: jest.fn(),
+}));
 jest.mock('../../core/logger', () => ({
   routeLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
@@ -33,8 +36,10 @@ import { calculateProjectMetrics } from '../../services/metricsCalculator';
 import { calculateFrameworkMetrics } from '../../services/frameworkMetrics';
 import { detectWarnings } from '../../services/earlyWarning';
 import { teamService } from '../../services/teamService';
+import { detectResourceConflicts } from '../../services/resourceConflictDetector';
 
 const mockQuery = pool.query as jest.Mock;
+const mockDetectResourceConflicts = detectResourceConflicts as jest.Mock;
 const mockCalculateProjectMetrics = calculateProjectMetrics as jest.Mock;
 const mockCalculateFrameworkMetrics = calculateFrameworkMetrics as jest.Mock;
 const mockDetectWarnings = detectWarnings as jest.Mock;
@@ -63,9 +68,11 @@ describe('orchestrator.analyzeProject', () => {
     mockEconomicAnalyze.mockReset();
     mockReportingAnalyze.mockReset();
     mockGetDisconnectionAlerts.mockReset();
+    mockDetectResourceConflicts.mockReset();
 
     mockCalculateProjectMetrics.mockResolvedValue(baseMetrics);
     mockGetDisconnectionAlerts.mockResolvedValue([]);
+    mockDetectResourceConflicts.mockResolvedValue({ conflicts: [], bottlenecks: [], cross_project_dependencies: [] });
     mockRiskAnalyze.mockResolvedValue({ analysis: { analysis: { overallRiskScore: 'MEDIUM' } } });
     mockEconomicAnalyze.mockResolvedValue({ analysis: { analysis: { budget_status: 'ON_TRACK' } } });
     mockReportingAnalyze.mockResolvedValue({ analysis: { senior_report: 'Senior text', technical_report: 'Tech text' } });
@@ -96,11 +103,12 @@ describe('orchestrator.analyzeProject', () => {
   it('skips the org lookup query when org is passed explicitly', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [] }) // normalization record lookup
+      .mockResolvedValueOnce({ rows: [] }) // SOW content lookup (getProjectSOW)
       .mockResolvedValueOnce({ rows: [] }); // insert combined analysis
 
     await orchestrator.analyzeProject(1, 'scrum', 'user_1', 'Explicit Org');
 
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenCalledTimes(3);
   });
 
   it('sets the framework on both risk and economic agents before analyzing', async () => {
