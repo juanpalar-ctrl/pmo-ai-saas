@@ -167,11 +167,13 @@ router.post('/', async (req: Request, res: Response) => {
     const response = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 1200,
+      thinking: aiConfig.thinking,
       system: `${systemPrompt}\n\n${languageDirective(lang)}`,
       messages,
     });
 
-    const raw = response.content[0].type === 'text' ? response.content[0].text : '';
+    const chatTextBlock = response.content.find((b) => b.type === 'text');
+    const raw = chatTextBlock && chatTextBlock.type === 'text' ? chatTextBlock.text : '';
     const { reply, actions } = parseActionsFromReply(raw);
 
     res.json({ success: true, reply, actions });
@@ -219,11 +221,13 @@ router.post('/draft', async (req: Request, res: Response) => {
     const response = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 600,
+      thinking: aiConfig.thinking,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     });
 
-    const draft = response.content[0].type === 'text' ? response.content[0].text.trim() : '';
+    const draftTextBlock = response.content.find((b) => b.type === 'text');
+    const draft = draftTextBlock && draftTextBlock.type === 'text' ? draftTextBlock.text.trim() : '';
     res.json({ success: true, draft, audience });
   } catch (error) {
     routeLogger.error({ err: errorMessage(error) }, 'draft POST error');
@@ -266,13 +270,15 @@ router.post('/simulate', async (req: Request, res: Response) => {
     const parseResponse = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 120,
+      thinking: aiConfig.thinking,
       system: `${PARSE_DELTA_PROMPT}\n\n${languageDirective(lang)}`,
       messages: [{ role: 'user', content: question }],
     });
 
     let delta: SimulationDelta;
     try {
-      const raw = parseResponse.content[0].type === 'text' ? parseResponse.content[0].text.trim() : '{}';
+      const parseTextBlock = parseResponse.content.find((b) => b.type === 'text');
+      const raw = parseTextBlock && parseTextBlock.type === 'text' ? parseTextBlock.text.trim() : '{}';
       delta = JSON.parse(raw) as SimulationDelta;
     } catch {
       delta = { type: 'schedule_delay', weeks: 2, label: 'Retraso de 2 semanas' };
@@ -301,11 +307,13 @@ Cambio en Revenue at Stake: ${result.deltaSummary.revenueAtStakeChange >= 0 ? '+
     const narrateResponse = await anthropicClient.messages.create({
       model: aiConfig.model,
       max_tokens: 400,
+      thinking: aiConfig.thinking,
       system: `${NARRATE_SIMULATION_PROMPT}\n\n${languageDirective(lang)}`,
       messages: [{ role: 'user', content: narratePrompt }],
     });
 
-    const narrative = narrateResponse.content[0].type === 'text' ? narrateResponse.content[0].text.trim() : '';
+    const narrateTextBlock = narrateResponse.content.find((b) => b.type === 'text');
+    const narrative = narrateTextBlock && narrateTextBlock.type === 'text' ? narrateTextBlock.text.trim() : '';
 
     res.json({ success: true, result, narrative, scenario: delta.label });
   } catch (error) {

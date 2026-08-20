@@ -247,8 +247,8 @@ Revisar análisis completo de riesgos y económico para detalles adicionales.`;
   }
 
   private extractText(response: any, kind: 'senior' | 'technical'): string {
-    const block = response?.content?.[0];
-    const text = block && block.type === 'text' ? block.text.trim() : '';
+    const block = response?.content?.find((b: any) => b?.type === 'text');
+    const text = block ? block.text.trim() : '';
     if (text) return text;
     agentLogger.warn({ agent: this.name, kind }, 'Respuesta vacía o sin texto de la API — usando fallback');
     return kind === 'senior' ? this.fallbackSeniorReport() : this.fallbackTechnicalReport();
@@ -278,11 +278,13 @@ Revisar análisis completo de riesgos y económico para detalles adicionales.`;
         anthropicClient.messages.create({
           model: aiConfig.model,
           max_tokens: this.maxTokens,
+          thinking: aiConfig.thinking,
           messages: [{ role: 'user', content: this.buildSeniorPrompt(input) }],
         }),
         anthropicClient.messages.create({
           model: aiConfig.model,
           max_tokens: this.maxTokens,
+          thinking: aiConfig.thinking,
           messages: [{ role: 'user', content: this.buildTechnicalPrompt(input) }],
         }),
       ]);

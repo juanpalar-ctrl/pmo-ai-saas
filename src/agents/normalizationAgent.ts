@@ -99,6 +99,7 @@ export async function detectColumns(input: NormalizationInput): Promise<Normaliz
       const response = await anthropicClient.messages.create({
         model: aiConfig.model,
         max_tokens: 1000, // Sufficient for JSON response with ~20 columns
+        thinking: aiConfig.thinking,
         system: systemPrompt,
         messages: [
           {

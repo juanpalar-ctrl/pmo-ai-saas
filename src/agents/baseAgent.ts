@@ -37,6 +37,7 @@ export abstract class BaseAgent implements IAgent {
       const response = await anthropicClient.messages.create({
         model: aiConfig.model,
         max_tokens: this.maxTokens,
+        thinking: aiConfig.thinking,
         messages: [
           {
             role: 'user',
@@ -44,11 +45,10 @@ export abstract class BaseAgent implements IAgent {
           },
         ],
       });
-      
-      // 4. Extraer respuesta
-      const responseText = response.content[0].type === 'text' 
-        ? response.content[0].text 
-        : '';
+
+      // 4. Extraer respuesta (buscar el bloque 'text', no asumir content[0])
+      const textBlock = response.content.find((block) => block.type === 'text');
+      const responseText = textBlock && textBlock.type === 'text' ? textBlock.text : '';
       
       agentLogger.debug({ agent: this.name, preview: responseText.substring(0, 200) }, 'Raw API response');
       const analysis = this.parseResponse(responseText);

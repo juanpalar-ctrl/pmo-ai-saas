@@ -9,15 +9,22 @@ import Anthropic from '@anthropic-ai/sdk';
 // Declarada ANTES del cliente porque el constructor referencia aiConfig.timeout.
 export const aiConfig = {
   // Modelo a usar (configurable con AI_MODEL; default: modelo Opus vigente)
-  model: process.env.AI_MODEL || 'claude-opus-4-8',
+  model: process.env.AI_MODEL || 'claude-opus-5',
 
   // Máximo de tokens en la respuesta
   maxTokens: parseInt(process.env.AI_MAX_TOKENS || '2000', 10),
 
   // NOTA: NO enviar `temperature` a la API. El modelo Opus vigente
-  // (claude-opus-4-8) lo rechaza con 400 "temperature is deprecated for this
+  // (claude-opus-5) lo rechaza con 400 "temperature is deprecated for this
   // model", lo que rompía todos los agentes (risk/economic/reporting) y dejaba
   // el análisis sin registro 'combined'. Las llamadas omiten el parámetro.
+
+  // NOTA: Opus 5 activa "thinking" adaptativo por defecto (a diferencia de
+  // 4.8, donde estaba apagado salvo que se pidiera). Lo desactivamos
+  // explícitamente en cada llamada porque varios endpoints usan max_tokens
+  // chicos (120-600) que no dejan margen para bloques de thinking sin
+  // truncar la respuesta real.
+  thinking: { type: 'disabled' as const },
 
   // Timeout en milisegundos
   timeout: 60000,
