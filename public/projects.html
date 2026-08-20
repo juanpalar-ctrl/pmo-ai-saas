@@ -776,7 +776,7 @@
 <body class="text-gray-800 font-sans">
 
   <div class="flex h-screen relative">
-    <div id="sidebar-backdrop" onclick="toggleHistorySidebar(false)" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
     <div id="history-sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-80 max-w-[85vw] bg-white shadow-lg overflow-y-auto border-r border-teal-200 no-print transform -translate-x-full md:translate-x-0 transition-transform duration-200">
       <div class="sticky top-0 bg-gradient-to-r from-teal-500 to-teal-700 text-white p-4 z-10 flex items-center justify-between gap-2">
         <div>
@@ -784,11 +784,11 @@
           <p class="text-xs opacity-90 mt-1">Gestiona tus stakeholders</p>
         </div>
         <div class="flex items-center gap-1">
-          <button onclick="toggleSidebarCollapse()" class="hidden md:block collapse-btn text-white text-lg leading-none px-2" title="Contraer/Expandir">
+          <button id="sidebarCollapseBtn" class="hidden md:block collapse-btn text-white text-lg leading-none px-2" title="Contraer/Expandir">
             <i class="fa-solid fa-angles-left"></i>
             <span class="collapse-btn-text">Ocultar</span>
           </button>
-          <button onclick="toggleHistorySidebar(false)" class="md:hidden text-white text-xl leading-none px-2" title="Cerrar">✕</button>
+          <button id="sidebarCloseBtn" class="md:hidden text-white text-xl leading-none px-2" title="Cerrar">✕</button>
         </div>
       </div>
       <div id="stakeholders-list" class="p-4 space-y-2 flex-1 overflow-y-auto">
@@ -798,7 +798,7 @@
       <div class="stakeholders-hint flex-1">Stakeholders</div>
       <!-- Button to add stakeholders -->
       <div class="p-4 border-t border-teal-200 flex-shrink-0">
-        <button onclick="openAddStakeholderModal()" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white font-semibold text-sm py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2">
+        <button id="openAddStakeholderBtn" class="w-full bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white font-semibold text-sm py-2.5 px-3 rounded-lg transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-plus"></i> Agregar Stakeholder
         </button>
       </div>
@@ -807,7 +807,7 @@
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
       <header class="border-b border-teal-600 bg-white/95 px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 shadow-lg no-print">
         <div class="flex items-center gap-2 sm:gap-3">
-          <button onclick="toggleHistorySidebar(true)" class="md:hidden text-teal-700 text-lg px-1" title="Ver historial">
+          <button id="sidebarOpenBtn" class="md:hidden text-teal-700 text-lg px-1" title="Ver historial">
             <i class="fa-solid fa-bars"></i>
           </button>
           <img src="logo.jpeg" alt="LARA" class="logo-img">
@@ -825,10 +825,10 @@
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
           <span class="inline text-xs sm:text-sm text-gray-600">👋 <strong class="text-gray-800" id="userEmail"></strong></span>
-          <button id="admin-nav-btn" onclick="toggleAdminPanel()" style="display: none;" class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
+          <button id="admin-nav-btn" style="display: none;" class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
             🔐 Admin
           </button>
-          <button onclick="logout()" class="bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
+          <button id="logoutBtn" class="bg-gradient-to-r from-teal-500 to-teal-700 hover:from-teal-600 hover:to-teal-800 text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold shadow-md transition">
             Cerrar sesión
           </button>
         </div>
@@ -843,14 +843,14 @@
               <i class="fa-solid fa-file-pdf text-amber-600 text-2xl"></i>
               <h2 class="font-bold text-xl text-gray-800">Cargar SOW</h2>
             </div>
-            <button onclick="closeProjectSOWModal()" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
+            <button id="projectSOWModalCloseBtn" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
           </div>
 
           <!-- Body -->
           <div class="space-y-4">
             <!-- Upload Zone -->
-            <div id="projectSOWUploadZone" style="border: 2px dashed #f59e0b; border-radius: 10px; padding: 32px; text-align: center; background: #fffbeb; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffbeb'">
-              <input type="file" id="projectSOWFile" accept=".pdf,.docx" style="display: none;" onchange="handleProjectSOWFileSelect(event)">
+            <div id="projectSOWUploadZone" style="border: 2px dashed #f59e0b; border-radius: 10px; padding: 32px; text-align: center; background: #fffbeb; cursor: pointer; transition: all 0.3s;">
+              <input type="file" id="projectSOWFile" accept=".pdf,.docx" style="display: none;">
               <div style="font-size: 48px; margin-bottom: 12px;">📤</div>
               <p style="margin: 0; font-weight: 600; color: #333;">Arrastra tu SOW aquí</p>
               <p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">o haz clic para seleccionar (PDF o Word)</p>
@@ -858,6 +858,10 @@
             </div>
 
             <script>
+              document.getElementById('projectSOWModalCloseBtn').addEventListener('click', () => closeProjectSOWModal());
+              document.getElementById('projectSOWFile').addEventListener('change', (event) => handleProjectSOWFileSelect(event));
+              document.getElementById('projectSOWUploadZone').addEventListener('mouseover', e => { e.currentTarget.style.background = '#fef3c7'; });
+              document.getElementById('projectSOWUploadZone').addEventListener('mouseout', e => { e.currentTarget.style.background = '#fffbeb'; });
               document.getElementById('projectSOWUploadZone').addEventListener('click', () => document.getElementById('projectSOWFile').click());
               document.getElementById('projectSOWUploadZone').addEventListener('dragover', e => {
                 e.preventDefault();
@@ -880,15 +884,15 @@
                   <p style="margin: 0; font-weight: 600; color: #065f46;" id="projectSOWFileName">archivo.pdf</p>
                   <p style="margin: 4px 0 0 0; font-size: 0.85em; color: #666;" id="projectSOWFileSize">5.2 MB</p>
                 </div>
-                <button type="button" onclick="removeProjectPendingSOW()" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em;">Cambiar</button>
+                <button type="button" id="removeProjectPendingSOWBtn" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em;">Cambiar</button>
               </div>
             </div>
           </div>
 
           <!-- Footer -->
           <div class="flex justify-end gap-3 border-t border-amber-200 pt-4 mt-6">
-            <button type="button" onclick="closeProjectSOWModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">Cancelar</button>
-            <button type="button" id="projectSOWSaveBtn" onclick="saveProjectSOW()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; opacity: 0.5;" disabled>Guardar SOW</button>
+            <button type="button" id="projectSOWModalCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">Cancelar</button>
+            <button type="button" id="projectSOWSaveBtn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; opacity: 0.5;" disabled>Guardar SOW</button>
           </div>
         </div>
       </div>
@@ -901,16 +905,16 @@
               <i class="fa-solid fa-shield text-purple-600 text-2xl"></i>
               <h2 class="font-bold text-xl text-gray-800">Consola de Administración</h2>
             </div>
-            <button onclick="toggleAdminPanel()" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
+            <button id="adminPanelCloseBtn" class="text-gray-600 hover:text-gray-900 text-2xl">✕</button>
           </div>
 
           <!-- Admin Tabs -->
           <div class="mb-6 border-b border-teal-200">
             <div class="flex gap-2 mb-4">
-              <button onclick="switchAdminTab('pending')" id="admin-tab-pending" class="px-4 py-2 font-semibold text-sm rounded-lg bg-teal-100 border-b-2 border-teal-600 text-teal-700 transition">
+              <button data-admin-tab="pending" id="admin-tab-pending" class="px-4 py-2 font-semibold text-sm rounded-lg bg-teal-100 border-b-2 border-teal-600 text-teal-700 transition">
                 ⏳ Pendientes
               </button>
-              <button onclick="switchAdminTab('users')" id="admin-tab-users" class="px-4 py-2 font-semibold text-sm rounded-lg hover:bg-teal-50 text-gray-700 transition">
+              <button data-admin-tab="users" id="admin-tab-users" class="px-4 py-2 font-semibold text-sm rounded-lg hover:bg-teal-50 text-gray-700 transition">
                 👥 Todos los Usuarios
               </button>
             </div>
@@ -937,7 +941,7 @@
           </div>
 
           <div class="flex justify-end gap-3 border-t border-teal-200 pt-4">
-            <button onclick="toggleAdminPanel()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">
+            <button id="adminPanelCloseBtn2" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg font-semibold">
               Cerrar
             </button>
           </div>
@@ -949,7 +953,7 @@
         <div class="stakeholder-modal-content">
           <div class="stakeholder-modal-header">
             <h2>Agregar Stakeholder</h2>
-            <button onclick="closeAddStakeholderModal()" class="stakeholder-modal-close">✕</button>
+            <button id="stakeholderModalCloseBtn" class="stakeholder-modal-close">✕</button>
           </div>
           <div class="stakeholder-modal-body">
             <div class="stakeholder-form-group">
@@ -976,8 +980,8 @@
             </div>
           </div>
           <div class="stakeholder-modal-footer">
-            <button onclick="closeAddStakeholderModal()" class="btn-stakeholder-cancel">Cancelar</button>
-            <button onclick="saveStakeholder()" class="btn-stakeholder-save">Guardar</button>
+            <button id="stakeholderModalCancelBtn" class="btn-stakeholder-cancel">Cancelar</button>
+            <button id="stakeholderModalSaveBtn" class="btn-stakeholder-save">Guardar</button>
           </div>
         </div>
       </div>
@@ -985,29 +989,29 @@
       <main class="flex-1 overflow-y-auto p-6 space-y-6">
         <!-- Framework Tabs -->
         <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
-          <button onclick="switchFramework('scrum')" id="tab-scrum" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
+          <button data-framework="scrum" id="tab-scrum" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
             <i class="fa-solid fa-rotate text-emerald-500"></i> Scrum
           </button>
-          <button onclick="switchFramework('kanban')" id="tab-kanban" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
+          <button data-framework="kanban" id="tab-kanban" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
             <i class="fa-solid fa-columns text-teal-600"></i> Kanban
           </button>
-          <button onclick="switchFramework('waterfall')" id="tab-waterfall" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
+          <button data-framework="waterfall" id="tab-waterfall" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
             <i class="fa-solid fa-water text-amber-500"></i> Waterfall
           </button>
-          <button onclick="switchFramework('safe')" id="tab-safe" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
+          <button data-framework="safe" id="tab-safe" class="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-100 text-gray-700">
             <i class="fa-solid fa-network-wired text-teal-600"></i> SAFe
           </button>
         </div>
 
         <!-- Dashboard Tabs (Resumen | Riesgos y RAID | Cronograma) -->
         <div class="bg-white rounded-xl p-2 flex flex-wrap gap-2 shadow-lg border-l-4 border-teal-400">
-          <button onclick="switchDashboardTab('resumen')" id="tab-resumen" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700 bg-teal-100 border-teal-600 active-tab">
+          <button data-dashboard-tab="resumen" id="tab-resumen" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700 bg-teal-100 border-teal-600 active-tab">
             <i class="fa-solid fa-chart-line text-teal-600"></i> 📊 Resumen
           </button>
-          <button onclick="switchDashboardTab('riesgos')" id="tab-riesgos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
+          <button data-dashboard-tab="riesgos" id="tab-riesgos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
             <i class="fa-solid fa-triangle-exclamation text-orange-600"></i> ⚠️ Riesgos y RAID
           </button>
-          <button onclick="switchDashboardTab('documentos')" id="tab-documentos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
+          <button data-dashboard-tab="documentos" id="tab-documentos" class="flex-1 min-w-[140px] py-3 px-4 rounded-lg transition font-semibold text-sm border-2 border-transparent hover:bg-teal-50 text-gray-700">
             <i class="fa-solid fa-file-pdf text-amber-600"></i> 📄 Documentos
           </button>
         </div>
@@ -1061,7 +1065,7 @@
                 <p class="text-xs text-gray-500 mt-1">Riesgos identificados automáticamente por LARA</p>
               </div>
             </div>
-            <button onclick="openRiskModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">
+            <button id="openRiskModalBtn" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">
               <i class="fa-solid fa-plus"></i> Agregar Riesgo
             </button>
           </div>
@@ -1090,10 +1094,10 @@
               <i class="fa-solid fa-flag text-amber-600 text-2xl"></i>
               <div>
                 <h3 class="font-bold text-lg text-gray-800">RAID Log</h3>
-                <p class="text-xs text-gray-500 mt-1">Riesgos, Suposiciones, Problemas y Dependencias identificados automáticamente</p>
+                <p class="text-xs text-gray-500 mt-1">Riesgos identificados automáticamente por LARA · Suposiciones, Problemas y Dependencias se agregan manualmente</p>
               </div>
             </div>
-            <button onclick="openRaidModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">
+            <button id="openRaidModalBtn" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">
               <i class="fa-solid fa-plus"></i> Agregar RAID
             </button>
           </div>
@@ -1135,7 +1139,7 @@
               <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
               <p class="text-gray-600 font-semibold mb-2">No hay SOW cargado</p>
               <p class="text-gray-500 text-sm mb-6">Carga el documento de alcance para mejorar el análisis de IA</p>
-              <button type="button" onclick="openProjectSOWModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+              <button type="button" id="sowEmptyStateUploadBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold transition">
                 + Cargar SOW
               </button>
             </div>
@@ -1150,9 +1154,9 @@
                       <p class="font-semibold text-gray-800" id="sowFileName">archivo.pdf</p>
                       <p class="text-sm text-gray-600 mt-1" id="sowFileInfo">Cargado el 01/08/2026 • 5.2 MB</p>
                       <div style="margin-top: 8px; display: flex; gap: 8px;">
-                        <button type="button" onclick="viewSOWPreview()" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">👁️ Ver Preview</button>
-                        <button type="button" onclick="openProjectSOWModal()" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">🔄 Reemplazar</button>
-                        <button type="button" onclick="deleteProjectSOW()" class="text-red-600 hover:text-red-700 text-sm font-semibold">🗑️ Eliminar</button>
+                        <button type="button" id="viewSOWPreviewBtn" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">👁️ Ver Preview</button>
+                        <button type="button" id="sowLoadedStateUploadBtn" class="text-amber-600 hover:text-amber-700 text-sm font-semibold">🔄 Reemplazar</button>
+                        <button type="button" id="deleteProjectSOWBtn" class="text-red-600 hover:text-red-700 text-sm font-semibold">🗑️ Eliminar</button>
                       </div>
                     </div>
                   </div>
@@ -1162,7 +1166,7 @@
               <!-- Use in Analysis Toggle -->
               <div class="bg-gray-50 rounded-lg p-4 mb-4">
                 <label class="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" id="projectSOWUseInAnalysis" checked onchange="toggleProjectSOWUsage()" style="width: 20px; height: 20px; cursor: pointer;">
+                  <input type="checkbox" id="projectSOWUseInAnalysis" checked style="width: 20px; height: 20px; cursor: pointer;">
                   <div>
                     <p class="font-semibold text-gray-800">Usar en análisis de IA</p>
                     <p class="text-sm text-gray-600">Claude incluirá el SOW al generar análisis de riesgos</p>
@@ -1236,7 +1240,7 @@
             <div class="relative ml-auto">
               <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
               <input id="gantt-search" type="text" placeholder="Buscar entregable…"
-                     oninput="onGanttSearch(this.value)" autocomplete="off" />
+                     autocomplete="off" />
             </div>
           </div>
 
@@ -1339,14 +1343,14 @@
 
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-teal-200">
             <div class="flex gap-2">
-              <button onclick="showReport('senior')" id="tab-senior" class="px-3 sm:px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
+              <button data-report="senior" id="tab-senior" class="px-3 sm:px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
                 <i class="fa-solid fa-crown text-amber-500"></i> Ejecutivo
               </button>
-              <button onclick="showReport('technical')" id="tab-technical" class="px-3 sm:px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
+              <button data-report="technical" id="tab-technical" class="px-3 sm:px-6 py-3 font-semibold text-gray-700 border-b-2 border-transparent hover:text-teal-600 transition">
                 <i class="fa-solid fa-wrench text-teal-600"></i> Técnico
               </button>
             </div>
-            <button class="export-pdf-btn no-print" onclick="exportPDF()">
+            <button class="export-pdf-btn no-print" id="exportPDFBtn">
               <i class="fa-solid fa-file-pdf"></i>&nbsp; Exportar PDF
             </button>
           </div>
@@ -1367,7 +1371,7 @@
         <div class="risk-modal-content">
           <div class="risk-modal-header">
             <h2 id="riskModalTitle">Nuevo Riesgo</h2>
-            <button class="risk-modal-close" onclick="closeRiskModal()">×</button>
+            <button class="risk-modal-close" id="riskModalCloseBtn">×</button>
           </div>
           <div class="risk-modal-body">
             <div class="risk-form-group">
@@ -1400,8 +1404,8 @@
             </div>
           </div>
           <div class="risk-modal-footer">
-            <button class="btn-cancel" onclick="closeRiskModal()">Cancelar</button>
-            <button class="btn-save" onclick="saveRisk()">Guardar Riesgo</button>
+            <button class="btn-cancel" id="riskModalCancelBtn">Cancelar</button>
+            <button class="btn-save" id="riskModalSaveBtn">Guardar Riesgo</button>
           </div>
         </div>
       </div>
@@ -1411,7 +1415,7 @@
         <div class="raid-modal-content">
           <div class="raid-modal-header">
             <h2 id="raidModalTitle">Nuevo RAID</h2>
-            <button class="raid-modal-close" onclick="closeRaidModal()">×</button>
+            <button class="raid-modal-close" id="raidModalCloseBtn">×</button>
           </div>
           <div class="raid-modal-body">
             <div class="raid-form-group">
@@ -1454,8 +1458,8 @@
             </div>
           </div>
           <div class="raid-modal-footer">
-            <button class="raid-btn-cancel" onclick="closeRaidModal()">Cancelar</button>
-            <button class="raid-btn-save" onclick="saveRaid()">Guardar RAID</button>
+            <button class="raid-btn-cancel" id="raidModalCancelBtn">Cancelar</button>
+            <button class="raid-btn-save" id="raidModalSaveBtn">Guardar RAID</button>
           </div>
         </div>
       </div>
@@ -1542,10 +1546,10 @@
               <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString('es-MX')}</p>
             </div>
             <div class="flex gap-2">
-              <button onclick="approveUser('${user.id}')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              <button class="approve-user-btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold" data-user-id="${user.id}">
                 ✓ Aprobar
               </button>
-              <button onclick="rejectUser('${user.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+              <button class="reject-user-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold" data-user-id="${user.id}">
                 ✕ Rechazar
               </button>
             </div>
@@ -1643,7 +1647,7 @@
               <p class="font-semibold text-gray-800">${escapeHtml(user.email)}</p>
               <p class="text-xs text-gray-500 mt-1">📅 ${new Date(user.created_at).toLocaleDateString('es-MX')} • Estado: <span class="${user.status === 'approved' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}">${user.status === 'approved' ? '✓ Aprobado' : '✕ Rechazado'}</span></p>
             </div>
-            <button onclick="deleteUserConfirm('${user.id}', '${escapeHtml(user.email)}')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+            <button class="delete-user-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition" data-user-id="${user.id}" data-user-email="${escapeHtml(user.email)}">
               🗑️ Eliminar
             </button>
           </div>
@@ -1733,7 +1737,7 @@
                 <div class="stakeholder-rol">${escapeHtml(sh.rol)}</div>
                 <div class="stakeholder-raci">${escapeHtml(sh.raci)}</div>
               </div>
-              <button onclick="deleteStakeholder(${sh.id})" class="stakeholder-delete-btn" title="Eliminar stakeholder">
+              <button class="stakeholder-delete-btn" data-stakeholder-id="${sh.id}" title="Eliminar stakeholder">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -2467,7 +2471,7 @@
         const n = counts[key];
         if (n === 0 && key !== 'atencion' && key !== 'todos') return '';
         const active = _ganttFilter === key ? ' active' : '';
-        return `<button class="gantt-chip${active}" onclick="setGanttFilter('${key}')">${b.emoji ? b.emoji + ' ' : ''}${b.label}<span class="chip-count">${n}</span></button>`;
+        return `<button class="gantt-chip${active}" data-gantt-filter="${key}">${b.emoji ? b.emoji + ' ' : ''}${b.label}<span class="chip-count">${n}</span></button>`;
       }).join('');
     }
 
@@ -2665,7 +2669,7 @@
         if (_ganttSearch) {
           msg = `Ningún entregable coincide con "<strong>${escapeHtml(_ganttSearch)}</strong>".`;
         } else if (_ganttFilter === 'atencion') {
-          msg = `🎉 Todo en orden — ningún entregable requiere atención. <button class="text-teal-600 font-semibold underline" onclick="setGanttFilter('todos')">Ver todos</button>`;
+          msg = `🎉 Todo en orden — ningún entregable requiere atención. <button class="text-teal-600 font-semibold underline" data-gantt-filter="todos">Ver todos</button>`;
         } else {
           msg = 'Sin entregables en esta vista.';
         }
@@ -2717,10 +2721,10 @@
                   <div style="left:${barLeft}%;width:${barWidth}%;height:100%;position:absolute;background:${barCol};border-radius:8px;opacity:0.85"></div>
                 </div>
                 <div class="gantt-whatif-btns">
-                  <button class="gantt-whatif-btn" onclick="ganttWhatIf(this, -10)" title="¿Qué pasa si baja 10%?">−10%</button>
-                  <button class="gantt-whatif-btn" onclick="ganttWhatIf(this, -5)"  title="¿Qué pasa si baja 5%?">−5%</button>
-                  <button class="gantt-whatif-btn accent" onclick="ganttWhatIf(this, +5)"  title="¿Qué pasa si sube 5%?">+5%</button>
-                  <button class="gantt-whatif-btn accent" onclick="ganttWhatIf(this, +10)" title="¿Qué pasa si sube 10%?">+10%</button>
+                  <button class="gantt-whatif-btn" data-whatif-delta="-10" title="¿Qué pasa si baja 10%?">−10%</button>
+                  <button class="gantt-whatif-btn" data-whatif-delta="-5" title="¿Qué pasa si baja 5%?">−5%</button>
+                  <button class="gantt-whatif-btn accent" data-whatif-delta="5" title="¿Qué pasa si sube 5%?">+5%</button>
+                  <button class="gantt-whatif-btn accent" data-whatif-delta="10" title="¿Qué pasa si sube 10%?">+10%</button>
                 </div>
               </div>
             </td>
@@ -2760,7 +2764,7 @@
         html += `
           <tr><td colspan="5" style="padding:0;border:0;">
             <div class="gantt-group status-${group.status}" id="gantt-group-${group.id}">
-              <div class="gantt-group-header" onclick="toggleGanttGroup('${group.id}')">
+              <div class="gantt-group-header" data-group-id="${group.id}">
                 <div class="gantt-group-left">
                   <div class="gantt-group-emoji">${group.emoji}</div>
                   <div class="gantt-group-title" style="color:${group.status === 'red' ? '#991b1b' : group.status === 'yellow' ? '#92400e' : group.status === 'green' ? '#15803d' : '#065f46'}">${escapeHtml(group.label)}</div>
@@ -2974,7 +2978,7 @@
   <!-- ══════════════════════════════════════════
        LARA CHAT WIDGET
   ══════════════════════════════════════════ -->
-  <button id="chat-fab" onclick="toggleChat()" title="Habla con LARA">🤖</button>
+  <button id="chat-fab" title="Habla con LARA">🤖</button>
 
   <div id="chat-panel">
     <div id="chat-header">
@@ -2983,22 +2987,21 @@
         <strong>LARA Assistant</strong>
         <span>Experta en Project Management</span>
       </div>
-      <button id="chat-close" onclick="toggleChat()">✕</button>
+      <button id="chat-close">✕</button>
     </div>
 
     <div id="chat-messages"></div>
 
     <div id="chat-suggestions">
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué significa el CPI de mi proyecto?')">¿Qué es el CPI?</button>
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Cómo interpreto el SPI?')">¿Qué es el SPI?</button>
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Cuáles son los riesgos más críticos?')">Ver riesgos</button>
-      <button class="suggestion-chip" onclick="sendSuggestion('¿Qué acciones debo tomar ahora?')">¿Qué hago?</button>
+      <button class="suggestion-chip" data-suggestion="¿Qué significa el CPI de mi proyecto?">¿Qué es el CPI?</button>
+      <button class="suggestion-chip" data-suggestion="¿Cómo interpreto el SPI?">¿Qué es el SPI?</button>
+      <button class="suggestion-chip" data-suggestion="¿Cuáles son los riesgos más críticos?">Ver riesgos</button>
+      <button class="suggestion-chip" data-suggestion="¿Qué acciones debo tomar ahora?">¿Qué hago?</button>
     </div>
 
     <div id="chat-input-row">
-      <textarea id="chat-input" placeholder="Pregúntame sobre tu proyecto..." rows="1"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-      <button id="chat-send" onclick="sendMessage()">
+      <textarea id="chat-input" placeholder="Pregúntame sobre tu proyecto..." rows="1"></textarea>
+      <button id="chat-send">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -3132,7 +3135,7 @@
           const suggestionsContainer = document.getElementById('chat-suggestions');
           if (suggestionsContainer && welcome.suggestions.length > 0) {
             suggestionsContainer.innerHTML = welcome.suggestions
-              .map(text => `<button class="suggestion-chip" onclick="sendSuggestion('${text.replace(/'/g, "\\'")}')">${escapeHtml(text)}</button>`)
+              .map(text => `<button class="suggestion-chip" data-suggestion="${escapeHtml(text)}">${escapeHtml(text)}</button>`)
               .join('');
           }
         }
@@ -3511,13 +3514,13 @@
                   ${level === 'red' ? '🔴' : level === 'yellow' ? '🟡' : '🟢'} ${levelBadge}
                 </span>
               </td>
-              <td style="font-size: 0.8rem; line-height: 1.4;">${risk.response}</td>
+              <td style="font-size: 0.8rem; line-height: 1.4;">${risk.response || '<span class="text-gray-400">Pendiente de definir</span>'}</td>
               <td>
                 <div class="risk-actions">
-                  <button class="risk-btn risk-btn-edit" onclick="editRisk(${risk.id})">
+                  <button class="risk-btn risk-btn-edit" data-risk-action="edit" data-risk-id="${risk.id}">
                     <i class="fa-solid fa-edit"></i> Editar
                   </button>
-                  <button class="risk-btn risk-btn-delete" onclick="deleteRisk(${risk.id})">
+                  <button class="risk-btn risk-btn-delete" data-risk-action="delete" data-risk-id="${risk.id}">
                     <i class="fa-solid fa-trash"></i> Eliminar
                   </button>
                 </div>
@@ -3677,10 +3680,10 @@
               <td>${impactLabel}</td>
               <td>
                 <div class="raid-actions">
-                  <button class="raid-btn raid-btn-edit" onclick="editRaid(${raid.id})">
+                  <button class="raid-btn raid-btn-edit" data-raid-action="edit" data-raid-id="${raid.id}">
                     <i class="fa-solid fa-edit"></i> Editar
                   </button>
-                  <button class="raid-btn raid-btn-delete" onclick="deleteRaid(${raid.id})">
+                  <button class="raid-btn raid-btn-delete" data-raid-action="delete" data-raid-id="${raid.id}">
                     <i class="fa-solid fa-trash"></i> Eliminar
                   </button>
                 </div>
@@ -4064,6 +4067,129 @@
         }
       };
     })();
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       EVENT WIRING (replaces inline on* handlers — CSP hardening)
+       Placed last so every function referenced below (top-level
+       `function` declarations and window.* assignments from the
+       earlier script blocks) is already defined.
+  ══════════════════════════════════════════ -->
+  <script>
+    // --- Sidebar / header ---
+    document.getElementById('sidebar-backdrop').addEventListener('click', () => toggleHistorySidebar(false));
+    document.getElementById('sidebarCollapseBtn').addEventListener('click', toggleSidebarCollapse);
+    document.getElementById('sidebarCloseBtn').addEventListener('click', () => toggleHistorySidebar(false));
+    document.getElementById('openAddStakeholderBtn').addEventListener('click', openAddStakeholderModal);
+    document.getElementById('sidebarOpenBtn').addEventListener('click', () => toggleHistorySidebar(true));
+    document.getElementById('admin-nav-btn').addEventListener('click', toggleAdminPanel);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // --- Project SOW modal (footer buttons; upload zone itself is wired inline above) ---
+    document.getElementById('removeProjectPendingSOWBtn').addEventListener('click', removeProjectPendingSOW);
+    document.getElementById('projectSOWModalCancelBtn').addEventListener('click', closeProjectSOWModal);
+    document.getElementById('projectSOWSaveBtn').addEventListener('click', saveProjectSOW);
+
+    // --- Admin panel ---
+    document.getElementById('adminPanelCloseBtn').addEventListener('click', toggleAdminPanel);
+    document.getElementById('adminPanelCloseBtn2').addEventListener('click', toggleAdminPanel);
+    document.querySelectorAll('[data-admin-tab]').forEach(btn => {
+      btn.addEventListener('click', () => switchAdminTab(btn.dataset.adminTab));
+    });
+    document.getElementById('pending-users-list').addEventListener('click', (e) => {
+      const approveBtn = e.target.closest('.approve-user-btn');
+      if (approveBtn) { approveUser(approveBtn.dataset.userId); return; }
+      const rejectBtn = e.target.closest('.reject-user-btn');
+      if (rejectBtn) rejectUser(rejectBtn.dataset.userId);
+    });
+    document.getElementById('all-users-list').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.delete-user-btn');
+      if (delBtn) deleteUserConfirm(delBtn.dataset.userId, delBtn.dataset.userEmail);
+    });
+
+    // --- Stakeholders ---
+    document.getElementById('stakeholderModalCloseBtn').addEventListener('click', closeAddStakeholderModal);
+    document.getElementById('stakeholderModalCancelBtn').addEventListener('click', closeAddStakeholderModal);
+    document.getElementById('stakeholderModalSaveBtn').addEventListener('click', saveStakeholder);
+    document.getElementById('stakeholders-list').addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.stakeholder-delete-btn');
+      if (delBtn) deleteStakeholder(Number(delBtn.dataset.stakeholderId));
+    });
+
+    // --- Framework / dashboard tabs ---
+    document.querySelectorAll('[data-framework]').forEach(btn => {
+      btn.addEventListener('click', () => switchFramework(btn.dataset.framework));
+    });
+    document.querySelectorAll('[data-dashboard-tab]').forEach(btn => {
+      btn.addEventListener('click', () => switchDashboardTab(btn.dataset.dashboardTab));
+    });
+
+    // --- Risk register ---
+    document.getElementById('openRiskModalBtn').addEventListener('click', openRiskModal);
+    document.getElementById('riskModalCloseBtn').addEventListener('click', closeRiskModal);
+    document.getElementById('riskModalCancelBtn').addEventListener('click', closeRiskModal);
+    document.getElementById('riskModalSaveBtn').addEventListener('click', saveRisk);
+    document.getElementById('risks-table-body').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-risk-action]');
+      if (!btn) return;
+      if (btn.dataset.riskAction === 'edit') editRisk(btn.dataset.riskId);
+      else if (btn.dataset.riskAction === 'delete') deleteRisk(btn.dataset.riskId);
+    });
+
+    // --- RAID log ---
+    document.getElementById('openRaidModalBtn').addEventListener('click', openRaidModal);
+    document.getElementById('raidModalCloseBtn').addEventListener('click', closeRaidModal);
+    document.getElementById('raidModalCancelBtn').addEventListener('click', closeRaidModal);
+    document.getElementById('raidModalSaveBtn').addEventListener('click', saveRaid);
+    document.getElementById('raid-table-body').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-raid-action]');
+      if (!btn) return;
+      if (btn.dataset.raidAction === 'edit') editRaid(btn.dataset.raidId);
+      else if (btn.dataset.raidAction === 'delete') deleteRaid(btn.dataset.raidId);
+    });
+
+    // --- SOW (Documentos tab) ---
+    document.getElementById('sowEmptyStateUploadBtn').addEventListener('click', openProjectSOWModal);
+    document.getElementById('viewSOWPreviewBtn').addEventListener('click', viewSOWPreview);
+    document.getElementById('sowLoadedStateUploadBtn').addEventListener('click', openProjectSOWModal);
+    document.getElementById('deleteProjectSOWBtn').addEventListener('click', deleteProjectSOW);
+    document.getElementById('projectSOWUseInAnalysis').addEventListener('change', toggleProjectSOWUsage);
+
+    // --- Gantt ---
+    document.getElementById('gantt-search').addEventListener('input', (e) => onGanttSearch(e.target.value));
+    document.getElementById('gantt-chips').addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-gantt-filter]');
+      if (chip) setGanttFilter(chip.dataset.ganttFilter);
+    });
+    document.getElementById('gantt-body').addEventListener('click', (e) => {
+      const filterBtn = e.target.closest('[data-gantt-filter]');
+      if (filterBtn) { setGanttFilter(filterBtn.dataset.ganttFilter); return; }
+      const whatifBtn = e.target.closest('[data-whatif-delta]');
+      if (whatifBtn) { ganttWhatIf(whatifBtn, Number(whatifBtn.dataset.whatifDelta)); return; }
+      const groupHeader = e.target.closest('.gantt-group-header');
+      if (groupHeader) toggleGanttGroup(groupHeader.dataset.groupId);
+    });
+
+    // --- Report tabs / export ---
+    document.querySelectorAll('[data-report]').forEach(btn => {
+      btn.addEventListener('click', () => showReport(btn.dataset.report));
+    });
+    document.getElementById('exportPDFBtn').addEventListener('click', exportPDF);
+
+    // --- Chat widget ---
+    document.getElementById('chat-fab').addEventListener('click', toggleChat);
+    document.getElementById('chat-close').addEventListener('click', toggleChat);
+    document.getElementById('chat-send').addEventListener('click', sendMessage);
+    document.getElementById('chat-input').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+    document.getElementById('chat-suggestions').addEventListener('click', (e) => {
+      const chip = e.target.closest('.suggestion-chip');
+      if (chip) sendSuggestion(chip.dataset.suggestion);
+    });
   </script>
 </body>
 </html>
