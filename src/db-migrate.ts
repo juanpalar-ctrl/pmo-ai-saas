@@ -260,6 +260,44 @@ export async function runMigrations(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_stakeholders_projectid ON stakeholders(projectid)
   `);
 
+  // SOW (Statement of Work) tables — mirrors src/migrations/002-sow-tables.ts,
+  // which was never wired into this auto-migration runner (found 2026-08-20:
+  // any environment besides production — where these tables were presumably
+  // created by running that file by hand once — 500s on every SOW endpoint
+  // with "relation sow_documents does not exist"). Drops that file's
+  // REFERENCES projects(id) FKs: no `projects` table exists in this schema,
+  // only project_data with a plain projectid INT and no FK (see comment
+  // above) — an FK to a nonexistent table would throw here and abort every
+  // migration after it.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sow_documents (
+      id SERIAL PRIMARY KEY,
+      project_id VARCHAR(255) NOT NULL,
+      user_id VARCHAR(255) NOT NULL,
+      filename VARCHAR(255) NOT NULL,
+      file_type VARCHAR(10),
+      file_size_bytes INT,
+      storage_path VARCHAR(500),
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      use_in_analysis BOOLEAN DEFAULT true,
+      CONSTRAINT unique_sow_per_project UNIQUE (project_id)
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS sow_content (
+      id SERIAL PRIMARY KEY,
+      project_id VARCHAR(255) NOT NULL UNIQUE,
+      sow_document_id INT NOT NULL REFERENCES sow_documents(id) ON DELETE CASCADE,
+      extracted_text TEXT,
+      char_count INT,
+      extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      extraction_status VARCHAR(50) DEFAULT 'pending'
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sow_documents_project ON sow_documents(project_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sow_content_project ON sow_content(project_id)`);
+
   // Resource Assignments table (Hito 6: Resource Distribution Gantt)
   // Tracks individual person assignments to projects with weekly allocation.
   // Used for overbooking detection and cross-project dependency analysis.

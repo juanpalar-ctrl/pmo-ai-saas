@@ -79,10 +79,14 @@ router.post(
         return;
       }
 
-      // Verify project exists and user has access
+      // Verify project exists and user has access. projectId here is
+      // project_data's SERIAL id (the ?id= value projects.html puts in the
+      // URL and passes straight through), not the business projectid column
+      // — those are two different values on this table (see dossier: known
+      // inconsistent-projectid-convention trap).
       const projectRes = await pool.query(
-        'SELECT id FROM projects WHERE id = $1',
-        [projectId]
+        'SELECT 1 FROM project_data WHERE id = $1 AND user_id = $2 LIMIT 1',
+        [projectId, userId]
       );
 
       if (projectRes.rows.length === 0) {
