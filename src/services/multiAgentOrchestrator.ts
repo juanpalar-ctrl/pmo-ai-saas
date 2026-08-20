@@ -7,6 +7,7 @@ import { calculateFrameworkMetrics } from './frameworkMetrics';
 import { detectWarnings } from './earlyWarning';
 import { teamService } from './teamService';
 import { detectResourceConflicts } from './resourceConflictDetector';
+import { syncRisksFromAgent } from './riskSyncService';
 import { routeLogger } from '../core/logger';
 
 /**
@@ -134,6 +135,8 @@ export const orchestrator = {
       riskAgent.analyze(input),
       economicAgent.analyze(input),
     ]);
+
+    await syncRisksFromAgent(projectId, riskAnalysis.analysis?.analysis?.topRisks);
 
     reportingAgent.setAnalysisOutputs(riskAnalysis, economicAnalysis);
     const reportingAnalysis: any = await reportingAgent.analyze(input);

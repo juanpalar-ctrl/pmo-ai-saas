@@ -9,6 +9,7 @@ export interface Risk {
   impact: 'low' | 'medium' | 'high';
   response: string;
   status?: 'open' | 'in-progress' | 'resolved';
+  source?: 'manual' | 'ai_agent';
   createdat?: Date;
   updatedat?: Date;
 }
@@ -21,6 +22,7 @@ export interface RAIDItem {
   owner?: string;
   status?: 'open' | 'in-progress' | 'resolved';
   impact?: 'low' | 'medium' | 'high';
+  source?: 'manual' | 'ai_agent';
   createdat?: Date;
   updatedat?: Date;
 }
@@ -33,7 +35,7 @@ export class RiskRepository {
   async getRisks(projectid: number): Promise<Risk[]> {
     try {
       const result = await pool.query(
-        'SELECT id, projectid, description, probability, impact, response, status, createdat, updatedat FROM risks WHERE projectid = $1 ORDER BY createdat DESC',
+        'SELECT id, projectid, description, probability, impact, response, status, source, createdat, updatedat FROM risks WHERE projectid = $1 ORDER BY createdat DESC',
         [projectid]
       );
       return result.rows;
@@ -127,7 +129,7 @@ export class RiskRepository {
   async getRAIDLog(projectid: number): Promise<RAIDItem[]> {
     try {
       const result = await pool.query(
-        'SELECT id, projectid, type, description, owner, status, impact, createdat, updatedat FROM raid_log WHERE projectid = $1 ORDER BY createdat DESC',
+        'SELECT id, projectid, type, description, owner, status, impact, source, createdat, updatedat FROM raid_log WHERE projectid = $1 ORDER BY createdat DESC',
         [projectid]
       );
       return result.rows;

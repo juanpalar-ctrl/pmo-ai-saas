@@ -357,6 +357,47 @@ export async function runMigrations(): Promise<void> {
     ON resource_assignments(user_id)
   `);
 
+  // Risk Register + RAID Log tables (also created lazily in risks.ts middleware;
+  // duplicated here so they exist before the orchestrator's risk-sync writes to
+  // them, regardless of which route hits first).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS risks (
+      id SERIAL PRIMARY KEY,
+      projectid INTEGER NOT NULL,
+      description TEXT NOT NULL,
+      probability INTEGER CHECK (probability >= 0 AND probability <= 100),
+      impact VARCHAR(50),
+      response TEXT,
+      status VARCHAR(50) DEFAULT 'open',
+      createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS raid_log (
+      id SERIAL PRIMARY KEY,
+      projectid INTEGER NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      description TEXT NOT NULL,
+      owner VARCHAR(255),
+      status VARCHAR(50) DEFAULT 'open',
+      impact VARCHAR(50),
+      createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_risks_projectid ON risks(projectid)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_raid_log_projectid ON raid_log(projectid)`);
+
+  // 'source' distinguishes rows the Risk Agent auto-inserted ('ai_agent') from
+  // rows a user typed in manually ('manual'). The sync only ever inserts new
+  // 'ai_agent' rows on re-analysis — it never touches manual rows or edits
+  // already-synced ones — so user edits/deletions always stick.
+  await pool.query(`ALTER TABLE risks ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'manual'`);
+  await pool.query(`ALTER TABLE raid_log ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'manual'`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_risks_projectid_source ON risks(projectid, source)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_raid_log_projectid_source ON raid_log(projectid, source)`);
+
   dbLogger.info('Database migrations complete');
 }
 
