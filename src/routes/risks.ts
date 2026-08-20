@@ -87,6 +87,24 @@ router.post('/:projectId/risks', async (req: Request, res: Response) => {
   }
 });
 
+// GET /:projectId/risks/:riskId
+router.get('/:projectId/risks/:riskId', async (req: Request, res: Response) => {
+  try {
+    const projectId = getProjectId(req.params.projectId);
+    const riskId = getProjectId(req.params.riskId);
+    const risk = await riskRepository.getRisk(parseInt(riskId), parseInt(projectId));
+
+    if (!risk) {
+      return res.status(404).json({ error: 'Risk not found' });
+    }
+
+    res.json(risk);
+  } catch (error: any) {
+    routeLogger.error({ err: error?.message }, 'Error fetching risk');
+    res.status(500).json({ error: 'Error fetching risk' });
+  }
+});
+
 // PATCH /:projectId/risks/:riskId
 router.patch('/:projectId/risks/:riskId', async (req: Request, res: Response) => {
   try {
@@ -164,6 +182,24 @@ router.post('/:projectId/raid', async (req: Request, res: Response) => {
   } catch (error: any) {
     routeLogger.error({ err: error?.message }, 'Error creating RAID item');
     res.status(500).json({ error: 'Error creating RAID item' });
+  }
+});
+
+// GET /:projectId/raid/:raidId
+router.get('/:projectId/raid/:raidId', async (req: Request, res: Response) => {
+  try {
+    const projectId = getProjectId(req.params.projectId);
+    const raidId = getProjectId(req.params.raidId);
+    const item = await riskRepository.getRAIDItem(parseInt(raidId), parseInt(projectId));
+
+    if (!item) {
+      return res.status(404).json({ error: 'RAID item not found' });
+    }
+
+    res.json(item);
+  } catch (error: any) {
+    routeLogger.error({ err: error?.message }, 'Error fetching RAID item');
+    res.status(500).json({ error: 'Error fetching RAID item' });
   }
 });
 

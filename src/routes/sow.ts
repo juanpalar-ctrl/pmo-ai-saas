@@ -188,7 +188,7 @@ router.post(
  * GET /api/projects/:projectId/sow
  * Get SOW metadata and content for a project
  */
-router.get('/:projectId', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/:projectId/sow', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { projectId } = req.params;
 
@@ -240,7 +240,7 @@ router.get('/:projectId', requireAuth, async (req: AuthRequest, res: Response): 
  * Delete SOW document for a project
  */
 router.delete(
-  '/:projectId',
+  '/:projectId/sow',
   requireAuth,
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
