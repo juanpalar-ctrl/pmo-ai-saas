@@ -544,10 +544,26 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
       });
     }
 
-    // Group assignments by (person_id, start_date) to detect cross-project overbooking
+    // team_members is unique per (project_id, lower(name)) — the SAME person
+    // ("Juan Pérez") gets a DIFFERENT person_id in every project they're
+    // assigned to. Grouping by person_id therefore can never detect
+    // cross-project overbooking (each project-scoped "Juan" looks like a
+    // different person, each individually <100%). Use the lowercased name as
+    // the canonical cross-project identity instead — same matching rule the
+    // ingestion side already uses when linking an Excel row to a team member.
+    const nameKeyOf = (personId: number) => (personNameMap.get(personId) || `person-${personId}`).trim().toLowerCase();
+    const displayNameOf = new Map<string, string>();
+    for (const personId of allPersonIds) {
+      const key = nameKeyOf(personId);
+      if (!displayNameOf.has(key)) {
+        displayNameOf.set(key, personNameMap.get(personId) || `Person ${personId}`);
+      }
+    }
+
+    // Group assignments by (person name, start_date) to detect cross-project overbooking
     const personWeekMap = new Map<string, ResourceAssignment[]>();
     for (const assignment of allAssignments) {
-      const key = `${assignment.person_id}-${assignment.start_date}`;
+      const key = `${nameKeyOf(assignment.person_id)}__${assignment.start_date}`;
       if (!personWeekMap.has(key)) {
         personWeekMap.set(key, []);
       }
@@ -556,19 +572,18 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
 
     // Detect overbooking at portfolio level (person-week granularity)
     const conflicts: ResourceConflict[] = [];
-    const conflictedPeople = new Set<number>();
+    const conflictedNames = new Set<string>();
 
-    for (const [key, weekAssignments] of personWeekMap.entries()) {
+    for (const weekAssignments of personWeekMap.values()) {
       const totalAllocation = weekAssignments.reduce((sum, a) => sum + (a.allocation_percent || 0), 0);
 
       if (totalAllocation > 100) {
-        const [personIdStr] = key.split('-');
-        const personId = parseInt(personIdStr, 10);
-        conflictedPeople.add(personId);
+        const nameKey = nameKeyOf(weekAssignments[0].person_id);
+        conflictedNames.add(nameKey);
 
         conflicts.push({
-          person_id: personId,
-          person_name: personNameMap.get(personId) || `Person ${personId}`,
+          person_id: weekAssignments[0].person_id,
+          person_name: displayNameOf.get(nameKey) || `Person ${weekAssignments[0].person_id}`,
           week_start: weekAssignments[0].start_date,
           total_allocation_percent: totalAllocation,
           projects: weekAssignments.map(a => ({
@@ -583,21 +598,23 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
     }
 
     // Detect bottlenecks: people in 3+ projects during the same period
-    const personProjectMap = new Map<number, Set<number>>();
+    const personProjectMap = new Map<string, Set<number>>();
     for (const assignment of allAssignments) {
-      if (!personProjectMap.has(assignment.person_id)) {
-        personProjectMap.set(assignment.person_id, new Set());
+      const nameKey = nameKeyOf(assignment.person_id);
+      if (!personProjectMap.has(nameKey)) {
+        personProjectMap.set(nameKey, new Set());
       }
-      personProjectMap.get(assignment.person_id)!.add(assignment.project_id);
+      personProjectMap.get(nameKey)!.add(assignment.project_id);
     }
 
     const bottlenecks: Bottleneck[] = [];
-    for (const [personId, projectIds] of personProjectMap.entries()) {
+    for (const [nameKey, projectIds] of personProjectMap.entries()) {
       if (projectIds.size >= 3) {
-        const overbooked = conflicts.filter(c => c.person_id === personId).length;
+        const overbooked = conflicts.filter(c => nameKeyOf(c.person_id) === nameKey).length;
+        const representative = allAssignments.find(a => nameKeyOf(a.person_id) === nameKey)!;
         bottlenecks.push({
-          person_id: personId,
-          person_name: personNameMap.get(personId) || `Person ${personId}`,
+          person_id: representative.person_id,
+          person_name: displayNameOf.get(nameKey) || `Person ${representative.person_id}`,
           project_count: projectIds.size,
           weeks_overbooked: overbooked,
           projects: Array.from(projectIds).map(pid => ({
@@ -622,10 +639,10 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
         const assignmentsA = allAssignments.filter(a => a.project_id === projA);
         const assignmentsB = allAssignments.filter(a => a.project_id === projB);
 
-        const peopleA = new Set(assignmentsA.map(a => a.person_id));
-        const peopleB = new Set(assignmentsB.map(a => a.person_id));
+        const peopleA = new Set(assignmentsA.map(a => nameKeyOf(a.person_id)));
+        const peopleB = new Set(assignmentsB.map(a => nameKeyOf(a.person_id)));
 
-        const shared = Array.from(peopleA).filter(id => peopleB.has(id));
+        const shared = Array.from(peopleA).filter(nameKey => peopleB.has(nameKey));
 
         if (shared.length > 0) {
           const startA = assignmentsA.map(a => new Date(a.start_date));
@@ -645,16 +662,16 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
             projBEnd.toISOString().split('T')[0]
           );
 
-          const sharedPeopleDetails = shared.map(personId => {
-            const assignA = assignmentsA.find(a => a.person_id === personId);
-            const assignB = assignmentsB.find(a => a.person_id === personId);
-            const isConflicted = conflicts.some(
-              c => c.person_id === personId &&
+          const sharedPeopleDetails = shared.map(nameKey => {
+            const assignA = assignmentsA.find(a => nameKeyOf(a.person_id) === nameKey);
+            const assignB = assignmentsB.find(a => nameKeyOf(a.person_id) === nameKey);
+            const isConflicted = conflictedNames.has(nameKey) && conflicts.some(
+              c => nameKeyOf(c.person_id) === nameKey &&
                    c.projects.some(p => p.projectid === projA || p.projectid === projB)
             );
             return {
-              person_id: personId,
-              person_name: personNameMap.get(personId) || `Person ${personId}`,
+              person_id: (assignA || assignB)!.person_id,
+              person_name: displayNameOf.get(nameKey) || nameKey,
               allocation_a: assignA?.allocation_percent || 0,
               allocation_b: assignB?.allocation_percent || 0,
               is_conflicted: isConflicted
@@ -679,7 +696,7 @@ export async function detectPortfolioResourceConflicts(userId: string): Promise<
       }
     }
 
-    const uniquePeople = new Set(conflicts.map(c => c.person_id));
+    const uniquePeople = conflictedNames;
     return {
       summary: {
         total_people: uniquePeople.size,
