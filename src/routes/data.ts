@@ -240,6 +240,9 @@ router.delete('/projects/:id', async (req: Request, res: Response) => {
     const realProjectId = projectResult.rows[0].projectid;
 
     await pool.query('DELETE FROM ai_analyses WHERE projectid = $1 AND user_id = $2', [realProjectId, userId]);
+    await pool.query('DELETE FROM risks WHERE projectid = $1', [realProjectId]);
+    await pool.query('DELETE FROM raid_log WHERE projectid = $1', [realProjectId]);
+    await pool.query('DELETE FROM resource_assignments WHERE project_id = $1 AND user_id = $2', [realProjectId, userId]);
     await pool.query('DELETE FROM project_data WHERE id = $1', [id]);
 
     routeLogger.info({ id, realProjectId }, 'Project deleted');

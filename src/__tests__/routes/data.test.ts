@@ -116,10 +116,13 @@ describe('DELETE /api/data/projects/:id', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 
-  it('deletes analyses then the project row, scoped to the owning user', async () => {
+  it('deletes analyses, risks, raid log, resource assignments then the project row, scoped to the owning user', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [{ projectid: 99 }] }) // ownership lookup
       .mockResolvedValueOnce({ rows: [] }) // delete ai_analyses
+      .mockResolvedValueOnce({ rows: [] }) // delete risks
+      .mockResolvedValueOnce({ rows: [] }) // delete raid_log
+      .mockResolvedValueOnce({ rows: [] }) // delete resource_assignments
       .mockResolvedValueOnce({ rows: [] }); // delete project_data
 
     const res = await request(app).delete('/api/data/projects/7');
@@ -131,6 +134,12 @@ describe('DELETE /api/data/projects/:id', () => {
     expect(mockQuery).toHaveBeenNthCalledWith(2,
       expect.stringContaining('DELETE FROM ai_analyses'), [99, 'user-1']);
     expect(mockQuery).toHaveBeenNthCalledWith(3,
+      expect.stringContaining('DELETE FROM risks'), [99]);
+    expect(mockQuery).toHaveBeenNthCalledWith(4,
+      expect.stringContaining('DELETE FROM raid_log'), [99]);
+    expect(mockQuery).toHaveBeenNthCalledWith(5,
+      expect.stringContaining('DELETE FROM resource_assignments'), [99, 'user-1']);
+    expect(mockQuery).toHaveBeenNthCalledWith(6,
       expect.stringContaining('DELETE FROM project_data'), [7]);
   });
 
