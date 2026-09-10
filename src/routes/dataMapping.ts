@@ -60,6 +60,16 @@ const upload = multer({
   },
 });
 
+// save-mapping's body arrives as multipart/form-data (the frontend builds a
+// FormData so it can attach an optional SOW file alongside the JSON mapping),
+// but nothing here parsed it — express.json() only understands
+// application/json, so req.body was always undefined and every save-mapping
+// call failed validation before doing anything. .any() accepts the text
+// fields (tempFilename, confirmedMapping, ...) into req.body regardless of
+// whether a file field is present; the optional sowFile itself isn't consumed
+// by this route yet, so its bytes are only held in memory for the request.
+const mappingBodyUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
 
 router.post(
   '/detect-columns',
@@ -176,11 +186,25 @@ router.post('/detect-columns-gsheet', async (req: Request, res: Response): Promi
   }
 });
 
-router.post('/save-mapping', async (req: Request, res: Response): Promise<void> => {
+router.post('/save-mapping', mappingBodyUpload.any(), async (req: Request, res: Response): Promise<void> => {
   let tempFilePath: string | null = null;
 
   try {
-    const validatedRequest = SaveMappingRequestSchema.parse(req.body);
+    // Fields arrive as plain strings when the request is multipart/form-data
+    // (the real frontend flow — see mappingBodyUpload above) but as their
+    // real JS types when it's application/json (only ever used by tests
+    // today). Normalize the multipart-string shape to what the schema
+    // expects; a request that already has real types passes through as-is.
+    const rawBody: Record<string, unknown> = { ...req.body };
+    if (typeof rawBody.confirmedMapping === 'string') {
+      rawBody.confirmedMapping = JSON.parse(rawBody.confirmedMapping);
+    }
+    if (typeof rawBody.targetProjectId === 'string') {
+      const trimmed = rawBody.targetProjectId.trim();
+      rawBody.targetProjectId = trimmed === '' || trimmed === 'null' ? null : Number(trimmed);
+    }
+
+    const validatedRequest = SaveMappingRequestSchema.parse(rawBody);
     const { tempFilename, confirmedMapping, framework, org, lang, targetProjectId } = validatedRequest;
     routeLogger.info({ framework, lang, targetProjectId }, '[save-mapping] Received framework');
 
@@ -290,6 +314,21 @@ router.post('/save-mapping', async (req: Request, res: Response): Promise<void> 
       await teamService.autoPopulateTeam(projectId, userId, validatedRows);
     } catch (err) {
       routeLogger.error({ err }, '[save-mapping] Team auto-populate failed');
+    }
+
+    // Hito 6: extract per-person weekly allocation from the "hours_per_week"
+    // column (Resource Zone / overbooking detection). Runs after team
+    // auto-populate so assignee names already resolve to team_members rows.
+    // Non-fatal — a mapping without hours_per_week just means no resource data.
+    try {
+      const { ingestResourceAssignments } = await import('../services/resourceAssignmentIngestService');
+      const latestEndDate = validatedRows.reduce<string | undefined>((latest, row) => {
+        if (!row.end_date) return latest;
+        return !latest || row.end_date > latest ? row.end_date : latest;
+      }, undefined);
+      await ingestResourceAssignments(validatedRows, projectId, userId, latestEndDate);
+    } catch (err) {
+      routeLogger.error({ err }, '[save-mapping] Resource assignment ingest failed');
     }
 
     if (tempFilePath && fs.existsSync(tempFilePath)) {

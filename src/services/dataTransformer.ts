@@ -17,6 +17,7 @@ interface TransformationContext {
   endDateField?: string;
   risksField?: string;
   assigneeField?: string;
+  hoursPerWeekField?: string;
 }
 
 /**
@@ -217,6 +218,9 @@ export function transformRow(
     end_date: parseDate(context.endDateField ? row[context.endDateField] : undefined, thirtyDaysLater),
     risks: context.risksField ? String(row[context.risksField] || '').trim() || null : null,
     assignee: context.assigneeField ? String(row[context.assigneeField] || '').trim() || null : null,
+    hours_per_week: context.hoursPerWeekField
+      ? parseCost(row[context.hoursPerWeekField], 0) || null
+      : null,
   } as TransformedProjectRow;
 }
 
@@ -246,6 +250,7 @@ export function transformDataset(
     endDateField: undefined,
     risksField: undefined,
     assigneeField: undefined,
+    hoursPerWeekField: undefined,
   };
 
   // Find which Excel column maps to each standard field
@@ -279,6 +284,9 @@ export function transformDataset(
         break;
       case 'assignee':
         context.assigneeField = originalHeader;
+        break;
+      case 'hours_per_week':
+        context.hoursPerWeekField = originalHeader;
         break;
     }
   }

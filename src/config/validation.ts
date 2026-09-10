@@ -21,6 +21,7 @@ export const ColumnSuggestionSchema = z.object({
     'end_date',
     'risks',
     'assignee',
+    'hours_per_week',
   ]).nullable(),
   framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum')
 });
@@ -58,6 +59,7 @@ export const TransformedProjectRowSchema = z.object({
   end_date: z.string().optional().nullable(),
   risks: z.string().optional().nullable(),
   assignee: z.string().optional().nullable(),
+  hours_per_week: z.number().nonnegative().finite().optional().nullable(),
 });
 
 
@@ -78,6 +80,7 @@ export const SaveMappingRequestSchema = z.object({
       'end_date',
       'risks',
       'assignee',
+      'hours_per_week',
     ]).nullable()
   ),
   framework: z.enum(['scrum', 'kanban', 'waterfall', 'safe']).default('scrum'),

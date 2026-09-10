@@ -128,7 +128,7 @@ export async function extractResourceAssignments(
       project_id: projectId,
       user_id: userId,
       person_id: member.id,
-      task_name: row['task_name'] || row['Task'] || row['task'],
+      task_name: row['task_name'] || row['Task'] || row['task'] || row['project_name'],
       start_date: row['start_date'] || row['Start Date'] || new Date().toISOString().split('T')[0],
       end_date: row['end_date'] || row['End Date'] || projectEndDate,
       hours_per_week: hoursPerWeek,

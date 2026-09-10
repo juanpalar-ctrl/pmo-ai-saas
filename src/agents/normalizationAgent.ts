@@ -33,12 +33,13 @@ Map each column to one of these standard fields, or suggest NULL if unmappable:
 - project_name: Project/task name (required if present)
 - status: Project status (Not Started, In Progress, On Hold, Completed, etc.)
 - estimated_cost: Planned/budgeted cost (PV, Story Points as cost, Estimate, Budget, etc.)
-- actual_cost: Real/actual cost spent (AC, Spent, Cost, Effort Hours, etc.)
+- actual_cost: Real/actual cost spent in currency (AC, Spent, Cost, etc.) — NOT hours worked
 - progress_percent: Task completion percentage (0-100, Progress, Status, Completion %, etc.)
 - start_date: Task start date
 - end_date: Task deadline or end date
 - risks: Identified risks or risk description
-- assignee: Person assigned/responsible for the task (Asignado a, Responsable, Owner, Assignee, etc.)
+- assignee: Person assigned/responsible for the task (Asignado a, Responsable, Owner, Assignee, Team Member, etc.)
+- hours_per_week: Weekly hours or allocation this person spends on the task (Hours/Week, Horas, Effort Hours, Allocation %, etc.) — used for resource overbooking detection, distinct from cost
 
 Respond ONLY with valid JSON (no markdown, no extra text). Example:
 {

@@ -14,6 +14,7 @@ export interface TransformedRow {
   end_date?: string | null;
   risks?: string | null;
   assignee?: string | null;
+  hours_per_week?: number | null;
 }
 
 export interface FrameworkMetricCard {
