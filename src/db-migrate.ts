@@ -398,6 +398,18 @@ export async function runMigrations(): Promise<void> {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_risks_projectid_source ON risks(projectid, source)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_raid_log_projectid_source ON raid_log(projectid, source)`);
 
+  // risks.projectid / raid_log.projectid hold the business projectid (matched against
+  // project_data.projectid, e.g. Date.now()-based ids for new projects) everywhere in
+  // the app — but on production these tables carry stray FK constraints left over from
+  // some earlier manual change, pointing at project_data(id) (the internal serial PK)
+  // instead. That mismatch made every fresh project's Risk Agent sync fail with
+  // "violates foreign key constraint risks_projectid_fkey" (id and business projectid
+  // only coincide by chance). A real FK to project_data(projectid) isn't possible either:
+  // that column is only unique combined with user_id (idx_project_data_projectid_user_id),
+  // since the same business projectid can legitimately repeat across different users.
+  await pool.query(`ALTER TABLE risks DROP CONSTRAINT IF EXISTS risks_projectid_fkey`);
+  await pool.query(`ALTER TABLE raid_log DROP CONSTRAINT IF EXISTS raid_log_projectid_fkey`);
+
   dbLogger.info('Database migrations complete');
 }
 
